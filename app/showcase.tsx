@@ -9,6 +9,7 @@ import { SITE_LANGUAGE_COOKIE, siteCopy } from '@/lib/site-language';
 import PoemCover from './poem-cover';
 import ThemeToggle from './theme-toggle';
 import LanguageSelector from './language-selector';
+import AboutPoetio from './about-poetio';
 
 const number = (n: number) => String(n).padStart(2, '0');
 const lines = (content: string) => content.split('\n').filter(line => line.trim());
@@ -25,8 +26,6 @@ export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { 
   const trigger = useRef<HTMLButtonElement | null>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const copy = siteCopy[language];
-  const featured = poems[0];
-  const featuredDisplay = featured && displayedVersion(featured, language);
   const current = active === null ? null : poems[active];
   const originalLabel = (source: PoemLanguage) => source === 'ro' ? copy.originalRomanian : copy.originalEnglish;
 
@@ -62,20 +61,7 @@ export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { 
         <div className="intro-top"><p className="eyebrow">{copy.tagline}</p><p className="edition">{copy.edition}</p></div>
         <h1 id="page-title">{copy.intro} <em>{copy.pause}</em></h1>
       </section>
-      {featured && featuredDisplay && <section className="featured shell" aria-labelledby="featured-title">
-        <div className="feature-art"><PoemCover key={featured.image_id || featured.id} poem={featured} eager /></div>
-        <article className="feature-poem">
-          <div className="feature-top"><span className="eyebrow">{copy.featured}</span><span className="poem-index">01 / {number(poems.length)}</span></div>
-          <div className="feature-content">
-            {featuredDisplay.fallback && <span className="original-language-note">{originalLabel(featured.source_language)}</span>}
-            <p className="poem-theme" lang={featuredDisplay.language}>{featuredDisplay.text.theme}</p>
-            <h2 id="featured-title" lang={featuredDisplay.language}>{featuredDisplay.text.title}</h2>
-            <div className="poem-excerpt feature-excerpt-text" lang={featuredDisplay.language}>{featuredDisplay.text.content.split('\n').slice(0, 7).join('\n')}</div>
-            <button className="read-link" onClick={e => open(0, e.currentTarget)}>{copy.read} <span className="circle-arrow" aria-hidden="true">↗</span></button>
-          </div>
-          <div className="feature-bottom"><span>{featured.author}</span><span>{copy.moment}</span></div>
-        </article>
-      </section>}
+      <AboutPoetio language={language} portrait={{ src: '/assets/dan-enache.jpg', width: 960, height: 960 }} />
       <section id="collection" className="collection shell" aria-labelledby="collection-title">
         <div className="section-heading"><div><p className="eyebrow">{copy.takeTime}</p><h2 id="collection-title">{copy.collection}<span className="count">({number(poems.length)})</span></h2></div><p>{copy.slowly}</p></div>
         {poems.length ? <div className="poem-grid">{poems.map((poem, index) => {
