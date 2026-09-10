@@ -1,13 +1,15 @@
 .about-poetio {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   background: var(--tint);
   color: var(--secondary-foreground);
 }
 
 .about-portrait {
-  position: relative;
-  min-height: 535px;
+  position: sticky;
+  top: 2rem;
+  align-self: start;
+  aspect-ratio: 1;
   overflow: hidden;
   background: #fff;
 }
@@ -52,12 +54,18 @@
 
 .about-biography p { margin: 0 0 1.1rem; }
 .about-biography p:last-child { margin-bottom: 0; }
+.about-profile { margin: 0 0 2rem; }
+.about-profile > div { margin-bottom: .6rem; }
+.about-profile dt { display: inline; font-weight: 600; }
+.about-profile dt::after { content: ': '; }
+.about-profile dd { display: inline; margin: 0; }
+.biography-section + .biography-section { margin-top: 2rem; }
+.biography-section h3 { margin: 0 0 .85rem; font: 400 1.4rem/1.3 var(--serif); letter-spacing: -.025em; }
 .about-story .read-link { margin-top: 0; }
 .about-source { display: inline-block; margin-top: 1rem; color: var(--secondary-muted); font-size: .75rem; text-decoration: underline; text-underline-offset: .2em; }
 .about-source:hover { color: var(--blue); }
 
 @media (min-width: 1500px) {
-  .about-portrait { min-height: 595px; }
   .about-story { padding: 2.25rem 3.5rem; }
 }
 
@@ -67,6 +75,6 @@
 
 @media (max-width: 760px) {
   .about-poetio { grid-template-columns: minmax(0, 1fr); }
-  .about-portrait { min-height: 0; aspect-ratio: 1; }
+  .about-portrait { position: relative; top: auto; }
   .about-story { padding: 1.7rem 1.5rem; }
 }

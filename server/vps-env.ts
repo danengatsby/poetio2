@@ -8,6 +8,7 @@ const dataDirectory = () => process.env.POETIO_DATA_DIR || '/var/lib/poetio';
 // This module replaces cloudflare:workers only in the explicit Node build.
 // Bindings are lazy so compiling never creates or modifies the live database.
 export const env = {
+  ADMIN_AUTH_MODE: 'basic',
   get DB() { return database ??= openDatabase(join(dataDirectory(), 'poetio.sqlite3')); },
   get BUCKET() { return bucket ??= openImageBucket(join(dataDirectory(), 'images')); },
   get OPENAI_API_KEY() { return process.env.OPENAI_API_KEY; },

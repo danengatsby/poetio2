@@ -6,14 +6,14 @@ import './about-poetio.css';
 const copy = {
   ro: {
     about: 'Despre Poetio',
-    biography: 'Biografie',
+    biography: 'Schiță biografică',
     portrait: 'Portretul lui Dan Enache',
     read: 'Descoperă poemele',
     source: 'Biografia autorului pe PoetrySoup',
   },
   'en-US': {
     about: 'About Poetio',
-    biography: 'Biography',
+    biography: 'Biographical Sketch',
     portrait: 'Portrait of Dan Enache',
     read: 'Explore the poems',
     source: 'Author biography on PoetrySoup',
@@ -27,6 +27,7 @@ type AboutPoetioProps = {
 
 export default function AboutPoetio({ language, portrait }: AboutPoetioProps) {
   const text = copy[language];
+  const biography = danEnacheBiography[language];
 
   return <section id="about" className="about-poetio shell" aria-labelledby="about-title" lang={language}>
     <div className="about-portrait">
@@ -38,7 +39,13 @@ export default function AboutPoetio({ language, portrait }: AboutPoetioProps) {
         <p className="about-label">{text.biography}</p>
         <h2 id="about-title">Dan Enache</h2>
         <div className="about-biography">
-          {danEnacheBiography[language].map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+          <dl className="about-profile">
+            {biography.profile.map(fact => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
+          </dl>
+          {biography.sections.map(section => <section key={section.id} className="biography-section" aria-labelledby={`biography-${section.id}`}>
+            <h3 id={`biography-${section.id}`}>{section.title}</h3>
+            {section.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+          </section>)}
         </div>
         <a className="about-source" href={biographySource} target="_blank" rel="noopener noreferrer">{text.source} <span aria-hidden="true">↗</span></a>
       </div>
