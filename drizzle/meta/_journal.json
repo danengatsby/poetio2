@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1788873546165,
+      "tag": "0000_first_blink",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788897857440,
+      "tag": "0001_special_paper_doll",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788899823959,
+      "tag": "0002_nice_leader",
+      "breakpoints": true
+    }
+  ]
+}

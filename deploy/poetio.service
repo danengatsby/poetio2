@@ -1,0 +1,32 @@
+[Unit]
+Description=Poetio poetry collection
+After=network.target
+
+[Service]
+Type=simple
+User=poetio
+Group=poetio
+WorkingDirectory=/var/www/Poetio/sursa
+Environment=NODE_ENV=production
+Environment=POETIO_DATA_DIR=/var/lib/poetio
+Environment=POETIO_BUILD_DIR=/var/www/Poetio/vps/dist
+Environment=POETIO_PORT=4106
+Environment=VINEXT_TRUSTED_HOSTS=159.69.200.202:8096
+EnvironmentFile=-/etc/poetio/runtime.env
+ExecStart=/usr/bin/node /var/www/Poetio/sursa/scripts/start-vps.mjs
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=15
+StateDirectory=poetio
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/poetio
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SyslogIdentifier=poetio
+
+[Install]
+WantedBy=multi-user.target

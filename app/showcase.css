@@ -1,0 +1,98 @@
+
+:root{--paper:var(--background);--ink:var(--foreground);--blue:var(--primary);--text-muted:var(--muted-foreground);--line:var(--border);--tint:var(--secondary);--serif:Georgia,'Times New Roman',serif;--sans:Arial,Helvetica,sans-serif}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:2rem}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:1rem;-webkit-font-smoothing:antialiased}
+body.reading{overflow:hidden}
+button,a{-webkit-tap-highlight-color:transparent}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid var(--blue);outline-offset:6px}
+button{touch-action:manipulation}
+::selection{background:var(--selection-background);color:var(--selection-foreground)}
+.shell{width:calc(100% - 7rem);max-width:1320px;margin-inline:auto}
+.skip-link{position:fixed;left:1rem;top:-6rem;background:var(--paper);padding:1rem;z-index:10;border:2px solid var(--blue)}
+.skip-link:focus{top:1rem}
+.site-header{min-height:100px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--ink);gap:2rem}
+.wordmark{display:inline-flex;align-items:center;gap:.3rem;font-family:var(--serif);font-size:2.25rem;letter-spacing:-.075em;line-height:1.15}
+.wordmark span{align-self:flex-start;margin-top:.2rem;font-family:var(--sans);font-size:1.2rem;letter-spacing:0;color:var(--blue)}
+.header-note{color:var(--text-muted);font-size:.875rem}
+.nav-link{font-size:.9375rem;display:flex;align-items:center;gap:1.75rem;padding-block:.75rem}
+.nav-link:hover,.back-top:hover{color:var(--blue)}
+.nav-link span{font-size:1.4rem}
+.intro{padding:2.6rem 0 2.4rem}
+.intro-top{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.eyebrow{font-size:.75rem;font-weight:500;text-transform:uppercase;letter-spacing:.12em;margin:0;line-height:1.5}
+.edition{font-size:.75rem;color:var(--text-muted);margin:0;line-height:1.5}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(2.6rem,5.4vw,5rem);letter-spacing:-.065em;line-height:1.12;margin:1.45rem 0 .2rem}
+h1 em{font-weight:400;color:var(--blue);letter-spacing:-.075em}
+#page-title{font-size:clamp(1.875rem,3.4vw,3rem)}
+.featured{display:grid;grid-template-columns:1fr 1fr;min-height:535px}
+.feature-art{position:relative;background:#153ba5;min-height:535px;overflow:hidden}
+.feature-art img{position:absolute;width:100%;height:100%;inset:0;object-fit:cover;object-position:center 60%}
+.art-caption{position:absolute;bottom:1.5rem;left:1.75rem;color:#fff;font-size:.75rem;letter-spacing:.02em;text-shadow:0 1px 6px #001960}
+.feature-poem{background:var(--tint);padding:2rem 2.75rem 1.5rem;display:flex;flex-direction:column;justify-content:space-between;gap:2.25rem;color:var(--secondary-foreground)}
+.feature-top,.feature-bottom{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.feature-top .eyebrow{font-size:.75rem;font-weight:600;letter-spacing:.11em}
+.poem-index{font-size:.75rem;font-variant-numeric:tabular-nums}
+.feature-content{padding-block:.4rem}
+.poem-theme{font-size:.75rem;letter-spacing:.14em;margin:0 0 .65rem;color:var(--secondary-muted)}
+.feature-poem h2{font-family:var(--serif);font-size:clamp(1.65rem,2.65vw,2.5rem);font-weight:400;letter-spacing:-.04em;margin:0 0 1.4rem;line-height:1.2}
+.poem-excerpt{font-family:var(--serif);font-size:clamp(.9375rem,1.15vw,1.0625rem);line-height:1.65}
+.poem-excerpt p{margin:0 0 1.1rem}
+.read-link{display:inline-flex;align-items:center;gap:1.8rem;background:transparent;border:0;padding:0;margin-top:.8rem;font-size:.875rem;color:var(--blue)}
+.circle-arrow{display:grid;place-items:center;width:2.35rem;height:2.35rem;border:1px solid var(--secondary-border);border-radius:50%;font-size:1.3rem;transition:background .2s,color .2s,transform .2s}
+.read-link:hover .circle-arrow{background:var(--blue);color:var(--primary-foreground);border-color:var(--blue);transform:rotate(45deg)}
+.feature-bottom{border-top:1px solid var(--secondary-border);padding-top:1rem;color:var(--secondary-muted);font-size:.75rem}
+.collection{padding-top:5.5rem;scroll-margin-top:2rem}
+.section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:2rem;margin-bottom:2.25rem}
+.section-heading .eyebrow{color:var(--text-muted);margin-bottom:.8rem}
+.section-heading h2{font-family:var(--serif);font-size:2.2rem;letter-spacing:-.05em;font-weight:400;margin:0;line-height:1.15}
+.count{font-family:var(--sans);font-size:.8125rem;letter-spacing:0;display:inline-block;vertical-align:top;margin:.35rem 0 0 .8rem;color:var(--blue)}
+.section-heading>p{font-family:var(--serif);font-size:1rem;color:var(--text-muted);margin:0 0 .2rem}
+.poem-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--ink)}
+.poem-card{display:flex;flex-direction:column;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;padding:2rem 1.75rem 1.75rem;position:relative;min-width:0;transition:background .2s}
+.poem-card:not(:nth-child(3n)){border-right:1px solid var(--line)}
+.poem-card:hover{background:var(--tint)}
+.poem-card:focus-visible{z-index:1;outline-offset:-3px}
+.card-meta{display:flex;justify-content:space-between;gap:1rem;font-size:.75rem;color:var(--text-muted);margin-bottom:2.2rem}
+.card-meta>span:first-child{color:var(--blue);font-variant-numeric:tabular-nums}
+.poem-card h3{font-family:var(--serif);font-size:1.4rem;font-weight:400;letter-spacing:-.04em;line-height:1.2;margin:0 0 1rem}
+.poem-card>p{font-family:var(--serif);font-size:.875rem;color:var(--text-muted);line-height:1.7;margin:0 0 2.25rem}
+.card-bottom{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:1rem;color:var(--text-muted);font-size:.75rem}
+.card-bottom>span:last-child{color:var(--blue);font-size:1.5rem;line-height:1;transition:transform .2s}
+.poem-card:hover .card-bottom>span:last-child{transform:translate(2px,-2px)}
+.closing{padding-block:5.5rem 5rem;text-align:center}
+.closing>span{color:var(--blue);font-size:2.4rem;display:block;margin-bottom:1.5rem}
+.closing p{font-family:var(--serif);font-size:clamp(1.5rem,2.6vw,2.25rem);line-height:1.15;letter-spacing:-.045em;margin:0}
+.closing em{color:var(--blue)}
+.site-footer{border-top:1px solid var(--ink);display:flex;align-items:center;justify-content:space-between;gap:1.5rem;min-height:110px;padding-block:1.5rem}
+.site-footer .wordmark{font-size:1.7rem}
+.site-footer .wordmark span{font-size:1rem}
+.site-footer p{font-size:.75rem;line-height:1.5;color:var(--text-muted)}
+.back-top{font-size:.8125rem;display:flex;gap:1rem;align-items:center;padding-block:.75rem}
+dialog{width:min(760px,calc(100vw - 3rem));max-height:calc(100dvh - 3rem);border:0;background:var(--paper);color:var(--ink);padding:0;box-shadow:0 20px 100px #08133544;overscroll-behavior:contain}
+dialog::backdrop{background:#131d47b8;backdrop-filter:blur(6px)}
+dialog[open]{animation:appear .2s ease-out}
+.reader-top{display:flex;justify-content:space-between;align-items:center;padding:1.25rem 1.75rem;border-bottom:1px solid var(--line)}
+.reader-brand{font-family:var(--serif);font-size:1.5rem;letter-spacing:-.05em}
+.reader-brand span{font-family:var(--sans);font-size:.875rem;color:var(--blue);vertical-align:top;margin-left:.15rem}
+#close-reader{background:transparent;border:1px solid var(--line);border-radius:50%;width:2.5rem;height:2.5rem;font-size:1.75rem;display:grid;place-items:center;line-height:1}
+#close-reader:hover{background:var(--tint);color:var(--blue)}
+.reader-article{padding:3.5rem 4.25rem 2.75rem}
+.reader-article>.eyebrow{color:var(--blue)}
+#reader-title{font-family:var(--serif);font-size:clamp(1.8rem,3.2vw,2.6rem);font-weight:400;letter-spacing:-.045em;line-height:1.2;margin:.9rem 0 2.25rem;outline:none}
+.reader-body{font-family:var(--serif);font-size:1.0625rem;line-height:1.75}
+.reader-body p{margin:0 0 1.4rem}
+.reader-body .poem-line{display:block;padding-left:1rem;text-indent:-1rem}
+.reader-attribution{font-size:.75rem;color:var(--text-muted);margin:2.5rem 0 0}
+.reader-navigation{display:flex;justify-content:space-between;align-items:center;gap:1rem;border-top:1px solid var(--line);padding:1.25rem 1.75rem}
+.reader-navigation button{display:flex;align-items:center;gap:.75rem;border:0;background:transparent;color:var(--blue);font-size:.875rem;min-height:2.75rem;padding:.5rem}
+.reader-navigation button:disabled{opacity:.3;cursor:default}
+#reader-count{font-size:.75rem;font-variant-numeric:tabular-nums;color:var(--text-muted)}
+@keyframes appear{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media(min-width:1500px){.feature-art{min-height:595px}.feature-poem{padding:2.25rem 3.5rem 1.75rem}.poem-excerpt{font-size:1.125rem}}
+@media(max-width:1050px){.shell{width:calc(100% - 4rem)}.feature-poem{padding:1.6rem 1.8rem 1.25rem}.feature-art{min-height:520px}.poem-card{padding:1.75rem 1.1rem}.poem-card h3{font-size:1.25rem}.poem-card>p br{display:none}.poem-excerpt{font-size:.9375rem}.section-heading h2{font-size:2rem}}
+@media(max-width:760px){.shell{width:calc(100% - 2.5rem)}.site-header{min-height:82px;gap:1rem}.wordmark{font-size:2rem}.header-note{display:none}.nav-link{font-size:.875rem;gap:.75rem}.intro{padding:2rem 0}.intro-top{gap:1.5rem}.eyebrow,.edition{font-size:.75rem}.edition{text-align:right;max-width:8rem}h1{font-size:clamp(2.1rem,7.5vw,3.75rem);margin:1.1rem 0 .1rem}.featured{grid-template-columns:1fr}.feature-art{min-height:0;aspect-ratio:1.4}.feature-art img{object-position:center 61%}.art-caption{left:1.5rem;bottom:1.25rem}.feature-poem{padding:1.7rem 1.5rem 1.25rem;gap:2rem}.feature-poem h2{font-size:2rem}.poem-excerpt{font-size:1rem}.feature-content{padding-block:.25rem}.feature-bottom{font-size:.75rem}.collection{padding-top:3.5rem}.section-heading{align-items:flex-start;flex-direction:column;gap:.9rem;margin-bottom:1.75rem}.section-heading h2{font-size:1.85rem}.section-heading>p{font-size:.9375rem}.poem-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.poem-card{padding:1.5rem 1rem}.poem-card:not(:nth-child(3n)){border-right:0}.poem-card:nth-child(odd){border-right:1px solid var(--line)}.card-meta{margin-bottom:1.7rem;gap:.4rem;font-size:.75rem}.poem-card h3{font-size:1.3rem}.poem-card>p{font-size:.875rem;line-height:1.6}.card-bottom{font-size:.75rem;gap:.5rem}.closing{padding-block:3.5rem}.site-footer{flex-wrap:wrap;column-gap:2rem;row-gap:.3rem}.site-footer p{order:3;flex-basis:100%;margin:.5rem 0 0}.reader-article{padding:2.5rem 2rem}.reader-body{font-size:1rem}dialog{width:calc(100vw - 1.5rem);max-height:calc(100dvh - 1.5rem)}.reader-top,.reader-navigation{padding:1rem 1.25rem}}
+@media(max-width:420px){.poem-grid{grid-template-columns:1fr}.poem-card:nth-child(odd){border-right:0}.poem-card{padding:1.7rem 0}.poem-card:hover{padding-inline:.75rem}.poem-card h3{font-size:1.4rem}.card-meta{margin-bottom:1.3rem;font-size:.75rem}.poem-card>p{margin-bottom:1.5rem}.card-bottom{font-size:.75rem}.reader-article{padding:2rem 1.25rem}.reader-navigation{gap:.5rem;padding:.75rem}.reader-navigation button{font-size:.8125rem;gap:.4rem}.feature-poem h2{font-size:1.85rem}.poem-excerpt{font-size:.9375rem}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
