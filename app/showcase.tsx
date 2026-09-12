@@ -99,7 +99,7 @@ export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { 
                 <DialogDescription className="eyebrow">{version?.theme || readerCopy.poetry}</DialogDescription>
                 <DialogTitle ref={locale === language ? title : undefined} tabIndex={-1} className="reader-title" lang={version ? locale : current.source_language}>{version?.title || current.title}</DialogTitle>
                 <p className="reader-author">{current.author}</p>
-                {version && locale === language && current[audioField(locale)] && <PoemAudioPlayer key={`${current.id}:${current.revision}:${locale}`} audioId={current[audioField(locale)]!} title={version.title} language={locale} />}
+                {locale === language && <PoemAudioPlayer key={`${current.id}:${current.revision}:${locale}`} audioId={current[audioField(locale)] ?? null} title={version?.title || current.title} language={locale} />}
                 {version ? <div className="reader-body saved-poem-text">{version.content}</div> : <div className="translation-missing"><p>{readerCopy.missing}</p><button className="secondary-button" onClick={() => changeLanguage(current.source_language)}>{readerCopy.readOriginal}</button>{canAdmin && <a href="/admin">{readerCopy.addTranslation}</a>}</div>}
               </article>
             </TabsContent>;
