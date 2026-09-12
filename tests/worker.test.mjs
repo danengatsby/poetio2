@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { Miniflare } from 'miniflare';
+import { wavFixture } from './audio-fixture.mjs';
 
 test('built Worker protects administration and persists API changes into the rendered collection', { timeout: 45000 }, async () => {
   let translationCalls = 0;
@@ -51,6 +52,19 @@ test('built Worker protects administration and persists API changes into the ren
     assert.match(adminHtml, /O marți obișnuită/);
     assert.match(adminHtml, /Textul traducerii/);
     assert.doesNotMatch(adminHtml, /test-worker-key/);
+    assert.match(adminHtml, /Înregistrările poemului/);
+    const audioId = 'bf1a4071-8aa4-4e52-8bf2-690d49d72683';
+    const audioBytes = wavFixture();
+    const audioHeaders = { ...owner, Origin: base, 'Content-Type': 'audio/wav', 'X-Upload-Id': audioId };
+    for (const headers of [{ ...audioHeaders, 'oai-authenticated-user-email': '' }, { ...audioHeaders, Origin: 'https://other.test' }]) {
+      const rejected = await mf.dispatchFetch(base + '/api/audio', { method: 'POST', headers, body: audioBytes });
+      assert.ok([401, 403].includes(rejected.status));
+    }
+    const audioUpload = await mf.dispatchFetch(base + '/api/audio', { method: 'POST', headers: audioHeaders, body: audioBytes });
+    assert.equal(audioUpload.status, 201, await audioUpload.text());
+    assert.equal((await mf.dispatchFetch(base + '/api/audio/' + audioId)).status, 404);
+    const previewAudio = await mf.dispatchFetch(base + '/api/audio/' + audioId, { headers: owner });
+    assert.equal(previewAudio.status, 200); assert.deepEqual(Buffer.from(await previewAudio.arrayBuffer()), audioBytes);
     const imageBytes = readFileSync(new URL('../public/assets/blue-hour.webp', import.meta.url));
     const imageId = '78337a23-f6e1-4bd3-8c51-4e4f041c497d';
     const imageHeaders = { ...owner, Origin: base, 'Content-Type': 'image/webp', 'X-Upload-Id': imageId, 'X-File-Name': encodeURIComponent('Lumină de seară.webp') };
@@ -76,7 +90,7 @@ test('built Worker protects administration and persists API changes into the ren
     assert.equal(ownerImage.status, 200);
     assert.equal(ownerImage.headers.get('content-type'), 'image/webp');
     assert.deepEqual(Buffer.from(await ownerImage.arrayBuffer()), imageBytes);
-    const input = { id: '13941a33-ff28-4359-8951-3958514a2bd7', title: 'Poem de verificare', author: 'Autor de test', theme: 'Verificare', content: 'Versul întâi\nVersul al doilea\n\nStrofa a doua.', image_id: imageId, source_language: 'ro', translated_title: 'Verification Poem', translated_theme: 'Testing', translated_content: 'First line\nSecond line\n\nThe second stanza.' };
+    const input = { id: '13941a33-ff28-4359-8951-3958514a2bd7', title: 'Poem de verificare', author: 'Autor de test', theme: 'Verificare', content: 'Versul întâi\nVersul al doilea\n\nStrofa a doua.', image_id: imageId, audio_ro_id: audioId, source_language: 'ro', translated_title: 'Verification Poem', translated_theme: 'Testing', translated_content: 'First line\nSecond line\n\nThe second stanza.' };
     const forbiddenTranslation = await mf.dispatchFetch(base + '/api/poems/translate', { method: 'POST', headers: { ...mutation, 'oai-authenticated-user-email': 'visitor@example.com' }, body: JSON.stringify(input) });
     assert.equal(forbiddenTranslation.status, 403);
     const crossSiteTranslation = await mf.dispatchFetch(base + '/api/poems/translate', { method: 'POST', headers: { ...mutation, Origin: 'https://other.example' }, body: JSON.stringify(input) });
@@ -103,6 +117,13 @@ test('built Worker protects administration and persists API changes into the ren
     assert.equal(createdBody.poem.image_id, imageId);
     assert.equal(createdBody.poem.source_language, 'ro');
     assert.equal(createdBody.poem.translated_content, input.translated_content);
+    assert.equal(createdBody.poem.audio_ro_id, audioId);
+    const publicAudio = await mf.dispatchFetch(base + '/api/audio/' + audioId, { headers: { Range: 'bytes=44-299' } });
+    assert.equal(publicAudio.status, 206);
+    assert.equal(publicAudio.headers.get('Content-Range'), `bytes 44-299/${audioBytes.length}`);
+    assert.deepEqual(Buffer.from(await publicAudio.arrayBuffer()), audioBytes.subarray(44, 300));
+    const headAudio = await mf.dispatchFetch(base + '/api/audio/' + audioId, { method: 'HEAD' });
+    assert.equal(headAudio.status, 200); assert.equal(headAudio.headers.get('Content-Length'), String(audioBytes.length));
     const attachedImage = await mf.dispatchFetch(base + '/api/images/' + imageId);
     assert.equal(attachedImage.status, 200);
     const home = await mf.dispatchFetch(base + '/');
@@ -135,6 +156,7 @@ test('built Worker protects administration and persists API changes into the ren
     assert.equal((await mf.dispatchFetch(base + '/api/images/' + secondImageId)).status, 404);
     const deleted = await mf.dispatchFetch(base + '/api/poems/' + input.id, { method: 'DELETE', headers: mutation, body: JSON.stringify({ revision: 5 }) });
     assert.equal(deleted.status, 200);
+    assert.equal((await mf.dispatchFetch(base + '/api/audio/' + audioId)).status, 404);
     const finalList = await mf.dispatchFetch(base + '/api/poems', { headers: owner });
     assert.equal((await finalList.json()).poems.length, 6);
   } finally { await mf.dispose(); }

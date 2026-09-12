@@ -9,7 +9,7 @@ import ts from 'typescript';
 
 const output = mkdtempSync(join(tmpdir(), 'stillword-tests-'));
 writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
-for (const file of ['db/poems', 'db/seed-poems', 'db/images', 'db/language-backfill', 'lib/access', 'lib/poem-images', 'lib/poem-languages', 'lib/translate-poem']) {
+for (const file of ['db/poems', 'db/audio', 'lib/poem-audio', 'db/seed-poems', 'db/images', 'db/language-backfill', 'lib/access', 'lib/poem-images', 'lib/poem-languages', 'lib/translate-poem']) {
   mkdirSync(join(output, file.split('/')[0]), { recursive: true });
   const source = readFileSync(new URL(`../${file}.ts`, import.meta.url), 'utf8');
   writeFileSync(join(output, file + '.js'), ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText);
@@ -243,4 +243,89 @@ test('translations with missing, extra, blank or merged verses are rejected', ()
     { ...valid, lines: ['x'.repeat(30001), '', 'Last line'] },
     { ...valid, title: '' },
   ]) assert.throws(() => parseTranslation(changed, original), { status: 503 });
+});
+
+const audio = require(join(output, 'db/audio.js'));
+const { wavFixture } = await import('./audio-fixture.mjs');
+
+test('audio rejects disguised or oversized uploads and supports common container signatures', async () => {
+  const bytes = wavFixture();
+  const req = (body, type = 'audio/wav', extra = {}) => new Request('https://poetio.test/api/audio', { method: 'POST', headers: { 'Content-Type': type, ...extra }, body, duplex: 'half' });
+  assert.equal((await audio.readAudioBytes(req(bytes))).contentType, 'audio/wav');
+  assert.equal((await audio.readAudioBytes(req(bytes, 'audio/x-wav'))).contentType, 'audio/wav');
+  await assert.rejects(audio.readAudioBytes(req('<script>bad</script>')), { status: 415 });
+  await assert.rejects(audio.readAudioBytes(req(bytes, 'audio/mpeg')), { status: 415 });
+  await assert.rejects(audio.readAudioBytes(req(bytes, 'audio/wav', { 'Content-Length': String(25 * 1024 * 1024 + 1) })), { status: 413 });
+  let cancelled = false;
+  const oversized = new ReadableStream({ pull(controller) { controller.enqueue(new Uint8Array(1024 * 1024)); }, cancel() { cancelled = true; } });
+  await assert.rejects(audio.readAudioBytes(req(oversized)), { status: 413 });
+  assert.equal(cancelled, true);
+  assert.equal(audio.audioType(Uint8Array.from([0xff, 0xfb, 0x90, 0x00, 0, 0])), 'audio/mpeg');
+  const m4a = Buffer.alloc(40); m4a.writeUInt32BE(24); m4a.write('ftypM4A ', 4);
+  assert.equal(audio.audioType(m4a), 'audio/mp4');
+  const ogg = Buffer.alloc(50); ogg.write('OggS'); ogg[26] = 1; ogg[27] = 19; ogg.write('OpusHead', 28);
+  assert.equal(audio.audioType(ogg), 'audio/ogg');
+  assert.throws(() => audio.audioType(new Uint8Array()), { status: 415 });
+});
+
+test('recordings remain private until attached, support seeking, and detach without changing text', async () => {
+  const db = database();
+  const objects = new Map();
+  const bucket = {
+    async put(key, bytes) { objects.set(key, bytes); },
+    async get(key, options) {
+      const bytes = objects.get(key); if (!bytes) return null;
+      const range = options?.range;
+      return { size: bytes.length, body: new Response(range ? bytes.slice(range.offset, range.offset + range.length) : bytes).body };
+    },
+  };
+  const recordingId = 'ff66365b-550d-4e6b-81ce-c79a218a8ee5';
+  const secondId = '9a1c843c-31e1-408b-953d-e2cfc75c1279';
+  const owner = { 'oai-authenticated-user-email': 'pensio53@gmail.com' };
+  const bytes = wavFixture();
+  const upload = (uploadId, body = bytes) => new Request('https://poetio.test/api/audio', { method: 'POST', headers: { ...owner, 'Content-Type': 'audio/wav', 'X-Upload-Id': uploadId, 'X-File-Name': encodeURIComponent('Vocea mea.wav') }, body });
+  const read = (audioId = recordingId, headers = {}, method = 'GET') => audio.serveAudio(db, bucket, new Request('https://poetio.test/api/audio/' + audioId, { headers, method }), audioId);
+  try {
+    const saved = await audio.saveAudio(db, bucket, upload(recordingId));
+    assert.equal(saved.file_name, 'Vocea mea.wav');
+    assert.equal((await audio.saveAudio(db, bucket, upload(recordingId))).id, recordingId);
+    await assert.rejects(audio.saveAudio(db, bucket, upload(recordingId, wavFixture(4000))), { status: 409 });
+    assert.equal(objects.size, 1);
+    assert.equal((await read()).status, 404);
+    const privateFile = await read(recordingId, owner);
+    assert.equal(privateFile.status, 200); await privateFile.body.cancel();
+    await assert.rejects(service.createPoem(db, id, { ...input, audio_ro_id: secondId }), { status: 400 });
+    assert.throws(() => service.validateInput({ ...input, audio_ro_id: '../../bad' }), { status: 400 });
+    const poemInput = { ...input, audio_ro_id: recordingId };
+    const poem = await service.createPoem(db, id, poemInput);
+    assert.equal(poem.audio_ro_id, recordingId);
+    assert.equal(poem.audio_en_id, null);
+    assert.equal((await service.createPoem(db, id, poemInput)).revision, 1);
+    await assert.rejects(service.createPoem(db, id, input), { status: 409 });
+    const head = await read(recordingId, { Range: 'bytes=44-99' }, 'HEAD');
+    assert.equal(head.status, 200); assert.equal(head.headers.get('Content-Length'), String(bytes.length)); assert.equal(head.body, null);
+    for (const [header, start, end] of [['bytes=44-99', 44, 99], ['bytes=100-', 100, bytes.length - 1], ['bytes=-64', bytes.length - 64, bytes.length - 1], ['bytes=0-999999', 0, bytes.length - 1]]) {
+      const response = await read(recordingId, { Range: header });
+      assert.equal(response.status, 206);
+      assert.equal(response.headers.get('Content-Range'), `bytes ${start}-${end}/${bytes.length}`);
+      assert.equal(response.headers.get('Content-Length'), String(end - start + 1));
+      assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes.subarray(start, end + 1));
+    }
+    for (const range of ['bytes=999999-', 'bytes=20-10', 'bytes=-0']) {
+      const response = await read(recordingId, { Range: range });
+      assert.equal(response.status, 416); assert.equal(response.headers.get('Content-Range'), `bytes */${bytes.length}`);
+    }
+    const staleRange = await read(recordingId, { Range: 'bytes=44-99', 'If-Range': '"old-file"' });
+    assert.equal(staleRange.status, 200); await staleRange.body.cancel();
+    await audio.saveAudio(db, bucket, upload(secondId));
+    const replaced = await service.updatePoem(db, id, 1, { ...input, audio_ro_id: secondId, audio_en_id: recordingId });
+    assert.equal(replaced.audio_ro_id, secondId); assert.equal(replaced.audio_en_id, recordingId);
+    await assert.rejects(service.updatePoem(db, id, 1, poemInput), { status: 409 });
+    const olderForm = await service.updatePoem(db, id, 2, { ...input, author: 'Autor revizuit', source_language: 'en-US' });
+    assert.equal(olderForm.audio_ro_id, secondId); assert.equal(olderForm.audio_en_id, recordingId, 'Language-specific audio cannot swap when source language changes');
+    const detached = await service.updatePoem(db, id, 3, { ...input, audio_ro_id: null, audio_en_id: null });
+    assert.equal(detached.content, input.content);
+    assert.equal((await read()).status, 404); assert.equal((await read(secondId)).status, 404);
+    assert.equal(objects.size, 2, 'Detached files remain recoverable in private storage');
+  } finally { db.close(); }
 });

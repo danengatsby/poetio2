@@ -3,6 +3,8 @@ import { AppError } from '../lib/access';
 import { seedPoems } from './seed-poems';
 import { requireAvailableImage, validImageId } from './images';
 import { languageBackfill } from './language-backfill';
+import { requireAvailableAudio, validAudioId } from './audio';
+import { AUDIO_FIELDS } from '../lib/poem-audio';
 
 export type Statement = {
   bind(...args: (string | number | null)[]): Statement;
@@ -56,6 +58,11 @@ export function validateInput(value: unknown): PoemInput {
     if (obj.image_id !== null && !validImageId(obj.image_id)) throw new AppError(400, 'Imaginea selectată este nevalidă.');
     input.image_id = obj.image_id as string | null;
   }
+  for (const field of AUDIO_FIELDS) {
+    if (obj[field] === undefined) continue;
+    if (obj[field] !== null && !validAudioId(obj[field])) throw new AppError(400, 'Înregistrarea selectată este nevalidă.');
+    input[field] = obj[field] as string | null;
+  }
   if (obj.source_language !== undefined) {
     if (obj.source_language !== 'ro' && obj.source_language !== 'en-US') throw new AppError(400, 'Alege Română sau English (US) pentru limba originalului.');
     input.source_language = obj.source_language;
@@ -93,12 +100,13 @@ export async function createPoem(db: Database, id: string, input: PoemInput) {
   await ensureInitialPoems(db);
   await ensureLanguageVariants(db);
   await requireAvailableImage(db, input.image_id);
+  for (const field of AUDIO_FIELDS) await requireAvailableAudio(db, input[field]);
   const now = Date.now();
-  await db.prepare('INSERT INTO poems (id, title, author, theme, content, source_language, translated_title, translated_theme, translated_content, image_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT(id) DO NOTHING')
-    .bind(id, input.title, input.author, input.theme, input.content, input.source_language ?? 'ro', input.translated_title ?? null, input.translated_theme ?? null, input.translated_content ?? null, input.image_id ?? null, now, now).run();
+  await db.prepare('INSERT INTO poems (id, title, author, theme, content, source_language, translated_title, translated_theme, translated_content, image_id, audio_ro_id, audio_en_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT(id) DO NOTHING')
+    .bind(id, input.title, input.author, input.theme, input.content, input.source_language ?? 'ro', input.translated_title ?? null, input.translated_theme ?? null, input.translated_content ?? null, input.image_id ?? null, input.audio_ro_id ?? null, input.audio_en_id ?? null, now, now).run();
   const poem = await getPoem(db, id);
   if (!poem) throw new Error('Inserted poem unavailable');
-  if (poem.title !== input.title || poem.author !== input.author || poem.theme !== input.theme || poem.content !== input.content || poem.image_id !== (input.image_id ?? null) || poem.source_language !== (input.source_language ?? 'ro') || poem.translated_title !== (input.translated_title ?? null) || poem.translated_theme !== (input.translated_theme ?? null) || poem.translated_content !== (input.translated_content ?? null)) throw new AppError(409, 'Acest poem a fost deja salvat cu alt conținut. Reîncarcă lista înainte de a continua.');
+  if (AUDIO_FIELDS.some(field => poem[field] !== (input[field] ?? null)) || poem.title !== input.title || poem.author !== input.author || poem.theme !== input.theme || poem.content !== input.content || poem.image_id !== (input.image_id ?? null) || poem.source_language !== (input.source_language ?? 'ro') || poem.translated_title !== (input.translated_title ?? null) || poem.translated_theme !== (input.translated_theme ?? null) || poem.translated_content !== (input.translated_content ?? null)) throw new AppError(409, 'Acest poem a fost deja salvat cu alt conținut. Reîncarcă lista înainte de a continua.');
   return poem;
 }
 
@@ -106,6 +114,7 @@ export async function updatePoem(db: Database, id: string, revision: number, inp
   validateId(id); validateRevision(revision);
   await ensureLanguageVariants(db);
   await requireAvailableImage(db, input.image_id);
+  for (const field of AUDIO_FIELDS) await requireAvailableAudio(db, input[field]);
   const current = await getPoem(db, id);
   if (!current) throw new AppError(404, 'Poemul a fost șters. Poți copia textul și crea un poem nou.');
   const language = input.source_language ?? current.source_language;
@@ -114,12 +123,12 @@ export async function updatePoem(db: Database, id: string, revision: number, inp
   const translatedTitle = translationsProvided ? input.translated_title ?? null : sourceChanged ? null : current.translated_title;
   const translatedTheme = translationsProvided ? input.translated_theme ?? null : sourceChanged ? null : current.translated_theme;
   const translatedContent = translationsProvided ? input.translated_content ?? null : sourceChanged ? null : current.translated_content;
-  const result = await db.prepare('UPDATE poems SET title = ?, author = ?, theme = ?, content = ?, source_language = ?, translated_title = ?, translated_theme = ?, translated_content = ?, image_id = CASE WHEN ? = 1 THEN ? ELSE image_id END, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?')
-    .bind(input.title, input.author, input.theme, input.content, language, translatedTitle, translatedTheme, translatedContent, input.image_id === undefined ? 0 : 1, input.image_id ?? null, Date.now(), id, revision).run();
+  const result = await db.prepare('UPDATE poems SET title = ?, author = ?, theme = ?, content = ?, source_language = ?, translated_title = ?, translated_theme = ?, translated_content = ?, image_id = CASE WHEN ? = 1 THEN ? ELSE image_id END, audio_ro_id = CASE WHEN ? = 1 THEN ? ELSE audio_ro_id END, audio_en_id = CASE WHEN ? = 1 THEN ? ELSE audio_en_id END, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?')
+    .bind(input.title, input.author, input.theme, input.content, language, translatedTitle, translatedTheme, translatedContent, input.image_id === undefined ? 0 : 1, input.image_id ?? null, input.audio_ro_id === undefined ? 0 : 1, input.audio_ro_id ?? null, input.audio_en_id === undefined ? 0 : 1, input.audio_en_id ?? null, Date.now(), id, revision).run();
   const poem = await getPoem(db, id);
   if (!poem) throw new AppError(404, 'Poemul a fost șters. Poți copia textul și crea un poem nou.');
   if (!result.meta.changes) {
-    if (poem.revision === revision + 1 && poem.title === input.title && poem.author === input.author && poem.theme === input.theme && poem.content === input.content && (input.image_id === undefined || poem.image_id === input.image_id) && poem.source_language === language && poem.translated_title === translatedTitle && poem.translated_theme === translatedTheme && poem.translated_content === translatedContent) return poem;
+    if (AUDIO_FIELDS.every(field => input[field] === undefined || poem[field] === input[field]) && poem.revision === revision + 1 && poem.title === input.title && poem.author === input.author && poem.theme === input.theme && poem.content === input.content && (input.image_id === undefined || poem.image_id === input.image_id) && poem.source_language === language && poem.translated_title === translatedTitle && poem.translated_theme === translatedTheme && poem.translated_content === translatedContent) return poem;
     throw new AppError(409, 'Poemul a fost modificat în altă pagină. Copiază textul introdus, apoi reîncarcă lista înainte de a edita din nou.');
   }
   return poem;

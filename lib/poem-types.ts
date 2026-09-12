@@ -11,6 +11,8 @@ export type Poem = {
   translated_theme: string | null;
   translated_content: string | null;
   image_id: string | null;
+  audio_ro_id: string | null;
+  audio_en_id: string | null;
   revision: number;
   created_at: number;
   updated_at: number;
@@ -18,6 +20,8 @@ export type Poem = {
 
 export type PoemInput = Pick<Poem, 'title' | 'author' | 'theme' | 'content'> & {
   image_id?: string | null;
+  audio_ro_id?: string | null;
+  audio_en_id?: string | null;
   source_language?: PoemLanguage;
   translated_title?: string | null;
   translated_theme?: string | null;

@@ -11,6 +11,17 @@ export const poemImages = sqliteTable('poem_images', {
   createdAt: integer('created_at').notNull(),
 });
 
+export const poemAudio = sqliteTable('poem_audio', {
+  id: text('id').primaryKey(),
+  objectKey: text('object_key').notNull(),
+  fileName: text('file_name').notNull(),
+  contentType: text('content_type').notNull(),
+  byteSize: integer('byte_size').notNull(),
+  contentHash: text('content_hash').notNull(),
+  ownerEmail: text('owner_email').notNull(),
+  createdAt: integer('created_at').notNull(),
+});
+
 export const poems = sqliteTable('poems', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
@@ -22,10 +33,12 @@ export const poems = sqliteTable('poems', {
   translatedTheme: text('translated_theme'),
   translatedContent: text('translated_content'),
   imageId: text('image_id').references(() => poemImages.id),
+  audioRoId: text('audio_ro_id').references(() => poemAudio.id),
+  audioEnId: text('audio_en_id').references(() => poemAudio.id),
   revision: integer('revision').notNull().default(1),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
-}, (table) => [index('idx_poems_image_id').on(table.imageId)]);
+}, (table) => [index('idx_poems_image_id').on(table.imageId), index('idx_poems_audio_ro_id').on(table.audioRoId), index('idx_poems_audio_en_id').on(table.audioEnId)]);
 
 export const collectionMeta = sqliteTable('collection_meta', {
   key: text('key').primaryKey(),

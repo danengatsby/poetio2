@@ -43,7 +43,7 @@ const worker = {
 
     const response = await handler.fetch(request, env, ctx);
     const secured = new Response(response.body, response);
-    if (url.pathname === '/' || url.pathname === '/admin' || url.pathname.startsWith('/admin/') || url.pathname.startsWith('/api/poems') || url.pathname.startsWith('/api/images')) {
+    if (url.pathname === '/' || url.pathname === '/admin' || url.pathname.startsWith('/admin/') || url.pathname.startsWith('/api/poems') || url.pathname.startsWith('/api/images') || url.pathname.startsWith('/api/audio')) {
       secured.headers.set('Cache-Control', 'private, no-store');
     }
     secured.headers.set('X-Content-Type-Options', 'nosniff');

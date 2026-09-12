@@ -46,9 +46,17 @@ export function openDatabase(file) {
 
 /** R2's used operations, with atomic writes outside the public asset directory. */
 export function openImageBucket(directory) {
+  return openMediaBucket(directory, 'poem-images', 'image');
+}
+
+export function openAudioBucket(directory) {
+  return openMediaBucket(directory, 'poem-audio', 'audio');
+}
+
+function openMediaBucket(directory, prefix, label) {
   function objectPath(key) {
-    if (!/^poem-images\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/[0-9a-f]{64}$/i.test(key)) {
-      throw new Error('Invalid image storage key.');
+    if (!new RegExp(`^${prefix}/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/[0-9a-f]{64}$`, 'i').test(key)) {
+      throw new Error(`Invalid ${label} storage key.`);
     }
     return join(directory, key);
   }
@@ -64,12 +72,13 @@ export function openImageBucket(directory) {
         await unlink(temporary).catch(error => { if (error.code !== 'ENOENT') throw error; });
       }
     },
-    async get(key) {
+    async get(key, options) {
       const target = objectPath(key);
       try {
         const details = await stat(target);
         if (!details.isFile()) return null;
-        return { body: Readable.toWeb(createReadStream(target)), size: details.size };
+        const range = options?.range;
+        return { body: Readable.toWeb(createReadStream(target, range ? { start: range.offset, end: range.offset + range.length - 1 } : undefined)), size: details.size };
       } catch (error) {
         if (error.code === 'ENOENT') return null;
         throw error;
