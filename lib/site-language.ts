@@ -9,7 +9,7 @@ export function siteLanguage(value?: string): PoemLanguage {
 export const siteCopy = {
   ro: {
     skip: 'Mergi la poeme', home: 'Poetio — Acasă', note: 'O colecție independentă de poezie',
-    navigation: 'Navigare principală', administration: 'Administrare', poems: 'Poemele',
+    navigation: 'Navigare principală', administration: 'Administrare', poems: 'Poemele', author: 'Autor',
     tagline: 'Cuvinte pentru clipele dintre', edition: 'O mică colecție · Nr. 01',
     intro: 'Un loc pentru', pause: 'răgaz.', takeTime: 'Fără grabă',
     collection: 'Colecția', slowly: 'Unele lucruri se citesc pe îndelete.', poetry: 'Poezie',
@@ -27,7 +27,7 @@ export const siteCopy = {
   },
   'en-US': {
     skip: 'Skip to poems', home: 'Poetio home', note: 'An independent poetry collection',
-    navigation: 'Main navigation', administration: 'Administration', poems: 'The poems',
+    navigation: 'Main navigation', administration: 'Administration', poems: 'The poems', author: 'Author',
     tagline: 'Words for the in-between', edition: 'A small collection · No. 01',
     intro: 'A place to', pause: 'pause.', takeTime: 'Take your time',
     collection: 'The collection', slowly: 'Some things are better read slowly.', poetry: 'Poetry',

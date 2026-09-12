@@ -8,8 +8,7 @@ import { POEM_LANGUAGES, poemVersion } from '@/lib/poem-languages';
 import { SITE_LANGUAGE_COOKIE, siteCopy } from '@/lib/site-language';
 import PoemCover from './poem-cover';
 import ThemeToggle from './theme-toggle';
-import LanguageSelector from './language-selector';
-import AboutPoetio from './about-poetio';
+import SiteHeader from './site-header';
 import PoemAudioPlayer from './poem-audio-player';
 import { audioField } from '@/lib/poem-audio';
 
@@ -48,22 +47,12 @@ export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { 
 
   return <>
     <a className="skip-link" href="#main">{copy.skip}</a>
-    <header className="site-header shell">
-      <a href="/" className="wordmark" aria-label={copy.home}>Poetio<span aria-hidden="true">✳</span></a>
-      <span className="header-note">{copy.note}</span>
-      <nav className="header-nav" aria-label={copy.navigation}>
-        <a className="admin-entry" href="/admin">{copy.administration}</a>
-        <a className="nav-link" href="#collection">{copy.poems} <span aria-hidden="true">↗</span></a>
-        <LanguageSelector language={language} onChange={changeLanguage} />
-        <ThemeToggle language={language} />
-      </nav>
-    </header>
+    <SiteHeader language={language} onLanguageChange={changeLanguage} />
     <main id="main">
       <section className="intro shell" aria-labelledby="page-title">
         <div className="intro-top"><p className="eyebrow">{copy.tagline}</p><p className="edition">{copy.edition}</p></div>
         <h1 id="page-title">{copy.intro} <em>{copy.pause}</em></h1>
       </section>
-      <AboutPoetio language={language} portrait={{ src: '/assets/dan-enache.jpg', width: 960, height: 960 }} />
       <section id="collection" className="collection shell" aria-labelledby="collection-title">
         <div className="section-heading"><div><p className="eyebrow">{copy.takeTime}</p><h2 id="collection-title">{copy.collection}<span className="count">({number(poems.length)})</span></h2></div><p>{copy.slowly}</p></div>
         {poems.length ? <div className="poem-grid">{poems.map((poem, index) => {

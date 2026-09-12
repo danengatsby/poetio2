@@ -49,7 +49,7 @@ export default function AboutPoetio({ language, portrait }: AboutPoetioProps) {
         </div>
         <a className="about-source" href={biographySource} target="_blank" rel="noopener noreferrer">{text.source} <span aria-hidden="true">↗</span></a>
       </div>
-      <a className="read-link" href="#collection">{text.read} <span className="circle-arrow" aria-hidden="true">↗</span></a>
+      <a className="read-link" href="/#collection">{text.read} <span className="circle-arrow" aria-hidden="true">↗</span></a>
     </article>
   </section>;
 }
