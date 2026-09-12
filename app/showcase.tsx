@@ -52,7 +52,7 @@ export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { 
       <a href="/" className="wordmark" aria-label={copy.home}>Poetio<span aria-hidden="true">✳</span></a>
       <span className="header-note">{copy.note}</span>
       <nav className="header-nav" aria-label={copy.navigation}>
-        {canAdmin && <a className="admin-entry" href="/admin">{copy.administration}</a>}
+        <a className="admin-entry" href="/admin">{copy.administration}</a>
         <a className="nav-link" href="#collection">{copy.poems} <span aria-hidden="true">↗</span></a>
         <LanguageSelector language={language} onChange={changeLanguage} />
         <ThemeToggle language={language} />

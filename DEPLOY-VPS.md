@@ -6,7 +6,7 @@ Administrare: https://159.69.200.202:8096/admin
 
 Aplicația rulează ca serviciu `poetio.service`, cu utilizatorul dedicat `poetio`, pe `127.0.0.1:4106`. Nginx furnizează HTTPS pe portul 8096 și validează parola pentru administrare și operațiile de scriere. Identitatea trimisă aplicației este generată numai după această validare. Headerul de identitate primit de la vizitatori este eliminat.
 
-Datele de acces se păstrează în `/etc/poetio/admin-credentials.txt`, disponibil numai administratorului serverului. Nginx folosește hashul parolei din `/etc/poetio/admin.htpasswd`. Aceste fișiere nu intră în Git sau în directorul public.
+Meniul „Administrare” este vizibil și fără autentificare. Accesarea lui deschide solicitarea de utilizator și parolă a browserului, prin HTTPS. Contul administrativ configurat pe VPS este `admin`; parola se păstrează în `/etc/poetio/admin-credentials.txt`, disponibil numai administratorului serverului. Nginx folosește hashul parolei din `/etc/poetio/admin.htpasswd`. Aceste fișiere nu intră în Git sau în directorul public.
 
 **Date și actualizări**
 
