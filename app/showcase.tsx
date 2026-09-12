@@ -49,12 +49,11 @@ export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { 
     <a className="skip-link" href="#main">{copy.skip}</a>
     <SiteHeader language={language} onLanguageChange={changeLanguage} />
     <main id="main">
-      <section className="intro shell" aria-labelledby="page-title">
+      <div className="intro shell">
         <div className="intro-top"><p className="eyebrow">{copy.tagline}</p><p className="edition">{copy.edition}</p></div>
-        <h1 id="page-title">{copy.intro} <em>{copy.pause}</em></h1>
-      </section>
+      </div>
       <section id="collection" className="collection shell" aria-labelledby="collection-title">
-        <div className="section-heading"><div><p className="eyebrow">{copy.takeTime}</p><h2 id="collection-title">{copy.collection}<span className="count">({number(poems.length)})</span></h2></div><p>{copy.slowly}</p></div>
+        <div className="section-heading"><div><p className="eyebrow">{copy.takeTime}</p><h1 id="collection-title">{copy.collection}<span className="count">({number(poems.length)})</span></h1></div><p>{copy.slowly}</p></div>
         {poems.length ? <div className="poem-grid">{poems.map((poem, index) => {
           const display = displayedVersion(poem, language);
           const poemLines = lines(display.text.content);
