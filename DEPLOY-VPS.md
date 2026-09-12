@@ -26,6 +26,8 @@ Certificatul HTTPS existent pentru adresa IP este reutilizat. Reînnoirea lui es
 
 Traducerile deja salvate funcționează fără cheie API. Traducerea automată necesită configurarea separată a secretului `OPENAI_API_KEY` în `/etc/poetio/runtime.env` și repornirea serviciului. Fără acest secret, editorul permite salvarea originalului și completarea manuală a traducerii.
 
+Playerul din fereastra poemului folosește Web Speech API și vocile oferite de browserul vizitatorului. Nu necesită credit OpenAI. Vocea trebuie să fie disponibilă pentru limba versiunii afișate; în caz contrar, playerul afișează instrucțiuni și dezactivează redarea. Recitarea pornește numai la apăsarea butonului și se oprește la închiderea ferestrei, schimbarea poemului sau a limbii. Continuarea după pauză reia fragmentul întrerupt. Testele pentru ordinea fragmentelor, vocile potrivite și anularea recitării se rulează cu `node --test tests/poem-recitation.test.mjs`; calitatea vocii se verifică pe un dispozitiv cu vocea respectivă instalată.
+
 **Verificare și diagnostic**
 
 ```sh

@@ -10,6 +10,7 @@ import PoemCover from './poem-cover';
 import ThemeToggle from './theme-toggle';
 import LanguageSelector from './language-selector';
 import AboutPoetio from './about-poetio';
+import PoemAudioPlayer from './poem-audio-player';
 
 const number = (n: number) => String(n).padStart(2, '0');
 const lines = (content: string) => content.split('\n').filter(line => line.trim());
@@ -97,6 +98,7 @@ export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { 
                 <DialogDescription className="eyebrow">{version?.theme || readerCopy.poetry}</DialogDescription>
                 <DialogTitle ref={locale === language ? title : undefined} tabIndex={-1} className="reader-title" lang={version ? locale : current.source_language}>{version?.title || current.title}</DialogTitle>
                 <p className="reader-author">{current.author}</p>
+                {version && locale === language && <PoemAudioPlayer key={`${current.id}:${current.revision}:${locale}`} title={version.title} content={version.content} language={locale} />}
                 {version ? <div className="reader-body saved-poem-text">{version.content}</div> : <div className="translation-missing"><p>{readerCopy.missing}</p><button className="secondary-button" onClick={() => changeLanguage(current.source_language)}>{readerCopy.readOriginal}</button>{canAdmin && <a href="/admin">{readerCopy.addTranslation}</a>}</div>}
               </article>
             </TabsContent>;

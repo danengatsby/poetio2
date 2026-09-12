@@ -1,0 +1,35 @@
+.poem-audio-player {
+  margin: 0 0 2.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--tint);
+  font-family: var(--sans);
+  text-align: left;
+}
+.poem-audio-heading { display: flex; align-items: center; gap: .8rem; color: var(--blue); margin-bottom: 1rem; }
+.poem-audio-heading h3 { margin: 0; font: 600 1rem/1.4 var(--sans); color: var(--ink); }
+.poem-audio-heading p { margin: .2rem 0 0; font-size: .8rem; color: var(--text-muted); }
+.poem-audio-controls { display: flex; flex-wrap: wrap; gap: .6rem; }
+.poem-audio-controls button { display: inline-flex; justify-content: center; align-items: center; gap: .5rem; min-height: 44px; padding: .65rem 1rem; border-radius: 5px; font: 500 .9rem/1.3 var(--sans); cursor: pointer; }
+.poem-audio-play { background: var(--blue); border: 1px solid var(--blue); color: var(--primary-foreground); }
+.poem-audio-play:hover:not(:disabled) { background: var(--primary-hover); }
+.poem-audio-stop { background: var(--paper); border: 1px solid var(--line); color: var(--ink); }
+.poem-audio-stop:hover:not(:disabled) { border-color: var(--blue); }
+.poem-audio-player :is(button, select):disabled { cursor: default; opacity: .55; }
+.poem-audio-player :is(button, select):focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.poem-audio-settings { display: grid; grid-template-columns: minmax(0, 1fr) 95px; gap: .8rem; margin-top: 1rem; }
+.poem-audio-settings > div { display: grid; gap: .35rem; min-width: 0; }
+.poem-audio-settings label { font: 500 .8rem/1.4 var(--sans); color: var(--text-muted); }
+.poem-audio-settings select { width: 100%; min-width: 0; min-height: 44px; padding: .5rem; border: 1px solid var(--line); border-radius: 4px; color: var(--ink); background: var(--paper); font: 400 .875rem/1.4 var(--sans); text-overflow: ellipsis; }
+.poem-audio-progress { display: flex; align-items: center; gap: .75rem; margin-top: 1rem; }
+.poem-audio-progress progress { appearance: none; display: block; flex: 1; width: 0; height: 6px; overflow: hidden; border: 0; border-radius: 3px; background: var(--line); accent-color: var(--blue); }
+.poem-audio-progress progress::-webkit-progress-bar { background: var(--line); border-radius: 3px; }
+.poem-audio-progress progress::-webkit-progress-value { background: var(--blue); border-radius: 3px; }
+.poem-audio-progress progress::-moz-progress-bar { background: var(--blue); border-radius: 3px; }
+.poem-audio-progress span { min-width: 3ch; font: 400 .75rem/1.4 var(--sans); color: var(--text-muted); }
+.poem-audio-status { margin: .6rem 0 0; font: 400 .8rem/1.6 var(--sans); color: var(--text-muted); }
+@media (max-width: 420px) {
+  .poem-audio-player { padding: 1rem; }
+  .poem-audio-settings { grid-template-columns: minmax(0, 1fr); }
+}
