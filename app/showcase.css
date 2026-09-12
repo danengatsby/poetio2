@@ -16,7 +16,7 @@ button{touch-action:manipulation}
 .site-header{min-height:100px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--ink);gap:2rem}
 .wordmark{display:inline-flex;align-items:center;gap:.3rem;font-family:var(--serif);font-size:2.25rem;letter-spacing:-.075em;line-height:1.15}
 .wordmark span{align-self:flex-start;margin-top:.2rem;font-family:var(--sans);font-size:1.2rem;letter-spacing:0;color:var(--blue)}
-.header-note{color:var(--text-muted);font-size:.875rem}
+.header-note{color:var(--text-muted);font-size:1.125rem;font-weight:700;line-height:1.4}
 .nav-link{font-size:.9375rem;display:flex;align-items:center;gap:1.75rem;padding-block:.75rem}
 .nav-link:hover,.back-top:hover{color:var(--blue)}
 .nav-link span{font-size:1.4rem}
