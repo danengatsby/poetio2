@@ -22,6 +22,7 @@ button{touch-action:manipulation}
 .nav-link span{font-size:1.4rem}
 .intro{padding:2.6rem 0 2.4rem}
 .intro-top{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.homepage-logo{display:block;width:100%;max-width:1120px;height:auto;margin:1.75rem auto 0;background:#fff}
 .eyebrow{font-size:.75rem;font-weight:500;text-transform:uppercase;letter-spacing:.12em;margin:0;line-height:1.5}
 .edition{font-size:.75rem;color:var(--text-muted);margin:0;line-height:1.5}
 h1{font-family:var(--serif);font-weight:400;font-size:clamp(2.6rem,5.4vw,5rem);letter-spacing:-.065em;line-height:1.12;margin:1.45rem 0 .2rem}
