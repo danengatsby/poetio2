@@ -52,7 +52,7 @@ export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { 
     <main id="main">
       <div className="intro shell">
         <div className="intro-top"><p className="eyebrow">{copy.tagline}</p><p className="edition">{copy.edition}</p></div>
-        <Image className="homepage-logo" src="/assets/poetio-logo.png" alt="Poetio" width={1120} height={425} loading="eager" fetchPriority="high" decoding="async" unoptimized />
+        <Image className="homepage-logo" src="/assets/poetio-floral.png" alt="Poetio" width={1916} height={821} loading="eager" fetchPriority="high" decoding="async" unoptimized />
       </div>
       <section id="collection" className="collection shell" aria-labelledby="collection-title">
         <div className="section-heading"><div><p className="eyebrow">{copy.takeTime}</p><h1 id="collection-title">{copy.collection}<span className="count">({number(poems.length)})</span></h1></div><p>{copy.slowly}</p></div>
