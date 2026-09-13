@@ -11,7 +11,7 @@ Environment=NODE_ENV=production
 Environment=POETIO_DATA_DIR=/var/lib/poetio
 Environment=POETIO_BUILD_DIR=/var/www/Poetio/vps/dist
 Environment=POETIO_PORT=4106
-Environment=VINEXT_TRUSTED_HOSTS=159.69.200.202:8096
+Environment=VINEXT_TRUSTED_HOSTS=poetio.cloud,159.69.200.202:8096
 EnvironmentFile=-/etc/poetio/runtime.env
 ExecStart=/usr/bin/node /var/www/Poetio/sursa/scripts/start-vps.mjs
 Restart=on-failure

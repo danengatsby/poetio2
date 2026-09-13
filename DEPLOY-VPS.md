@@ -1,12 +1,14 @@
-# Poetio pe serverul 159.69.200.202
+# Poetio — poetio.cloud
 
-Colecție publică: https://159.69.200.202:8096/
+Colecție publică: https://poetio.cloud/
 
-Pagina publică „Autor”: https://159.69.200.202:8096/autor. Fotografia și biografia completă „Despre Poetio” sunt prezentate aici, separat de colecție, în română și engleză. Meniul ambelor pagini oferă legăturile „Poemele”, „Autor” și „Administrare”.
+Pagina publică „Autor”: https://poetio.cloud/autor. Fotografia și biografia completă „Despre Poetio” sunt prezentate aici, separat de colecție, în română și engleză. Meniul ambelor pagini oferă legăturile „Poemele”, „Autor” și „Administrare”.
 
-Administrare: https://159.69.200.202:8096/admin
+Administrare: https://poetio.cloud/admin
 
-Aplicația rulează ca serviciu `poetio.service`, cu utilizatorul dedicat `poetio`, pe `127.0.0.1:4106`. Nginx furnizează HTTPS pe portul 8096 și validează parola pentru administrare și operațiile de scriere. Identitatea trimisă aplicației este generată numai după această validare. Headerul de identitate primit de la vizitatori este eliminat.
+HTTP și `www.poetio.cloud` redirecționează permanent către `https://poetio.cloud`, păstrând calea și parametrii. Adresa existentă https://159.69.200.202:8096/ rămâne accesibilă.
+
+Aplicația rulează ca serviciu `poetio.service`, cu utilizatorul dedicat `poetio`, pe `127.0.0.1:4106`. Nginx furnizează HTTPS pe portul 443 pentru domeniu și 8096 pentru IP și validează parola pentru administrare și operațiile de scriere. Identitatea trimisă aplicației este generată numai după această validare. Headerul de identitate primit de la vizitatori este eliminat.
 
 Meniul „Administrare” este vizibil și fără autentificare. Accesarea lui deschide solicitarea de utilizator și parolă a browserului, prin HTTPS. Contul administrativ configurat pe VPS este `admin`; parola se păstrează în `/etc/poetio/admin-credentials.txt`, disponibil numai administratorului serverului. Nginx folosește hashul parolei din `/etc/poetio/admin.htpasswd`. Aceste fișiere nu intră în Git sau în directorul public.
 
@@ -15,7 +17,7 @@ Meniul „Administrare” este vizibil și fără autentificare. Accesarea lui d
 - Baza de date: `/var/lib/poetio/poetio.sqlite3`, SQLite cu WAL și chei externe activate.
 - Imagini: `/var/lib/poetio/images/`; înregistrări audio: `/var/lib/poetio/audio/`. Fișierele sunt servite exclusiv prin API-ul aplicației.
 - Compilare publicată: `/var/www/Poetio/vps/dist`.
-- Configurație Nginx: `/etc/nginx/sites-available/poetio-vps` și `/etc/poetio/proxy.conf`.
+- Configurație Nginx: `/etc/nginx/sites-available/poetio-cloud`, `/etc/nginx/sites-available/poetio-vps` și fișierele comune `/etc/poetio/app.conf`, `/etc/poetio/proxy.conf`, `/etc/poetio/audio-location.conf`.
 - Configurație opțională de execuție: `/etc/poetio/runtime.env`.
 
 `npm run build:vps` generează în `dist/` varianta pentru Node.js. După verificare, aceasta se copiază în directorul de publicare și se repornește `poetio.service`. Datele din `/var/lib/poetio` se păstrează la actualizare; exporturile inițiale nu se importă din nou peste datele active. Pentru backupul unei baze aflate în funcțiune se folosește mecanismul SQLite de backup, împreună cu o copie a directoarelor de imagini și audio; nu se copiază doar fișierul principal ignorând WAL.
@@ -24,7 +26,40 @@ Fișierele compilate trebuie să poată fi citite de serviciu: directorul public
 
 `npm run build` păstrează compilarea originală pentru Sites. `POETIO_RUNTIME=node` selectează adaptorul SQLite/disc doar pentru compilarea VPS. Publicarea pe acest server nu modifică automat site-ul din Sites, iar cele două colecții evoluează independent după migrare.
 
-Certificatul HTTPS existent pentru adresa IP este reutilizat. Reînnoirea lui este gestionată de `amanet-cert-renew.timer`; hookul de reînnoire verifică și reîncarcă Nginx. Nu elimina această dependență fără a configura o reînnoire alternativă pentru Poetio.
+**Domeniu și certificat HTTPS**
+
+DNS: înregistrarea `A` pentru `poetio.cloud` indică `159.69.200.202`, iar `www` este un `CNAME` către `poetio.cloud`. Nu publica o înregistrare `AAAA` înainte de configurarea și verificarea accesului IPv6.
+
+Certificatul Let's Encrypt pentru ambele nume este în `/etc/letsencrypt/live/poetio.cloud/`. Reînnoirea automată folosește `certbot.timer`, provocări HTTP în `/var/www/poetio-acme/.well-known/acme-challenge/` și hookul `/etc/poetio/renew-nginx.sh`, care verifică și reîncarcă Nginx după reînnoire. Portul 80 și ruta de validare trebuie să rămână accesibile public.
+
+Fișierele din `deploy/` corespund configurației instalate:
+
+- `poetio-cloud.nginx.conf` → `/etc/nginx/sites-available/poetio-cloud` (activat prin legătură în `sites-enabled`).
+- `poetio.nginx.conf` → `/etc/nginx/sites-available/poetio-vps` (include și definirea unică a zonei `poetio_admin`).
+- `poetio-app.conf` → `/etc/poetio/app.conf`; `poetio-proxy.conf` → `/etc/poetio/proxy.conf`; `nginx-audio-location.conf` → `/etc/poetio/audio-location.conf`.
+- `poetio.service` → `/etc/systemd/system/poetio.service`.
+- `poetio-renew-nginx.sh` → `/etc/poetio/renew-nginx.sh`, proprietar `root`, permisiuni `0750`.
+
+La instalarea pe un server nou, activează inițial numai primul bloc `server` din configurația domeniului (HTTP), creează directorul de validare cu acces de citire pentru Nginx și verifică ruta pe ambele nume. Emite apoi certificatul înainte de activarea blocurilor HTTPS:
+
+```sh
+certbot certonly --webroot -w /var/www/poetio-acme \
+  --cert-name poetio.cloud -d poetio.cloud -d www.poetio.cloud \
+  --non-interactive --deploy-hook /etc/poetio/renew-nginx.sh
+```
+
+Comanda reutilizează contul ACME existent pe VPS. La instalarea inițială a Certbot, înregistrează mai întâi un cont ACME. După instalarea tuturor fișierelor, verifică `nginx -t`, rulează `systemctl daemon-reload`, repornește `poetio.service` și reîncarcă Nginx. Nu încărca noul proxy înainte ca ambele blocuri de aplicație să definească `$poetio_host`: valoarea este fixă pentru fiecare gazdă și protejează originea folosită la salvare și upload. `VINEXT_TRUSTED_HOSTS` acceptă `poetio.cloud,159.69.200.202:8096`; varianta `www` redirecționează înainte de a ajunge la aplicație.
+
+Verificarea reînnoirii:
+
+```sh
+systemctl is-enabled certbot.timer
+certbot renew --cert-name poetio.cloud --dry-run --run-deploy-hooks
+```
+
+Publicarea domeniului din 13 septembrie 2026 a fost verificată cu certificate valide pentru ambele nume, redirecționări HTTP/`www`, navigare în browser pe desktop și mobil, autentificarea administrării, imaginile originale și redarea parțială a fișierelor audio. Cererile de salvare și upload cu origine corectă ajung la validarea datelor; originile externe sau falsificate sunt respinse. Aceste verificări nu creează poeme ori fișiere. Simularea reînnoirii certificatului, inclusiv hookul Nginx, a reușit. Accesul existent prin IP și celelalte site-uri HTTPS ale serverului au fost verificate separat.
+
+Certificatul separat pentru adresa IP este reutilizat. Reînnoirea lui este gestionată de `amanet-cert-renew.timer`; hookul de reînnoire verifică și reîncarcă Nginx. Nu elimina această dependență cât timp accesul prin IP este menținut.
 
 Traducerile deja salvate funcționează fără cheie API. Traducerea automată necesită configurarea separată a secretului `OPENAI_API_KEY` în `/etc/poetio/runtime.env` și repornirea serviciului. Fără acest secret, editorul permite salvarea originalului și completarea manuală a traducerii.
 
