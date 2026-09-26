@@ -1,11 +1,18 @@
+import { migrateCommentModeration } from '../scripts/migrate-comment-moderation-vps.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
-import { mkdtemp, rm, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openDatabase, openImageBucket, openAudioBucket } from '../server/vps-storage.mjs';
+import { openDatabase, openImageBucket, openAudioBucket, openVideoBucket } from '../server/vps-storage.mjs';
 import { migrateAudioDatabase } from '../scripts/migrate-audio-vps.mjs';
+import { migrateVideoCommentsDatabase } from '../scripts/migrate-video-comments-vps.mjs';
+import { migrateBookCommentsDatabase } from '../scripts/migrate-book-comments-vps.mjs';
+import { migrateBookDatabase } from '../scripts/migrate-book-vps.mjs';
+import { migrateVideoDatabase } from '../scripts/migrate-video-vps.mjs';
+import { migrateAboutCommentsDatabase } from '../scripts/migrate-about-comments-vps.mjs';
+import { migrateCommentsDatabase } from '../scripts/migrate-comments-vps.mjs';
 import { wavFixture } from './audio-fixture.mjs';
 
 test('SQLite changes survive reopening and failed batches roll back', async () => {
@@ -86,4 +93,87 @@ test('audio migration preserves existing poems and can safely run twice', async 
     assert.deepEqual({ ...db.prepare('SELECT * FROM poems').get() }, { ...before, audio_ro_id: null, audio_en_id: null });
     assert.equal(db.prepare('PRAGMA foreign_key_check').all().length, 0);
   } finally { db.close(); await rm(directory, { recursive: true, force: true }); }
+});
+
+
+test('comment migration preserves poems and comments survive a database reopen', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'poetio-comments-test-'));
+  const file = join(directory, 'collection.sqlite3');
+  let db = new DatabaseSync(file);
+  try {
+    for (const name of ['0000_first_blink', '0001_special_paper_doll', '0002_nice_leader', '0003_uploaded_audio']) db.exec(await readFile(new URL(`../drizzle/${name}.sql`, import.meta.url), 'utf8'));
+    db.prepare('INSERT INTO poems (id, title, author, content, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').run('original-1', 'Lumină', 'Autor', 'Primul vers', 7, 1000, 2000);
+    const before = { ...db.prepare('SELECT * FROM poems').get() };
+    db.close();
+    assert.equal(migrateCommentsDatabase(file), true);
+    assert.equal(migrateCommentsDatabase(file), false);
+    db = new DatabaseSync(file);
+    assert.deepEqual({ ...db.prepare('SELECT * FROM poems').get() }, before);
+    db.prepare('INSERT INTO poem_comments VALUES (?, ?, ?, ?, ?)').run('test-comment', 'original-1', 'Cititor', 'O emoție.\nMulțumesc!', 3000);
+    db.close();
+    db = new DatabaseSync(file);
+    assert.equal(db.prepare('SELECT content FROM poem_comments').get().content, 'O emoție.\nMulțumesc!');
+    db.close();
+    assert.equal(migrateAboutCommentsDatabase(file), true);
+    assert.equal(migrateAboutCommentsDatabase(file), false);
+    db = new DatabaseSync(file);
+    assert.deepEqual({ ...db.prepare('SELECT * FROM poems').get() }, before);
+    assert.equal(db.prepare('SELECT content FROM poem_comments').get().content, 'O emoție.\nMulțumesc!');
+    db.prepare('INSERT INTO about_comments VALUES (?, ?, ?, ?)').run('about-test', 'Cititor', 'Despre Poetio', 4000);
+    db.close();
+    db = new DatabaseSync(file);
+    assert.equal(db.prepare('SELECT content FROM about_comments').get().content, 'Despre Poetio');
+    assert.equal(db.prepare('PRAGMA foreign_key_check').all().length, 0);
+  } finally { db.close(); await rm(directory, { recursive: true, force: true }); }
+});
+
+
+test('video migration preserves the collection, video files persist and serve ranges', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'poetio-video-test-'));
+  const file = join(directory, 'collection.sqlite3');
+  let db = new DatabaseSync(file);
+  try {
+    for (const name of ['0000_first_blink', '0001_special_paper_doll', '0002_nice_leader', '0003_uploaded_audio', '0004_reader_comments', '0005_about_comments']) db.exec(await readFile(new URL(`../drizzle/${name}.sql`, import.meta.url), 'utf8'));
+    db.prepare('INSERT INTO poems (id, title, author, content, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').run('original-1', 'Poem existent', 'Autor', 'Vers', 7, 1000, 2000);
+    const before = { ...db.prepare('SELECT * FROM poems').get() }; db.close();
+    assert.equal(migrateVideoDatabase(file), true); assert.equal(migrateVideoDatabase(file), false);
+    assert.equal(migrateVideoCommentsDatabase(file), true); assert.equal(migrateVideoCommentsDatabase(file), false);
+    assert.equal(migrateBookDatabase(file), true); assert.equal(migrateBookDatabase(file), false);
+    assert.equal(migrateBookCommentsDatabase(file), true); assert.equal(migrateBookCommentsDatabase(file), false);
+    db = new DatabaseSync(file); assert.deepEqual({ ...db.prepare('SELECT * FROM poems').get() }, before);
+    const key = `videos/72766231-67aa-4db8-9123-77071144a730/${'c'.repeat(64)}`;
+    const bytes = new TextEncoder().encode('video bytes for persistence');
+    await openVideoBucket(directory).put(key, bytes);
+    const restored = await openVideoBucket(directory).get(key, { range: { offset: 6, length: 5 } });
+    assert.deepEqual(new Uint8Array(await new Response(restored.body).arrayBuffer()), bytes.slice(6, 11));
+    await assert.rejects(openVideoBucket(directory).get('../../etc/passwd'), /Invalid video storage key/);
+    assert.equal(db.prepare('PRAGMA foreign_key_check').all().length, 0);
+  } finally { db.close(); await rm(directory, { recursive: true, force: true }); }
+});
+
+
+test('moderation migration preserves legacy visibility and never reapproves pending or hidden comments on retry', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'poetio-moderation-migration-'));
+  const file = join(directory, 'poetio.sqlite3');
+  let db = new DatabaseSync(file);
+  try {
+    const files = (await readdir(new URL('../drizzle/', import.meta.url))).filter(name => name.endsWith('.sql') && name < '0010').sort();
+    for (const name of files) db.exec(await readFile(new URL('../drizzle/' + name, import.meta.url), 'utf8'));
+    db.exec("INSERT INTO about_comments (id, name, content, created_at) VALUES ('legacy', 'Cititor', 'Text existent', 1000)");
+    db.close();
+    assert.equal(migrateCommentModeration(file), true);
+    db = new DatabaseSync(file);
+    assert.equal(db.prepare("SELECT status FROM about_comments WHERE id = 'legacy'").get().status, 'approved');
+    for (const kind of ['poem', 'about', 'video', 'book']) {
+      const columns = db.prepare(`PRAGMA table_info(${kind}_comments)`).all();
+      assert.equal(columns.find(row => row.name === 'status').dflt_value, "'pending'");
+    }
+    db.exec("UPDATE about_comments SET status = 'hidden', revision = 2 WHERE id = 'legacy'; INSERT INTO about_comments (id, name, content, created_at) VALUES ('new', 'Cititor', 'Nou', 2000)");
+    const before = db.prepare('SELECT * FROM about_comments ORDER BY id').all();
+    db.close();
+    assert.equal(migrateCommentModeration(file), false);
+    db = new DatabaseSync(file);
+    assert.deepEqual(db.prepare('SELECT * FROM about_comments ORDER BY id').all(), before);
+    assert.equal(db.prepare('PRAGMA integrity_check').get().integrity_check, 'ok');
+  } finally { if (db.isOpen) db.close(); await rm(directory, { recursive: true, force: true }); }
 });

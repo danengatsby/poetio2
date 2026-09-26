@@ -1,0 +1,68 @@
+.books-main{padding-block:2.5rem 5rem;min-height:60vh}
+.books-main>.homepage-logo{margin:0 auto 3.5rem}
+.book-card{text-decoration:none;color:inherit}
+.book-card h2{font:400 1.4rem/1.25 var(--serif);letter-spacing:-.04em;margin:0 0 1rem;overflow-wrap:anywhere}
+.book-card>p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;white-space:pre-line}
+.book-cover{display:block;width:100%;height:auto;aspect-ratio:3/4;object-fit:contain;background:var(--tint);margin-bottom:1.3rem;border:1px solid var(--line)}
+.book-cover-placeholder{display:flex;flex-direction:column;justify-content:space-between;gap:1rem;padding:1.25rem;color:var(--blue);font:400 1.2rem/1.4 var(--serif);overflow-wrap:anywhere}
+.book-cover-placeholder small{font:.75rem/1.4 var(--sans)}
+.book-back{display:inline-block;margin-bottom:2rem;color:var(--blue)}
+.book-detail{display:grid;grid-template-columns:minmax(160px,260px) minmax(0,1fr);gap:3rem;align-items:start;margin-bottom:2rem}
+.book-detail h1{font-size:clamp(1.8rem,3.2vw,2.6rem);overflow-wrap:anywhere}
+.book-description{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}
+.book-reader-actions{display:flex;flex-wrap:wrap;gap:1rem}
+.book-reader-note{font:.875rem/1.6 var(--sans);color:var(--text-muted);margin:1rem 0}
+.book-document{display:block;width:100%;height:80dvh;min-height:420px;border:1px solid var(--line);background:var(--tint)}
+.book-admin-cover{width:160px;height:210px;object-fit:contain}
+.book-admin .book-reader{margin-block:1.5rem}
+@media(max-width:760px){.book-detail{grid-template-columns:1fr;gap:1rem}.book-detail>.book-cover,.book-detail>div:first-child{max-width:200px}.book-card h2{font-size:1.3rem}}
+.protected-book-reader{max-width:1000px;margin-inline:auto}
+.book-page-controls{display:flex;align-items:center;flex-wrap:wrap;gap:.75rem}
+.book-page-frame+.book-page-controls{margin-top:1.25rem}
+.book-page-controls form{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.book-page-controls input{width:5rem;padding:.6rem;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.book-page-viewport{width:100%;overflow:auto;border:1px solid var(--line);background:var(--tint)}
+.book-page-spread{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;align-items:start}
+.book-page-image{display:block;width:100%;height:auto;margin:0}
+.book-page-zoom .book-page-spread{width:2400px}
+@media print{.protected-book-reader{display:none!important}}
+
+.book-page-frame{position:relative;margin-inline:-56px;padding-inline:56px;min-height:88px}
+.book-side-arrow{position:absolute;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:var(--paper);color:var(--blue);font-size:1.6rem;line-height:1;cursor:pointer}
+.book-side-previous{left:0}.book-side-next{right:0}
+.book-side-arrow:hover:not(:disabled){background:var(--tint)}
+.book-side-arrow:disabled{opacity:.35;cursor:default}
+.book-side-arrow:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+@media(max-width:1150px){.book-page-frame{margin-inline:0;padding-inline:48px}}
+
+.book-page-toggle{display:block;width:100%;min-width:0;padding:0;border:0;background:transparent;cursor:zoom-in}
+.book-page-toggle[hidden]{display:none}
+.book-page-toggle[aria-pressed=true]{cursor:zoom-out}
+.book-page-toggle:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}
+.book-page-single-zoom .book-page-spread{grid-template-columns:minmax(0,1fr);width:800px;margin-inline:auto}
+
+.book-comments{max-width:1000px;margin:3rem auto 0}
+.book-comments>.poem-comments{margin:0}
+
+/* Compact controls keep the same accessible labels in both reading layouts. */
+.book-page-controls{scroll-margin-top:.5rem}
+.book-page-controls button{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-width:44px;min-height:44px}
+.book-page-controls input{min-height:44px;border-radius:4px;font:inherit;text-align:center}
+.book-page-controls input:focus-visible,.book-page-viewport:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.book-page-total{white-space:nowrap;font-variant-numeric:tabular-nums}
+.book-position-note{min-height:1.6em}
+.book-reader[data-layout=single] .book-controls-top{position:sticky;top:0;z-index:10;display:flex;flex-wrap:nowrap;gap:4px;padding:.4rem 0;background:var(--paper);border-bottom:1px solid var(--line)}
+.book-reader[data-layout=single] .book-page-controls button{padding:.5rem;flex-shrink:0}
+.book-reader[data-layout=single] .book-control-text{display:none}
+.book-reader[data-layout=single] .book-page-controls form{display:flex;flex:1;justify-content:center;flex-wrap:nowrap;gap:4px;min-width:0}
+.book-reader[data-layout=single] .book-page-controls input{width:3rem;padding:.45rem .1rem;appearance:textfield;-moz-appearance:textfield}
+.book-reader[data-layout=single] .book-page-controls input::-webkit-inner-spin-button,.book-reader[data-layout=single] .book-page-controls input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.book-reader[data-layout=single] .book-page-total{font-size:.75rem}
+.book-reader[data-layout=single] .book-controls-bottom,.book-reader[data-layout=single] .book-side-arrow{display:none}
+.book-reader[data-layout=single] .book-visible-pages{margin:.4rem 0;font-size:.8125rem}
+.book-reader[data-layout=single] .book-page-frame{margin-inline:0;padding-inline:0;scroll-margin-top:calc(100px - 2rem)}
+.book-reader[data-layout=single] .book-page-spread{grid-template-columns:minmax(0,1fr);width:100%}
+.book-reader[data-layout=single] .book-page-viewport{max-height:calc(100svh - 112px);overscroll-behavior-x:contain}
+.book-reader[data-layout=single] .book-page-image{max-height:calc(100svh - 114px);object-fit:contain}
+.book-reader[data-layout=single] :is(.book-page-zoom,.book-page-single-zoom) .book-page-spread{width:max(100%,800px)}
+.book-reader[data-layout=single] :is(.book-page-zoom,.book-page-single-zoom) .book-page-image{max-height:none}

@@ -6,14 +6,14 @@ After=network.target
 Type=simple
 User=poetio
 Group=poetio
-WorkingDirectory=/var/www/Poetio/sursa
+WorkingDirectory=/var/www/Poetio/current
 Environment=NODE_ENV=production
 Environment=POETIO_DATA_DIR=/var/lib/poetio
-Environment=POETIO_BUILD_DIR=/var/www/Poetio/vps/dist
+Environment=POETIO_BUILD_DIR=/var/www/Poetio/current/dist
 Environment=POETIO_PORT=4106
 Environment=VINEXT_TRUSTED_HOSTS=poetio.cloud,159.69.200.202:8096
 EnvironmentFile=-/etc/poetio/runtime.env
-ExecStart=/usr/bin/node /var/www/Poetio/sursa/scripts/start-vps.mjs
+ExecStart=/usr/bin/node /var/www/Poetio/current/scripts/start-vps.mjs
 Restart=on-failure
 RestartSec=3
 TimeoutStopSec=15

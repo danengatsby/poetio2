@@ -3,9 +3,10 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- Use document navigation consistently with the shared header. */
 import { useState } from 'react';
 import type { PoemLanguage } from '@/lib/poem-types';
-import { SITE_LANGUAGE_COOKIE, siteCopy } from '@/lib/site-language';
+import { rememberSiteLanguage, siteCopy } from '@/lib/site-language';
 import AboutPoetio from '../about-poetio';
 import SiteHeader from '../site-header';
+import { ReaderComments } from '../poem-comments';
 
 export default function AuthorProfile({ initialLanguage }: { initialLanguage: PoemLanguage }) {
   const [language, setLanguage] = useState(initialLanguage);
@@ -13,10 +14,7 @@ export default function AuthorProfile({ initialLanguage }: { initialLanguage: Po
 
   function changeLanguage(value: PoemLanguage) {
     setLanguage(value);
-    document.documentElement.lang = value;
-    try {
-      document.cookie = `${SITE_LANGUAGE_COOKIE}=${value}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
-    } catch { /* Reading remains available when preference cookies are blocked. */ }
+    rememberSiteLanguage(value);
   }
 
   return <>
@@ -28,6 +26,9 @@ export default function AuthorProfile({ initialLanguage }: { initialLanguage: Po
         <h1 id="page-title">{language === 'ro' ? 'Despre Poetio' : 'About Poetio'}</h1>
       </section>
       <AboutPoetio language={language} portrait={{ src: '/assets/dan-enache.jpg', width: 960, height: 960 }} />
+      <div className="about-comments shell">
+        <ReaderComments endpoint="/api/about/comments" language={language} intro={language === 'ro' ? 'Lasă un gând despre Poetio și povestea autorului.' : 'Share a thought about Poetio and the author’s story.'} />
+      </div>
     </main>
     <footer className="site-footer shell">
       <a className="wordmark" href="/">Poetio<span aria-hidden="true">✳</span></a>

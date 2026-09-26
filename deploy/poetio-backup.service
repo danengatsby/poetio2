@@ -1,0 +1,20 @@
+[Unit]
+Description=Poetio encrypted backup and isolated restore verification
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/python3 /usr/local/sbin/poetio-backup create
+UMask=0077
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=30min
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=tmpfs
+ReadWritePaths=/var/backups/poetio/automatic
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6

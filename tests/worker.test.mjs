@@ -1,20 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { Miniflare } from 'miniflare';
+import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
+import sharp from 'sharp';
 import { wavFixture } from './audio-fixture.mjs';
 
 test('built Worker protects administration and persists API changes into the rendered collection', { timeout: 45000 }, async () => {
   let translationCalls = 0;
   let failTranslation = false;
-  const mf = new Miniflare({
-    modules: true,
-    scriptPath: new URL('../dist/server/index.js', import.meta.url).pathname,
-    modulesRules: [{ type: 'ESModule', include: ['**/*.js'] }],
+  const serverDirectory = new URL('../dist/server/', import.meta.url);
+  const modules = ['index.js', ...readdirSync(serverDirectory, { recursive: true }).filter(file => file.endsWith('.js') && file !== 'index.js')];
+  const mf = new Miniflare(convertV4MiniflareOptions({
+    modulesRoot: serverDirectory.pathname,
+    modules: modules.map(file => ({ type: 'ESModule', path: new URL(file, serverDirectory).pathname })),
     compatibilityDate: '2026-05-22',
     compatibilityFlags: ['nodejs_compat'],
     d1Databases: ['DB'],
     r2Buckets: ['BUCKET'],
+    images: { binding: 'IMAGES' },
     bindings: { OPENAI_API_KEY: 'test-worker-key' },
     outboundService: async request => {
       assert.equal(request.url, 'https://api.openai.com/v1/responses');
@@ -25,7 +28,7 @@ test('built Worker protects administration and persists API changes into the ren
       assert.equal(payload.store, false);
       return Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify({ title: 'Verification Poem', theme: 'Testing', lines: ['First line', 'Second line', '', 'The second stanza.'] }) }] }] });
     },
-  });
+  }));
   const base = 'https://stillword.test';
   const owner = { 'oai-authenticated-user-email': 'pensio53@gmail.com' };
   const mutation = { ...owner, 'Content-Type': 'application/json', Origin: base };
@@ -76,6 +79,17 @@ test('built Worker protects administration and persists API changes into the ren
     assert.equal(invalidUpload.status, 415);
     const tooLargeUpload = await mf.dispatchFetch(base + '/api/images', { method: 'POST', headers: imageHeaders, body: new Uint8Array(5 * 1024 * 1024 + 1) });
     assert.equal(tooLargeUpload.status, 413);
+    const forgedJpeg = Buffer.alloc(24); forgedJpeg.set([0xff, 0xd8, 0xff]);
+    const forgedUpload = await mf.dispatchFetch(base + '/api/images', { method: 'POST', headers: { ...imageHeaders, 'Content-Type': 'image/jpeg' }, body: forgedJpeg });
+    assert.equal(forgedUpload.status, 415);
+    const png = await sharp(imageBytes).resize(64).png().toBuffer();
+    const truncatedUpload = await mf.dispatchFetch(base + '/api/images', { method: 'POST', headers: { ...imageHeaders, 'Content-Type': 'image/png' }, body: png.subarray(0, Math.floor(png.length * 0.8)) });
+    assert.equal(truncatedUpload.status, 415, await truncatedUpload.text());
+    const largePng = await sharp({ create: { width: 8001, height: 5000, channels: 3, background: '#123456' } }).png().toBuffer();
+    const pixelLimitUpload = await mf.dispatchFetch(base + '/api/images', { method: 'POST', headers: { ...imageHeaders, 'Content-Type': 'image/png' }, body: largePng });
+    assert.equal(pixelLimitUpload.status, 413);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM poem_images').first()).n, 0);
+    assert.equal((await (await mf.getR2Bucket('BUCKET')).list({ prefix: 'poem-images/' })).objects.length, 0);
     const upload = await mf.dispatchFetch(base + '/api/images', { method: 'POST', headers: imageHeaders, body: imageBytes });
     const uploadBody = await upload.json();
     assert.equal(upload.status, 201, JSON.stringify(uploadBody));

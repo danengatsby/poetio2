@@ -1,5 +1,7 @@
 # Poetio
 
+For a fresh checkout, required system packages, and validation commands, see [REPRODUCERE.md](REPRODUCERE.md).
+
 Poetry collection with an owner-only administration page at `/admin`.
 
 The six original poems are seeded once into D1. Poems use prepared statements and revision checks, and edits preserve line breaks. Authentication is supplied by Sites and verified against the owner on the server.

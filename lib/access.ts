@@ -22,6 +22,10 @@ export function requireOwner(request: Request) {
 
 export function requireSameOriginOwner(request: Request) {
   requireOwner(request);
+  requireSameOrigin(request);
+}
+
+export function requireSameOrigin(request: Request) {
   const origin = request.headers.get('origin');
   const siteOrigin = new URL(request.url).origin;
   if (!origin || origin !== siteOrigin || request.headers.get('sec-fetch-site') === 'cross-site') {
@@ -36,8 +40,7 @@ export function requireSafeMutation(request: Request) {
   }
 }
 
-export async function readJson(request: Request) {
-  const limit = 320_000;
+export async function readJson(request: Request, limit = 320_000) {
   if (Number(request.headers.get('content-length') || 0) > limit) throw new AppError(413, 'Poemul este prea lung.');
   const reader = request.body?.getReader();
   if (!reader) throw new AppError(400, 'Cererea este goală.');

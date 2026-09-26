@@ -6,10 +6,17 @@ export function siteLanguage(value?: string): PoemLanguage {
   return value === 'en-US' ? 'en-US' : 'ro';
 }
 
+export function rememberSiteLanguage(language: PoemLanguage) {
+  document.documentElement.lang = language;
+  try {
+    document.cookie = `${SITE_LANGUAGE_COOKIE}=${language}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
+  } catch { /* The selector remains usable when preference cookies are blocked. */ }
+}
+
 export const siteCopy = {
   ro: {
     skip: 'Mergi la poeme', home: 'Poetio — Acasă', note: 'O colecție independentă de poezie',
-    navigation: 'Navigare principală', administration: 'Administrare', poems: 'Poemele', author: 'Autor',
+    navigation: 'Navigare principală', administration: 'Administrare', poems: 'Poeme', author: 'Autor',
     tagline: 'Cuvinte pentru clipele dintre', edition: 'O mică colecție · Nr. 01',
     takeTime: 'Fără grabă',
     collection: 'Colecția', slowly: 'Unele lucruri se citesc pe îndelete.', poetry: 'Poezie',

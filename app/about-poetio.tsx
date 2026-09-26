@@ -1,5 +1,6 @@
 import type { PoemLanguage } from '@/lib/poem-types';
 import Image from 'next/image';
+import Link from 'next/link';
 import { biographySource, danEnacheBiography } from '@/lib/dan-enache';
 import './about-poetio.css';
 
@@ -49,7 +50,7 @@ export default function AboutPoetio({ language, portrait }: AboutPoetioProps) {
         </div>
         <a className="about-source" href={biographySource} target="_blank" rel="noopener noreferrer">{text.source} <span aria-hidden="true">↗</span></a>
       </div>
-      <a className="read-link" href="/#collection">{text.read} <span className="circle-arrow" aria-hidden="true">↗</span></a>
+      <Link className="read-link" href="/#collection" prefetch={false}>{text.read} <span className="circle-arrow" aria-hidden="true">↗</span></Link>
     </article>
   </section>;
 }

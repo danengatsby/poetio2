@@ -1,0 +1,37 @@
+{
+  "measured_utc": "2026-09-14T19:44:50.229268+00:00",
+  "url": "https://poetio.cloud/",
+  "method": "Chromium CDP Network.loadingFinished.encodedDataLength; cold context, then normal navigation in same context; scroll entire page",
+  "viewport": {
+    "desktop": [
+      1440,
+      1000,
+      1
+    ],
+    "mobile": [
+      390,
+      844,
+      2
+    ]
+  },
+  "bytes": {
+    "desktop": {
+      "before_initial": 18138324,
+      "before_full": 18138324,
+      "before_repeat": 18138313,
+      "after_initial": 475566,
+      "after_full": 475566,
+      "after_repeat": 23194,
+      "full_reduction_percent": 97.38
+    },
+    "mobile": {
+      "before_initial": 14099427,
+      "before_full": 18138324,
+      "before_repeat": 18138291,
+      "after_initial": 728310,
+      "after_full": 1007689,
+      "after_repeat": 23194,
+      "full_reduction_percent": 94.44
+    }
+  }
+}

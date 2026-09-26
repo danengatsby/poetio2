@@ -18,6 +18,8 @@ export type Poem = {
   updated_at: number;
 };
 
+export type PoemWithCommentCount = Poem & { comment_count: number };
+
 export type PoemInput = Pick<Poem, 'title' | 'author' | 'theme' | 'content'> & {
   image_id?: string | null;
   audio_ro_id?: string | null;

@@ -1,0 +1,25 @@
+.moderation-main{max-width:1100px;min-height:65vh}
+.moderation-main h1:focus{outline:2px solid var(--blue);outline-offset:5px}
+.moderation-feedback>p:empty{margin:0}
+.moderation-feedback{margin-bottom:1.5rem}
+.moderation-filters{display:flex;flex-wrap:wrap;gap:1.5rem;align-items:end;margin:1.5rem 0 2rem}
+.moderation-filters label{display:grid;gap:.5rem;font-size:.9375rem}
+.moderation-filters select{max-width:100%;background:var(--paper);color:var(--ink);border:1px solid var(--input);border-radius:4px;padding:.75rem;font:inherit}
+.moderation-states{display:flex;flex-wrap:wrap;gap:.5rem}
+.moderation-states [aria-pressed=true]{background:var(--blue);border-color:var(--blue);color:var(--primary-foreground)}
+.moderation-list{padding:0;margin:0;list-style:none;display:grid;gap:1rem}
+.moderation-card{border:1px solid var(--line);background:var(--card);padding:1.5rem;min-width:0;overflow-wrap:anywhere}
+.moderation-card-top{display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.moderation-card-top p{margin:0}
+.moderation-card h2{font:400 1.5rem/1.4 var(--serif);margin:1rem 0}
+.moderation-meta{display:flex;flex-wrap:wrap;gap:.5rem 1rem;font-size:.9375rem}
+.moderation-meta time{color:var(--text-muted)}
+.moderation-body{white-space:pre-wrap;line-height:1.7;font-size:1rem;margin:1.25rem 0}
+.moderation-badge{padding:.3rem .6rem;border-radius:4px;font-size:.8125rem;white-space:nowrap;background:var(--muted);color:var(--ink)}
+.moderation-pending{background:var(--tint);color:var(--blue)}
+.moderation-approved{background:var(--success-background);color:var(--success-foreground)}
+.moderation-actions,.moderation-pagination{display:flex;flex-wrap:wrap;align-items:center;gap:1rem}
+.moderation-actions .delete-button{margin-left:auto}
+.moderation-empty{border:1px solid var(--line);padding:2.5rem 1.5rem;text-align:center;color:var(--text-muted)}
+.moderation-pagination{justify-content:space-between;margin-top:1.5rem}
+@media(max-width:600px){.moderation-card{padding:1rem}.moderation-filters>label{width:100%}.moderation-states{display:grid;grid-template-columns:1fr 1fr;width:100%}.moderation-states button{padding:.75rem .5rem}.moderation-pagination{gap:.75rem}.moderation-pagination>span{order:3;width:100%;text-align:center}}

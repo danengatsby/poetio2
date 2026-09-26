@@ -1,0 +1,98 @@
+{
+  "http": {
+    "checks": 41,
+    "passed": true
+  },
+  "browser": {
+    "results": [
+      "local autosave restores unfinished poem after reload",
+      "private server draft recovered in another browser and explicitly published",
+      "preview does not publish; recovered history saves a new revision",
+      "individual poem, copy link, collection links and quick reader preserved",
+      "individual video page with player and metadata",
+      "unfinished video draft can be saved before uploading a file"
+    ],
+    "errors": []
+  },
+  "deployment": {
+    "ok": true,
+    "stage": "/var/www/Poetio/releases/20260914T210447Z-editor",
+    "data_preserved": {
+      "collection_meta": 2,
+      "poems": 10,
+      "poem_images": 12,
+      "poem_audio": 26,
+      "poem_comments": 4,
+      "about_comments": 0,
+      "video_files": 22,
+      "videos": 20,
+      "video_comments": 1,
+      "book_files": 3,
+      "books": 1,
+      "book_comments": 0
+    },
+    "initial_history": 30,
+    "initial_stage": "/var/www/Poetio/releases/20260914T204329Z-editor"
+  },
+  "live": {
+    "ok": true,
+    "checks": [
+      "/",
+      "/video",
+      "/carti",
+      "/autor",
+      "/robots.txt",
+      "/sitemap.xml",
+      "/poeme/a7407c3a-e853-4515-85be-a3089217aa3c",
+      "/video/fc66dab8-2089-4b6e-8f39-d0dc390fffe4"
+    ],
+    "anonymous_admin_and_spoofing": "401",
+    "history_initial": 30,
+    "sitemap": 35,
+    "clipboard": true,
+    "mobile_and_desktop": true,
+    "video_range": true,
+    "browser_errors": [],
+    "poem_url": "https://poetio.cloud/poeme/a7407c3a-e853-4515-85be-a3089217aa3c",
+    "video_url": "https://poetio.cloud/video/fc66dab8-2089-4b6e-8f39-d0dc390fffe4"
+  },
+  "unit_tests": 46,
+  "failure_scenarios": [
+    "local storage denied",
+    "server draft save failure and retry",
+    "separate drafts in two browser tabs",
+    "gallery without overlap at 390/768/1440 px"
+  ],
+  "backup": {
+    "ok": true,
+    "created_utc": "20260914T210606Z",
+    "archive": "poetio-20260914T210606Z.tar.gz.gpg",
+    "sha256": "c711060ed642855c279d669b9ddc9065f3bee8ba44c8d384981b09b66307abf5",
+    "bytes": 571560777,
+    "tables": {
+      "collection_meta": 2,
+      "poems": 10,
+      "poem_images": 12,
+      "poem_audio": 26,
+      "poem_comments": 4,
+      "about_comments": 0,
+      "video_files": 22,
+      "videos": 20,
+      "video_comments": 1,
+      "book_files": 3,
+      "books": 1,
+      "book_comments": 0,
+      "content_drafts": 0,
+      "content_history": 30
+    },
+    "restore_http_checks": [
+      "/",
+      "/autor",
+      "/video",
+      "/carti",
+      "/carti/e635bba8-f10d-4103-b009-49ff508196c5",
+      "/api/book-pages/ccd7a18f-7af1-42f7-8ef7-3527b40958d8",
+      "/api/book-pages/ccd7a18f-7af1-42f7-8ef7-3527b40958d8/1"
+    ]
+  }
+}

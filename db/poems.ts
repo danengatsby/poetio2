@@ -1,4 +1,4 @@
-import type { Poem, PoemInput } from '../lib/poem-types';
+import type { Poem, PoemInput, PoemWithCommentCount } from '../lib/poem-types';
 import { AppError } from '../lib/access';
 import { seedPoems } from './seed-poems';
 import { requireAvailableImage, validImageId } from './images';
@@ -37,10 +37,11 @@ export async function ensureLanguageVariants(db: Database) {
   await db.batch(statements);
 }
 
-export async function listPoems(db: Database): Promise<Poem[]> {
+export async function listPoems(db: Database): Promise<PoemWithCommentCount[]> {
   await ensureInitialPoems(db);
   await ensureLanguageVariants(db);
-  return (await db.prepare('SELECT * FROM poems ORDER BY created_at ASC, id ASC').all<Poem>()).results;
+  return (await db.prepare(`SELECT poems.*, (SELECT COUNT(*) FROM poem_comments WHERE poem_id = poems.id AND status = 'approved') AS comment_count
+    FROM poems ORDER BY created_at ASC, id ASC`).all<PoemWithCommentCount>()).results;
 }
 
 export function validateInput(value: unknown): PoemInput {

@@ -1,16 +1,21 @@
 'use client';
+import Link from 'next/link';
+import { contentPath } from '@/lib/content-metadata';
+import './content-detail.css';
+import SiteLogo from './site-logo';
 
-import { useRef, useState } from 'react';
-import Image from 'next/image';
+import { useCallback, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import type { Poem, PoemLanguage } from '@/lib/poem-types';
+import type { Poem, PoemLanguage, PoemWithCommentCount } from '@/lib/poem-types';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { POEM_LANGUAGES, poemVersion } from '@/lib/poem-languages';
-import { SITE_LANGUAGE_COOKIE, siteCopy } from '@/lib/site-language';
+import { rememberSiteLanguage, siteCopy } from '@/lib/site-language';
 import PoemCover from './poem-cover';
 import ThemeToggle from './theme-toggle';
 import SiteHeader from './site-header';
 import PoemAudioPlayer from './poem-audio-player';
+import PoemComments from './poem-comments';
+import { commentCountLabel } from '@/lib/poem-comments';
 import { audioField } from '@/lib/poem-audio';
 
 const number = (n: number) => String(n).padStart(2, '0');
@@ -21,9 +26,13 @@ function displayedVersion(poem: Poem, language: PoemLanguage) {
   return { text: version ?? poem, language: version ? language : poem.source_language, fallback: !version };
 }
 
-export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { poems: Poem[]; canAdmin: boolean; initialLanguage?: PoemLanguage }) {
+export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { poems: PoemWithCommentCount[]; canAdmin: boolean; initialLanguage?: PoemLanguage }) {
   const [active, setActive] = useState<number | null>(null);
   const [language, setLanguage] = useState<PoemLanguage>(initialLanguage);
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const updateCommentCount = useCallback((poemId: string, total: number) => {
+    setCommentCounts(previous => previous[poemId] === total ? previous : { ...previous, [poemId]: total });
+  }, []);
   const reader = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const title = useRef<HTMLHeadingElement>(null);
@@ -33,10 +42,7 @@ export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { 
 
   function changeLanguage(value: PoemLanguage) {
     setLanguage(value);
-    document.documentElement.lang = value;
-    try {
-      document.cookie = `${SITE_LANGUAGE_COOKIE}=${value}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
-    } catch { /* The selector remains usable if the browser blocks preference cookies. */ }
+    rememberSiteLanguage(value);
     if (reader.current) reader.current.scrollTop = 0;
   }
   function open(index: number, button: HTMLButtonElement) { trigger.current = button; setActive(index); }
@@ -52,26 +58,27 @@ export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { 
     <main id="main">
       <div className="intro shell">
         <div className="intro-top"><p className="eyebrow">{copy.tagline}</p><p className="edition">{copy.edition}</p></div>
-        <Image className="homepage-logo" src="/assets/poetio-balloons.png" alt="Poetio" width={2048} height={683} loading="eager" fetchPriority="high" decoding="async" unoptimized />
+        <SiteLogo />
       </div>
       <section id="collection" className="collection shell" aria-labelledby="collection-title">
         <div className="section-heading"><div><p className="eyebrow">{copy.takeTime}</p><h1 id="collection-title">{copy.collection}<span className="count">({number(poems.length)})</span></h1></div><p>{copy.slowly}</p></div>
         {poems.length ? <div className="poem-grid">{poems.map((poem, index) => {
           const display = displayedVersion(poem, language);
           const poemLines = lines(display.text.content);
-          return <button key={poem.id} className="poem-card" onClick={e => open(index, e.currentTarget)} aria-label={copy.readBy(display.text.title, poem.author)}>
+          const countLabel = commentCountLabel(commentCounts[poem.id] ?? poem.comment_count, language);
+          return <div key={poem.id} className="collection-item"><button className="poem-card" onClick={e => open(index, e.currentTarget)} aria-label={`${copy.readBy(display.text.title, poem.author)} · ${countLabel}`}>
             <PoemCover key={poem.image_id || poem.id} poem={poem} className="card-cover" />
             <span className="card-meta"><span>{number(index + 1)}</span><span lang={display.text.theme ? display.language : language}>{display.text.theme || copy.poetry}</span></span>
             {display.fallback && <span className="original-language-note">{originalLabel(poem.source_language)}</span>}
             <h3 lang={display.language}>{display.text.title}</h3>
             <p lang={display.language}>{poemLines.slice(0, 2).join('\n')}</p>
-            <span className="card-bottom"><span>{poem.author} · {copy.lineCount(poemLines.length)}</span><span aria-hidden="true">↗</span></span>
-          </button>;
+            <span className="card-bottom"><span>{poem.author} · {copy.lineCount(poemLines.length)}<span className="card-comment-count">{countLabel}</span></span><span aria-hidden="true">↗</span></span>
+          </button><a className="content-page-link" href={contentPath('poem',poem.id)+(language==='en-US'?'?lang=en-US':'')}>{language==='ro'?'Pagina poemului ↗':'Poem page ↗'}</a></div>;
         })}</div> : <div className="collection-empty"><p>{copy.empty}</p>{canAdmin && <a href="/admin" className="primary-button">{copy.addFirst}</a>}</div>}
       </section>
       <div className="closing shell"><span aria-hidden="true">✳</span><p>{copy.closing}<br />{copy.closingFor} <em>{copy.unwritten}</em></p></div>
     </main>
-    <footer className="site-footer shell"><a className="wordmark" href="/">Poetio<span aria-hidden="true">✳</span></a><p>{copy.count(poems.length)}. {copy.footer}</p><a className="back-top" href="#">{copy.back} <span aria-hidden="true">↑</span></a></footer>
+    <footer className="site-footer shell"><Link className="wordmark" href="/" prefetch={false}>Poetio<span aria-hidden="true">✳</span></Link><p>{copy.count(poems.length)}. {copy.footer}</p><a className="back-top" href="#">{copy.back} <span aria-hidden="true">↑</span></a></footer>
     <Dialog open={active !== null} onOpenChange={value => { if (!value) setActive(null); }}>
       <DialogContent ref={reader} className="poetry-reader" lang={language} showCloseButton={false} onOpenAutoFocus={event => { event.preventDefault(); title.current?.focus(); }} onCloseAutoFocus={event => { event.preventDefault(); trigger.current?.focus(); }}>
         {current && <Tabs value={language} onValueChange={value => { if (value === 'ro' || value === 'en-US') changeLanguage(value); }} className="reader-languages">
@@ -94,6 +101,8 @@ export default function Showcase({ poems, canAdmin, initialLanguage = 'ro' }: { 
               </article>
             </TabsContent>;
           })}
+          <a className="content-page-link" href={contentPath('poem',current.id)+(language==='en-US'?'?lang=en-US':'')}>{language==='ro'?'Deschide pagina poemului ↗':'Open poem page ↗'}</a>
+          <PoemComments key={current.id} poemId={current.id} language={language} onCountChange={updateCommentCount} />
           <div className="reader-navigation"><button disabled={active === 0} onClick={() => navigate(-1)}>{copy.previous}</button><span aria-live="polite">{number((active ?? 0) + 1)} / {number(poems.length)}</span><button disabled={active === poems.length - 1} onClick={() => navigate(1)}>{copy.next}</button></div>
         </Tabs>}
       </DialogContent>

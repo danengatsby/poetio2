@@ -53,6 +53,14 @@ export function openAudioBucket(directory) {
   return openMediaBucket(directory, 'poem-audio', 'audio');
 }
 
+export function openVideoBucket(directory) {
+  return openMediaBucket(directory, 'videos', 'video');
+}
+
+export function openBookBucket(directory) {
+  return openMediaBucket(directory, 'books', 'book');
+}
+
 function openMediaBucket(directory, prefix, label) {
   function objectPath(key) {
     if (!new RegExp(`^${prefix}/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/[0-9a-f]{64}$`, 'i').test(key)) {

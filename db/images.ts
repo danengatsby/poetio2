@@ -1,6 +1,7 @@
 import { AppError, isOwnerEmail } from '../lib/access';
 import { IMAGE_TYPES, MAX_IMAGE_BYTES } from '../lib/poem-images';
 import type { Database } from './poems';
+import { validateDecodedImage, type ImageDecoder } from './image-validation';
 
 export type StoredImage = {
   id: string; object_key: string; file_name: string; content_type: string;
@@ -23,7 +24,7 @@ export function imageType(bytes: Uint8Array): string {
   throw new AppError(415, 'Alege o imagine JPG, PNG sau WebP. Alte tipuri de fișiere nu sunt acceptate.');
 }
 
-export async function readImageBytes(request: Request) {
+export async function readImageBytes(request: Request, decoder: ImageDecoder | undefined) {
   const declared = request.headers.get('content-type')?.split(';')[0].trim();
   if (!declared || !IMAGE_TYPES.includes(declared)) throw new AppError(415, 'Alege o imagine JPG, PNG sau WebP.');
   if (Number(request.headers.get('content-length') || 0) > MAX_IMAGE_BYTES) throw new AppError(413, 'Imaginea depășește limita de 5 MB.');
@@ -43,6 +44,7 @@ export async function readImageBytes(request: Request) {
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
   const contentType = imageType(bytes);
   if (declared !== contentType) throw new AppError(415, 'Tipul fișierului nu corespunde imaginii. Alege un fișier JPG, PNG sau WebP valid.');
+  await validateDecodedImage(bytes, contentType, decoder);
   return { bytes, contentType };
 }
 
@@ -57,10 +59,10 @@ export async function requireAvailableImage(db: Database, id: string | null | un
   if (!image || !isOwnerEmail(image.owner_email)) throw new AppError(400, 'Imaginea nu a fost încărcată în acest cont. Încarcă imaginea din nou.');
 }
 
-export async function saveImage(db: Database, bucket: ImageBucket, request: Request) {
+export async function saveImage(db: Database, bucket: ImageBucket, request: Request, decoder: ImageDecoder | undefined) {
   const id = request.headers.get('x-upload-id');
   if (!validImageId(id)) throw new AppError(400, 'Identificatorul încărcării este nevalid.');
-  const { bytes, contentType } = await readImageBytes(request);
+  const { bytes, contentType } = await readImageBytes(request, decoder);
   const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))).map(byte => byte.toString(16).padStart(2, '0')).join('');
   const owner = request.headers.get('oai-authenticated-user-email')!.trim().toLowerCase();
   const existing = await getImage(db, id);
