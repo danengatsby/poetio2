@@ -44,6 +44,23 @@ git status --short
 
 Variantele WebP din `public/optimized` și manifestul `lib/generated-images.ts` sunt versionate împreună cu originalele și generatorul `scripts/build-images.mjs`. Compilările le regenerează; o diferență raportată de Git trebuie revizuită înainte de publicare. Cache-urile, `dist`, `node_modules`, bazele SQLite și credențialele sunt excluse din Git.
 
+## Rezultatul verificării din 26 septembrie 2026
+
+Commitul `37dfbee497df918496c4027bf4eaed1919596086` a fost verificat într-o clonă locală independentă, cu checkout detașat, fără copierea fișierelor neversionate sau a dependențelor existente. `npm ci` a instalat din lockfile 675 de pachete, folosind un cache nou. Mediul verificat: Ubuntu 26.04, Node 24.21.0, npm 11.19.0 și Python 3.14.4.
+
+| Verificare | Rezultat |
+| --- | --- |
+| ESLint cu `--max-warnings=0` | Fără erori sau avertismente |
+| TypeScript fără emitere | Fără erori |
+| `npm run test:backup` | 4/4 teste trecute |
+| `npm test` | Compilare Cloudflare și 54/54 teste Node trecute, inclusiv Worker |
+| `npm run build:vps` | Compilare reușită și versiuni React/RSC aliniate |
+| Migrări SQL | Toate cele 12 se aplică în ordine pe o bază nouă; coloanele corespund ultimului snapshot Drizzle |
+| Resurse responsive regenerate | Identice cu fișierele versionate |
+| `git status --short` după verificări | Fără modificări în clonă |
+
+Instalarea și compilările au emis notificări despre dependențele vechi `@esbuild-kit`, politica npm pentru scripturile de instalare și compatibilitatea viitoare a încărcătorului de configurație Vite; comenzile s-au încheiat cu succes. Verificarea confirmă reconstruirea și testarea acestei versiuni în mediul descris, fără a garanta compilări identice octet cu octet pe alte sisteme.
+
 ## Limitele verificării și publicarea
 
 Checkoutul reproduce sursele și permite reconstruirea aplicației. Conținutul salvat de utilizatori, fișierele media private, certificatele și secretele runtime se restaurează separat din backup, conform [BACKUP-VPS.md](BACKUP-VPS.md). Configurațiile din `deploy` sunt modele care trebuie instalate pe serverul țintă; versionarea lor nu activează servicii.
