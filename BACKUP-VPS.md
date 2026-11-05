@@ -9,7 +9,7 @@ Fiecare rulare:
 1. Face un snapshot online prin API-ul SQLite, inclusiv datele comise în WAL, fără oprirea serviciului.
 2. Copiază toate obiectele media înregistrate în snapshot, inclusiv fișierele detașate, și le compară dimensiunea/hashul cu baza. Fișierele încărcate după snapshot vor intra în backupul următor.
 3. Include versiunea activă completă din `current` cu build și `node_modules`, sursele editabile și configurația Poetio. Include certificatul domeniului Poetio; certificatul comun al adresei IP trebuie administrat separat. Cache-ul regenerabil al paginilor PDF este omis.
-4. Criptează arhiva, o decriptează într-un director temporar și verifică manifestul SHA-256, integritatea SQLite, cheile externe și conținutul media.
+4. Comprimă și criptează în flux, elimină snapshotul intermediar, restaurează într-un director temporar și verifică manifestul SHA-256, integritatea SQLite, cheile externe și conținutul media.
 5. Pornește aplicația restaurată pe un port local temporar, cu baza restaurată și fără cheile API din producție. Verifică paginile și prezența înregistrărilor, refuzul administrării anonime, randarea primei pagini de carte și protecția PDF-ului original.
 6. Publică arhiva și `last-success.json` numai după reușită; abia apoi aplică retenția. La eșec, copiile valide anterioare rămân disponibile, iar serviciul raportează eroarea în journal/systemd.
 
@@ -36,7 +36,7 @@ Restaurare de probă, într-un director care **nu există încă**:
   --restore-dir /var/backups/poetio/restaurare-verificata
 ```
 
-Comanda verifică integritatea și pornește temporar aplicația restaurată; nu modifică serviciul sau baza activă. Directorul rezultat conține date sensibile decriptate și trebuie să rămână privat. Necesită Python cu suport `tarfile` pentru filtrul `data`, GnuPG, Node compatibil cu versiunea arhivată, `pdfinfo` și `pdftoppm`. Sunt recomandate minimum 6 GB liberi pentru arhivare și verificarea unei copii de dimensiunea actuală.
+Comanda verifică integritatea și pornește temporar aplicația restaurată; nu modifică serviciul sau baza activă. Directorul rezultat conține date sensibile decriptate și trebuie să rămână privat. Necesită Python cu suport `tarfile` pentru filtrul `data`, GnuPG, Node compatibil cu versiunea arhivată, `pdfinfo` și `pdftoppm`. Necesarul de spațiu pentru creare este calculat înaintea copierii și include o rezervă implicită de 512 MiB; la restaurarea separată trebuie asigurat spațiul pentru conținutul extras.
 
 Pentru recuperarea serviciului după un incident:
 
@@ -48,7 +48,8 @@ Pentru recuperarea serviciului după un incident:
 6. Actualizează atomic legătura `current` către versiunea restaurată, verifică Nginx și unitatea systemd, apoi pornește serviciul. Verifică site-ul HTTPS și autentificarea înainte de reluarea editării.
 
 Backupul nu transmite notificări prin email sau alte servicii. `last-success.json` și starea unității sunt punctele de verificare; integrarea cu monitorizare externă poate fi adăugată separat.
-# Remedierea consumului temporar de spațiu — 5 noiembrie 2026
+
+**Remedierea consumului temporar de spațiu — 5 noiembrie 2026**
 
 Crearea arhivei comprimă și criptează într-un flux, fără un fișier tar.gz necriptat pe disc. Snapshotul temporar este eliminat după criptare, înaintea restaurării de verificare. Restaurarea decriptează și extrage în flux și verifică finalizarea autentificată GPG, manifestul, SQLite, media și răspunsurile HTTP înaintea publicării arhivei și a indicatorului `last-success.json`. Arhivele existente rămân compatibile.
 
