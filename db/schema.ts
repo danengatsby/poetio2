@@ -166,6 +166,11 @@ export const contentDrafts = sqliteTable('content_drafts', {
 }, table => [index('idx_content_drafts_created').on(table.kind, table.createdAt, table.id), index('idx_content_drafts_entity').on(table.kind, table.entityId, table.createdAt, table.id)]);
 
 // Materialized projections; custom migration triggers maintain the FTS5 indexes.
+export const searchFoldCharacters = sqliteTable('search_fold_characters', {
+  letter: text('letter').primaryKey().notNull(),
+  replacement: text('replacement').notNull(),
+});
+
 export const poemSearch = sqliteTable('poem_search', {
   poemId: text('poem_id').primaryKey().references(() => poems.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),

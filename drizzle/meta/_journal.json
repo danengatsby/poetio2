@@ -127,6 +127,13 @@
       "when": 1793916508805,
       "tag": "0017_search_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1793920810578,
+      "tag": "0018_search_normalization",
+      "breakpoints": true
     }
   ]
 }

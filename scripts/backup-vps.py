@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Encrypted, online SQLite backups with an isolated application restore check."""
 import argparse
+from contextlib import contextmanager
 import datetime as dt
 import fcntl
 import hashlib
@@ -235,29 +236,57 @@ def smoke_restore(root):
                 process.wait()
 
 
-def gpg(key, *arguments):
+@contextmanager
+def gpg_command(key):
     if key.is_symlink() or not key.is_file() or key.stat().st_mode & 0o077:
         raise RuntimeError("Encryption key must be a private regular file (0600)")
     if key.stat().st_size < 32:
         raise RuntimeError("Encryption key is too short")
     with tempfile.TemporaryDirectory(prefix="poetio-gpg-") as home:
         try:
-            subprocess.run(["gpg", "--homedir", home, "--batch", "--yes", "--no-symkey-cache",
-                            "--pinentry-mode", "loopback", "--passphrase-file", str(key), *map(str, arguments)],
-                           check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            yield ["gpg", "--homedir", home, "--batch", "--yes", "--no-symkey-cache",
+                   "--pinentry-mode", "loopback", "--passphrase-file", str(key)]
         finally:
             subprocess.run(["gpgconf", "--homedir", home, "--kill", "gpg-agent"],
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def gpg(key, *arguments):
+    with gpg_command(key) as command:
+        subprocess.run([*command, *map(str, arguments)], check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+@contextmanager
+def gpg_pipe(key, arguments, encrypt=False):
+    with gpg_command(key) as command:
+        process = subprocess.Popen([*command, *map(str, arguments)],
+                                   stdin=subprocess.PIPE if encrypt else subprocess.DEVNULL,
+                                   stdout=subprocess.DEVNULL if encrypt else subprocess.PIPE,
+                                   stderr=subprocess.DEVNULL)
+        stream = process.stdin if encrypt else process.stdout
+        try:
+            yield stream
+            if not encrypt:
+                # Consume the full authenticated stream, including trailing data.
+                while stream.read(1024 * 1024):
+                    pass
+            stream.close()
+            if process.wait(timeout=60) != 0:
+                raise RuntimeError("Backup encryption/decryption failed")
+        finally:
+            stream.close()
+            if process.poll() is None:
+                process.kill()
+                process.wait()
 
 
 def restore_archive(archive, key, destination):
     if destination.exists():
         raise RuntimeError("Restore destination must not already exist")
     destination.mkdir(mode=0o700, parents=True)
-    with tempfile.TemporaryDirectory(prefix="decrypt-", dir=destination.parent) as temporary:
-        plaintext = Path(temporary) / "payload.tar.gz"
-        gpg(key, "--output", plaintext, "--decrypt", archive)
-        with tarfile.open(plaintext, "r:gz") as tar:
+    with gpg_pipe(key, ["--decrypt", archive]) as stream:
+        with tarfile.open(fileobj=stream, mode="r|gz") as tar:
             tar.extractall(destination, filter="data")
     manifest = verify_payload(destination)
     # Data extraction deliberately removes executable bits. Restore only files
@@ -276,6 +305,34 @@ def write_json(path, value):
     temporary.replace(path)
 
 
+def tree_size(root, excluded=()):
+    total, entries = 0, 0
+    for directory, folders, files in os.walk(root, followlinks=False):
+        ignored = shutil.ignore_patterns(*excluded)(directory, folders + files)
+        folders[:] = [name for name in folders if name not in ignored]
+        for name in folders + [name for name in files if name not in ignored]:
+            details = (Path(directory) / name).lstat()
+            total += details.st_size
+            entries += 1
+    return total + entries * 2048
+
+
+def ensure_backup_space(args):
+    runtime = tree_size(args.runtime_dir.resolve(), (".git", ".wrangler", ".sites-runtime", "*.tsbuildinfo", "__pycache__"))
+    source = tree_size(args.source_dir, (*EXCLUDES, "*.tsbuildinfo"))
+    database = args.data_dir / "poetio.sqlite3"
+    data = database.stat().st_size + sum(size for _, size, _ in media_rows(database))
+    # Both stages need at most one payload and one encrypted archive. Allow
+    # incompressible input, archive headers, configuration, and a free reserve.
+    payload = runtime + source + data + tree_size(args.config_dir) + 8 * 1024 * 1024
+    reserve = getattr(args, "reserve_mib", 512) * 1024 * 1024
+    required = int(payload * 2.1) + reserve
+    free = shutil.disk_usage(args.output_dir).free
+    if free < required:
+        raise RuntimeError(f"Insufficient backup space: need {required} bytes including reserve, have {free}")
+    return {"requiredAtStart": required, "freeAtStart": free, "reserveBytes": reserve}
+
+
 def create_backup(args):
     output = args.output_dir
     output.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -285,6 +342,7 @@ def create_backup(args):
         archive = output / f"poetio-{stamp}.tar.gz.gpg"
         if archive.exists():
             raise RuntimeError("Backup already exists for this timestamp")
+        space = ensure_backup_space(args)
         with tempfile.TemporaryDirectory(prefix=".backup-", dir=output) as temp:
             temporary = Path(temp)
             payload = temporary / "payload"
@@ -300,18 +358,19 @@ def create_backup(args):
                         "executables": [str(p.relative_to(payload)) for p in payload.rglob("*")
                                         if p.is_file() and not p.is_symlink() and p.stat().st_mode & 0o111]}
             write_json(payload / "manifest.json", manifest)
-            plaintext = temporary / "payload.tar.gz"
-            with tarfile.open(plaintext, "w:gz", compresslevel=3) as tar:
-                for child in sorted(payload.iterdir()):
-                    tar.add(child, arcname=child.name)
             encrypted = temporary / archive.name
-            gpg(args.key_file, "--cipher-algo", "AES256", "--compress-algo", "none", "--output", encrypted, "--symmetric", plaintext)
+            with gpg_pipe(args.key_file, ["--cipher-algo", "AES256", "--compress-algo", "none", "--output", encrypted, "--symmetric"], encrypt=True) as stream:
+                with tarfile.open(fileobj=stream, mode="w|gz", compresslevel=3) as tar:
+                    for child in sorted(payload.iterdir()):
+                        tar.add(child, arcname=child.name)
+            shutil.rmtree(payload)
             restored = temporary / "restored"
             restore_archive(encrypted, args.key_file, restored)
             checked = smoke_restore(restored)
             checksum = digest(encrypted)
             result = {"ok": True, "created_utc": stamp, "archive": archive.name, "sha256": checksum,
-                      "bytes": encrypted.stat().st_size, "tables": counts, "restore_http_checks": checked}
+                      "bytes": encrypted.stat().st_size, "tables": counts, "restore_http_checks": checked,
+                      "space": space}
             # Publish only after decryption, manifest, DB, media and HTTP checks pass.
             encrypted.replace(archive)
             archive.with_name(archive.name + ".sha256").write_text(checksum + "  " + archive.name + "\n")
@@ -340,9 +399,12 @@ def main():
     parser.add_argument("--key-file", type=Path, default=Path("/etc/poetio/backup.key"))
     parser.add_argument("--output-dir", type=Path, default=Path("/var/backups/poetio/automatic"))
     parser.add_argument("--keep", type=int, default=14)
+    parser.add_argument("--reserve-mib", type=int, default=512)
     args = parser.parse_args()
     if args.keep < 1:
         parser.error("--keep must be positive")
+    if args.reserve_mib < 0:
+        parser.error("--reserve-mib must be nonnegative")
     if args.command == "create":
         result = create_backup(args)
     else:

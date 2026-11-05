@@ -7,6 +7,8 @@ import sqlite3
 import tarfile
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("backup", Path(__file__).parents[1] / "scripts/backup-vps.py")
 backup = importlib.util.module_from_spec(spec)
@@ -100,6 +102,58 @@ class BackupTests(unittest.TestCase):
         (folder / "escape").symlink_to("/etc/passwd")
         with self.assertRaisesRegex(RuntimeError, "escapes snapshot"):
             backup.file_manifest(folder)
+
+    def arguments(self):
+        for name in ['runtime', 'source', 'config', 'backups']:
+            (self.root / name).mkdir(exist_ok=True)
+        key = self.root / 'key'
+        key.write_bytes(os.urandom(48).hex().encode())
+        key.chmod(0o600)
+        return SimpleNamespace(data_dir=self.data, source_dir=self.root/'source', runtime_dir=self.root/'runtime',
+                               config_dir=self.root/'config', output_dir=self.root/'backups', key_file=key, keep=14, reserve_mib=0)
+
+    def test_low_space_fails_before_snapshot_and_preserves_last_success(self):
+        args = self.arguments()
+        marker = args.output_dir / 'last-success.json'
+        marker.write_text('{"ok":true,"archive":"existing"}')
+        with patch.object(backup.shutil, 'disk_usage', return_value=SimpleNamespace(free=1)), patch.object(backup, 'snapshot_data') as snapshot:
+            with self.assertRaisesRegex(RuntimeError, 'Insufficient backup space'):
+                backup.create_backup(args)
+            snapshot.assert_not_called()
+        self.assertEqual(json.loads(marker.read_text())['archive'], 'existing')
+        self.assertEqual(list(args.output_dir.glob('.backup-*')), [])
+
+    def test_streamed_creation_restores_after_removing_snapshot_and_publishes_only_verified_archive(self):
+        args = self.arguments()
+        (args.runtime_dir / 'marker').write_text('runtime preserved')
+        def smoke(root):
+            self.assertFalse((root.parent / 'payload').exists())
+            self.assertEqual(list(root.parent.glob('*.tar.gz')), [])
+            self.assertEqual((root/'runtime/marker').read_text(), 'runtime preserved')
+            return ['/']
+        with patch.object(backup, 'copy_configuration', side_effect=lambda target, _: target.mkdir()), patch.object(backup, 'smoke_restore', side_effect=smoke):
+            result = backup.create_backup(args)
+        self.assertTrue(result['ok'])
+        self.assertEqual(json.loads((args.output_dir/'last-success.json').read_text()), result)
+        archive = args.output_dir/result['archive']
+        self.assertTrue(archive.is_file())
+        # The streaming restore remains compatible with existing encrypted tar.gz
+        # archives and must reject a truncated authenticated ciphertext.
+        damaged = self.root/'damaged.gpg'
+        damaged.write_bytes(archive.read_bytes()[:-12])
+        with self.assertRaises((RuntimeError, tarfile.TarError, EOFError)):
+            backup.restore_archive(damaged, args.key_file, self.root/'damaged-restore')
+
+    def test_failed_restore_never_replaces_success_or_publishes_an_archive(self):
+        args = self.arguments()
+        marker = args.output_dir/'last-success.json'
+        marker.write_text('{"ok":true,"archive":"existing"}')
+        with patch.object(backup, 'copy_configuration', side_effect=lambda target, _: target.mkdir()), patch.object(backup, 'smoke_restore', side_effect=RuntimeError('Restore check failed')):
+            with self.assertRaisesRegex(RuntimeError, 'Restore check failed'):
+                backup.create_backup(args)
+        self.assertEqual(json.loads(marker.read_text())['archive'], 'existing')
+        self.assertEqual(list(args.output_dir.glob('*.gpg')), [])
+        self.assertEqual(list(args.output_dir.glob('.backup-*')), [])
 
 
 if __name__ == "__main__":

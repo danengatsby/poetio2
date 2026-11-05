@@ -48,3 +48,10 @@ Pentru recuperarea serviciului după un incident:
 6. Actualizează atomic legătura `current` către versiunea restaurată, verifică Nginx și unitatea systemd, apoi pornește serviciul. Verifică site-ul HTTPS și autentificarea înainte de reluarea editării.
 
 Backupul nu transmite notificări prin email sau alte servicii. `last-success.json` și starea unității sunt punctele de verificare; integrarea cu monitorizare externă poate fi adăugată separat.
+# Remedierea consumului temporar de spațiu — 5 noiembrie 2026
+
+Crearea arhivei comprimă și criptează într-un flux, fără un fișier tar.gz necriptat pe disc. Snapshotul temporar este eliminat după criptare, înaintea restaurării de verificare. Restaurarea decriptează și extrage în flux și verifică finalizarea autentificată GPG, manifestul, SQLite, media și răspunsurile HTTP înaintea publicării arhivei și a indicatorului `last-success.json`. Arhivele existente rămân compatibile.
+
+Înaintea snapshotului, scriptul estimează spațiul pentru date, surse, runtime, antetele arhivei și o rezervă de 512 MiB. Dacă spațiul nu ajunge, operația se oprește înaintea copierii și păstrează ultima reușită. Rezerva poate fi configurată prin `--reserve-mib`; rotația arhivelor verificate rămâne după noua verificare reușită. Estimarea nu rezervă fizic spațiul împotriva altor procese.
+
+Instalează scriptul actualizat ca `/usr/local/sbin/poetio-backup` și rulează serviciul `poetio-backup.service`. Confirmă starea finală și o arhivă nouă verificată prin restaurare; un timer activ singur nu confirmă reușita. Testele Python includ lipsa spațiului, compatibilitatea arhivelor, fluxul fără copii intermediare, text cifrat trunchiat și păstrarea ultimei reușite la eșec.
