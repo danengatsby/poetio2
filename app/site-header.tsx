@@ -22,7 +22,7 @@ export default function SiteHeader({ language, onLanguageChange, authorPage = fa
     <a href={withSiteLanguage('/', language)} className="wordmark" aria-label={copy.home}>Poetio<span aria-hidden="true">✳</span></a>
     <span className="header-note">{copy.note}</span>
     <nav className="header-nav" aria-label={copy.navigation}>
-      <a className="nav-link" href={(authorPage || videoPage || booksPage || poemPage) ? withSiteLanguage('/#collection', language) : '#collection'} aria-current={poemPage ? 'page' : undefined}>{copy.poems}</a>
+      <a className="nav-link" href={(authorPage || videoPage || booksPage || poemPage) ? withSiteLanguage('/#collection', language) : '#collection'} aria-current={!authorPage && !videoPage && !booksPage ? 'page' : undefined}>{copy.poems}</a>
       <a className="nav-link" href={withSiteLanguage('/video', language)} aria-current={videoPage ? 'page' : undefined}>Video</a>
       <a className="nav-link" href={withSiteLanguage('/carti', language)} aria-current={booksPage ? 'page' : undefined}>{language === 'ro' ? 'Cărți' : 'Books'}</a>
       <a className="nav-link" href={withSiteLanguage('/autor', language)} aria-current={authorPage ? 'page' : undefined}>{copy.author}</a>
