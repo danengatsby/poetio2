@@ -120,6 +120,13 @@
       "when": 1790621443506,
       "tag": "0016_book_text_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1793916508805,
+      "tag": "0017_search_indexes",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,7 @@
 import { ensureInitialPoems, ensureLanguageVariants, type Database } from './poems';
 import { POEM_PAGE_SIZE, POEM_EXCERPT_LENGTH, collectionQuery, poemExcerpt, type CollectionParams, type PoemCard, type PoemCollection } from '../lib/poem-collection';
 import type { PoemLanguage } from '../lib/poem-types';
-import { foldSearch as fold, sqlFoldSearch as sqlFold } from '../lib/poem-search';
+import { searchPredicate } from '../lib/poem-search';
 
 const translated = `(length(trim(coalesce(translated_title, ''))) > 0 AND length(trim(coalesce(translated_content, ''), char(9)||char(10)||char(13)||' ')) > 0)`;
 
@@ -11,12 +11,14 @@ export async function listPoemCards(db: Database, params: CollectionParams = {},
   const { filters, page: requestedPage } = collectionQuery(params, fallback);
   const conditions: string[] = [], bindings: string[] = [];
   if (filters.q) {
-    conditions.push('(' + ['title', 'content', 'translated_title', 'translated_content'].map(column => `instr(${sqlFold(column)}, ?) > 0`).join(' OR ') + ')');
-    bindings.push(...Array(4).fill(fold(filters.q)));
+    const search = searchPredicate('poem_search', ['title', 'content', 'translated_title', 'translated_content'], filters.q);
+    conditions.push(`id IN (SELECT poem_id FROM poem_search WHERE ${search.sql})`);
+    bindings.push(...search.bindings);
   }
   if (filters.theme) {
-    conditions.push(`(instr(${sqlFold('theme')}, ?) > 0 OR instr(${sqlFold('translated_theme')}, ?) > 0)`);
-    bindings.push(fold(filters.theme), fold(filters.theme));
+    const search = searchPredicate('poem_search', ['theme', 'translated_theme'], filters.theme);
+    conditions.push(`id IN (SELECT poem_id FROM poem_search WHERE ${search.sql})`);
+    bindings.push(...search.bindings);
   }
   if (filters.translation !== 'all') conditions.push(filters.translation === 'with' ? translated : `NOT ${translated}`);
   const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';

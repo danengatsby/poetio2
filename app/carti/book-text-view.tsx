@@ -1,41 +1,45 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { fetchBookText, textMatch, type BookPageText } from '@/lib/book-text';
+import { fetchBookText, fetchBookSearch, textMatch, type BookPageText, type BookSearchResult } from '@/lib/book-text';
 import { bookTextSize } from '@/lib/book-reading';
 
 type Props = { previewText?: BookPageText; fileId: string; page: number; pages: number; ro: boolean; size: number; onSizeChange: (size: number) => void; onGo: (page: number) => void; onRead: (page: number) => void };
-export default function BookTextView({ previewText, fileId, page, pages, ro, size, onSizeChange, onGo, onRead }: Props) {
+export default function BookTextView({ previewText, fileId, page, ro, size, onSizeChange, onGo, onRead }: Props) {
   const [query, setQuery] = useState(''), [searched, setSearched] = useState('');
-  const [results, setResults] = useState<{ page: number; excerpt: string }[]>([]);
-  const [busy, setBusy] = useState(false), [scanned, setScanned] = useState(0), [unavailable, setUnavailable] = useState(0);
+  const [result, setResult] = useState<BookSearchResult | null>(null);
+  const [busy, setBusy] = useState(false), [searchFailed, setSearchFailed] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const focusPage = useRef(false);
   useEffect(() => () => controller.current?.abort(), []);
-  async function search(event: React.FormEvent) {
-    event.preventDefault();
-    const term = query.trim();
+  async function search(term: string, offset = 0, retry = false) {
+    term = term.trim();
     if (term.length < 2) return;
     controller.current?.abort();
     const abort = new AbortController(); controller.current = abort;
-    setSearched(term); setResults([]); setScanned(0); setUnavailable(0); setBusy(true);
-    let count = 0;
+    setSearched(term); setResult(null); setBusy(true); setSearchFailed(false);
     try {
-      for (let number = 1; number <= pages && count < 100; number++) {
-        if (abort.signal.aborted) break;
-        try {
-          const data = previewText?.page === number ? previewText : await fetchBookText(fileId, number, abort.signal);
-          if (abort.signal.aborted) break;
-          const index = textMatch(data.text, term);
-          if (index >= 0) {
-            count++;
-            const start = Math.max(0, index - 60), end = Math.min(data.text.length, index + term.length + 100);
-            setResults(old => [...old, { page: number, excerpt: `${start ? '…' : ''}${data.text.slice(start, end)}${end < data.text.length ? '…' : ''}` }]);
-          }
-          if (!data.text.trim()) setUnavailable(old => old + 1);
-        } catch { if (!abort.signal.aborted) setUnavailable(old => old + 1); }
-        if (!abort.signal.aborted) setScanned(number);
+      // An unsaved editor preview searches only its own page and stays private.
+      if (previewText) {
+        const index = textMatch(previewText.text, term);
+        setResult({ status: 'ready', pages: 1, scanned: 1, unavailable: 0, total: index >= 0 ? 1 : 0, offset: 0, hasMore: false,
+          results: index >= 0 ? [{ page: previewText.page, excerpt: previewText.text.slice(Math.max(0, index - 60), index + term.length + 100) }] : [] });
+        return;
       }
-    } finally { if (controller.current === abort) setBusy(false); }
+      do {
+        const value = await fetchBookSearch(fileId, term, offset, abort.signal, retry);
+        retry = false;
+        if (abort.signal.aborted) return;
+        setResult(value);
+        if (value.status !== 'preparing') break;
+        await new Promise<void>(resolve => {
+          const timer = setTimeout(done, 1500);
+          function done() { clearTimeout(timer); abort.signal.removeEventListener('abort', done); resolve(); }
+          abort.signal.addEventListener('abort', done, { once: true });
+          if (abort.signal.aborted) done();
+        });
+      } while (!abort.signal.aborted);
+    } catch { if (!abort.signal.aborted) setSearchFailed(true); }
+    finally { if (controller.current === abort) setBusy(false); }
   }
   return <div className="book-text-view">
     <div className="book-text-tools" role="group" aria-label={ro ? 'Dimensiunea textului' : 'Text size'}>
@@ -43,15 +47,22 @@ export default function BookTextView({ previewText, fileId, page, pages, ro, siz
       <span>{Math.round(size * 100)}%</span>
       <button className="secondary-button" type="button" onClick={() => onSizeChange(Math.min(bookTextSize.max, size + bookTextSize.step))} disabled={size >= bookTextSize.max} aria-label={ro ? 'Mărește textul' : 'Increase text size'}>A+</button>
     </div>
-    <form className="book-text-search" onSubmit={search} role="search" aria-label={ro ? 'Caută în carte' : 'Search this book'}>
-      <label>{ro ? 'Caută în textul cărții' : 'Search the book text'}<input type="search" minLength={2} maxLength={120} required value={query} onChange={event => setQuery(event.target.value)} /></label>
+    <form className="book-text-search" onSubmit={event => { event.preventDefault(); void search(query); }} role="search" aria-label={ro ? 'Caută în carte' : 'Search this book'}>
+      <label>{previewText ? (ro ? 'Caută în pagina previzualizată' : 'Search the previewed page') : (ro ? 'Caută în textul cărții' : 'Search the book text')}<input type="search" minLength={2} maxLength={120} required value={query} onChange={event => setQuery(event.target.value)} /></label>
       <button className="secondary-button" disabled={busy} type="submit">{ro ? 'Caută' : 'Search'}</button>
       {busy && <button className="secondary-button" type="button" onClick={() => { controller.current?.abort(); setBusy(false); }}>{ro ? 'Oprește căutarea' : 'Stop searching'}</button>}
     </form>
-    {searched && <div className="book-text-results">
-      <p role="status">{ro ? `${results.length} pagini găsite. ${scanned} din ${pages} pagini parcurse.${busy ? ' Căutarea continuă…' : scanned < pages ? ' Căutare incompletă.' : ''}${unavailable ? ` Text indisponibil pentru ${unavailable} pagini; rezultatele sunt incomplete.` : ''}` : `${results.length} matching pages. ${scanned} of ${pages} pages searched.${busy ? ' Searching…' : scanned < pages ? ' Search incomplete.' : ''}${unavailable ? ` Text unavailable for ${unavailable} pages; results are incomplete.` : ''}`}</p>
-      {results.length >= 100 && <p>{ro ? 'Sunt afișate primele 100 de pagini găsite. Restrânge căutarea.' : 'Showing the first 100 matching pages. Refine your search.'}</p>}
-      <ol>{results.map(result => <li key={result.page}><button type="button" className="book-text-result" onClick={() => { focusPage.current = true; onGo(result.page); if (result.page === page) document.getElementById('book-text-heading')?.focus(); }}><strong>{ro ? 'Pagina' : 'Page'} {result.page}</strong> — {result.excerpt}</button></li>)}</ol>
+    {searchFailed && <div role="alert"><p>{ro ? 'Căutarea nu poate fi încărcată momentan. Textul paginii rămâne disponibil.' : 'Search could not be loaded. You can still read the current page.'}</p><button type="button" className="secondary-button" onClick={() => void search(searched)}>{ro ? 'Reîncearcă' : 'Try again'}</button></div>}
+    {searched && result && <div className="book-text-results">
+      <p role="status">{result.status === 'preparing'
+        ? (ro ? `Se pregătește căutarea: ${result.scanned} din ${result.pages} pagini. ${result.total} pagini găsite până acum.` : `Preparing search: ${result.scanned} of ${result.pages} pages. ${result.total} matching pages so far.`)
+        : result.status === 'error'
+          ? (ro ? 'Pregătirea căutării s-a întrerupt. Rezultatele sunt incomplete.' : 'Search preparation stopped. Results are incomplete.')
+          : (ro ? `${result.total} pagini găsite.` : `${result.total} matching pages.`)}</p>
+      {result.unavailable > 0 && <p>{ro ? `Text indisponibil pentru ${result.unavailable} pagini; rezultatele sunt incomplete.` : `Text unavailable for ${result.unavailable} pages; results are incomplete.`}</p>}
+      {!busy && (result.unavailable > 0 || result.status === 'error') && <button type="button" className="secondary-button" onClick={() => void search(searched, 0, true)}>{ro ? 'Reîncearcă paginile indisponibile' : 'Retry unavailable pages'}</button>}
+      <ol>{result.results.map(item => <li key={item.page}><button type="button" className="book-text-result" onClick={() => { focusPage.current = true; onGo(item.page); if (item.page === page) document.getElementById('book-text-heading')?.focus(); }}><strong>{ro ? 'Pagina' : 'Page'} {item.page}</strong> — {item.excerpt}</button></li>)}</ol>
+      {(result.offset > 0 || result.hasMore) && <nav aria-label={ro ? 'Paginile rezultatelor' : 'Search result pages'}><button type="button" className="secondary-button" disabled={busy || result.offset === 0} onClick={() => void search(searched, Math.max(0, result.offset - 20))}>{ro ? 'Anterioarele' : 'Previous results'}</button><button type="button" className="secondary-button" disabled={busy || !result.hasMore} onClick={() => void search(searched, result.offset + 20)}>{ro ? 'Următoarele' : 'Next results'}</button></nav>}
     </div>}
     {previewText?.page === page ? <TextPageContent data={previewText} ro={ro} size={size} query={searched} /> : <TextPage key={`${fileId}:${page}`} fileId={fileId} page={page} ro={ro} size={size} query={searched} onRead={onRead} onReady={() => { if (focusPage.current) { document.getElementById('book-text-heading')?.focus(); focusPage.current = false; } }} />}
   </div>;

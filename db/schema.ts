@@ -164,3 +164,32 @@ export const contentDrafts = sqliteTable('content_drafts', {
   snapshot: text('snapshot').notNull(),
   createdAt: integer('created_at').notNull(),
 }, table => [index('idx_content_drafts_created').on(table.kind, table.createdAt, table.id), index('idx_content_drafts_entity').on(table.kind, table.entityId, table.createdAt, table.id)]);
+
+// Materialized projections; custom migration triggers maintain the FTS5 indexes.
+export const poemSearch = sqliteTable('poem_search', {
+  poemId: text('poem_id').primaryKey().references(() => poems.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  author: text('author').notNull(),
+  theme: text('theme').notNull(),
+  content: text('content').notNull(),
+  translatedTitle: text('translated_title').notNull(),
+  translatedTheme: text('translated_theme').notNull(),
+  translatedContent: text('translated_content').notNull(),
+});
+
+export const bookSearchPages = sqliteTable('book_search_pages', {
+  fileId: text('file_id').notNull().references(() => bookFiles.id, { onDelete: 'cascade' }),
+  page: integer('page').notNull(),
+  content: text('content').notNull(),
+  searchText: text('search_text').notNull(),
+  source: text('source').notNull(),
+  revision: integer('revision').notNull(),
+}, table => [primaryKey({ columns: [table.fileId, table.page] })]);
+
+export const bookSearchState = sqliteTable('book_search_state', {
+  fileId: text('file_id').primaryKey().references(() => bookFiles.id, { onDelete: 'cascade' }),
+  pages: integer('pages').notNull(),
+  scanned: integer('scanned').notNull().default(0),
+  status: text('status').notNull().default('preparing'),
+  updatedAt: integer('updated_at').notNull(),
+});

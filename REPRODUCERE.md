@@ -24,7 +24,7 @@ Pe Ubuntu, testele de randare PDF și backup necesită și dependențe de sistem
 ```sh
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends \
-  poppler-utils util-linux tesseract-ocr tesseract-ocr-ron tesseract-ocr-eng \
+  poppler-utils util-linux ffmpeg tesseract-ocr tesseract-ocr-ron tesseract-ocr-eng \
   fonts-dejavu-core fontconfig python3 gnupg
 ```
 
@@ -66,6 +66,8 @@ Instalarea și compilările au emis notificări despre dependențele vechi `@esb
 
 Checkoutul reproduce sursele și permite reconstruirea aplicației. Conținutul salvat de utilizatori, fișierele media private, certificatele și secretele runtime se restaurează separat din backup, conform [BACKUP-VPS.md](BACKUP-VPS.md). Configurațiile din `deploy` sunt modele care trebuie instalate pe serverul țintă; versionarea lor nu activează servicii.
 
-Revizuirea pentru această includere în Git urmărește completitudinea surselor, dependențele, migrările, protecțiile API și verificările automate. Problema cunoscută a traducerii generate pentru un original schimbat după o salvare eșuată rămâne deschisă; includerea versiunii în Git nu o remediază.
+Revizuirea pentru includerea din septembrie urmărește completitudinea surselor, dependențele, migrările, protecțiile API și verificările automate. Problema traducerii generate pentru un original schimbat ulterior a fost între timp remediată prin proveniența verificată la publicare; vezi [TRADUCERI-VERIFICATE.md](TRADUCERI-VERIFICATE.md).
+
+Din 5 noiembrie, directoarele auxiliare sunt excluse explicit din TypeScript/ESLint, iar suita VPS se execută succesiv și include verificările migrării și căutării indexate. Pentru versiunea nouă se aplică și migrarea aditivă `0017`; vezi [CAUTARE-INDEXATA.md](CAUTARE-INDEXATA.md). Rezultatele istorice de mai sus rămân asociate commitului verificat atunci.
 
 Publicarea folosește un release nou construit din commitul ales și procedura din [DEPLOY-VPS.md](DEPLOY-VPS.md). Rezultatele operaționale trebuie verificate pe serverul efectiv. Un commit local nu este încă disponibil într-un depozit extern până la un push autorizat.

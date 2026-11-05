@@ -1,4 +1,7 @@
 import { openOperations } from './operations.mjs';
+import { createBookSearch } from '../db/book-search';
+import type { Database } from '../db/poems';
+import type { TextRenderer } from '../db/book-text';
 import { openImageRenderer } from './image-renderer.mjs';
 import { imageDecoder } from './image-decoder.mjs';
 import { openBookRenderer } from './book-renderer.mjs';
@@ -16,6 +19,7 @@ let videoBucket: ReturnType<typeof openVideoBucket> | undefined;
 let bookBucket: ReturnType<typeof openBookBucket> | undefined;
 let bookRenderer: ReturnType<typeof openBookRenderer> | undefined;
 let mediaValidator: ReturnType<typeof openMediaValidator> | undefined;
+let bookSearch: ReturnType<typeof createBookSearch> | undefined;
 const dataDirectory = () => process.env.POETIO_DATA_DIR || '/var/lib/poetio';
 
 // This module replaces cloudflare:workers only in the explicit Node build.
@@ -31,6 +35,7 @@ export const env = {
   get AUDIO_BUCKET() { return audioBucket ??= openAudioBucket(join(dataDirectory(), 'audio')); },
   get VIDEO_BUCKET() { return videoBucket ??= openVideoBucket(join(dataDirectory(), 'videos')); },
   get BOOK_RENDERER() { return bookRenderer ??= getOperations().observe('book', openBookRenderer(dataDirectory())); },
+  get BOOK_SEARCH() { return bookSearch ??= createBookSearch(env.DB as unknown as Database, env.BOOK_RENDERER as TextRenderer); },
   get BOOK_BUCKET() { return bookBucket ??= openBookBucket(join(dataDirectory(), 'books')); },
   get OPENAI_API_KEY() { return process.env.OPENAI_API_KEY; },
   get OPENAI_TRANSLATION_MODEL() { return process.env.OPENAI_TRANSLATION_MODEL; },

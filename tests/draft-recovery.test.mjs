@@ -7,7 +7,7 @@ import { createRequire } from 'node:module';
 import ts from 'typescript';
 const root=mkdtempSync(join(tmpdir(),'poetio-draft-tests-'));
 writeFileSync(join(root,'package.json'),'{"type":"commonjs"}');mkdirSync(join(root,'lib'));
-for(const name of ['comment-draft','poem-comments','book-text-recovery','book-text']) writeFileSync(join(root,'lib',name+'.js'),ts.transpileModule(readFileSync(new URL('../lib/'+name+'.ts',import.meta.url),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText);
+for(const name of ['comment-draft','poem-comments','book-text-recovery','book-text','poem-search']) writeFileSync(join(root,'lib',name+'.js'),ts.transpileModule(readFileSync(new URL('../lib/'+name+'.ts',import.meta.url),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText);
 process.on('exit',()=>rmSync(root,{recursive:true,force:true}));
 const require=createRequire(import.meta.url);
 const comments=require(join(root,'lib/comment-draft.js')),text=require(join(root,'lib/book-text-recovery.js'));
