@@ -1,3 +1,4 @@
+import { getMediaValidator } from '@/db/media-binding';
 import { getPoemDb } from '@/db/binding';
 import { createPoem, listPoems, validateId, validateInput } from '@/db/poems';
 import { apiError, readJson, requireOwner, requireSafeMutation } from '@/lib/access';
@@ -17,6 +18,6 @@ export async function POST(request: Request) {
     const data = await readJson(request);
     const input = validateInput(data);
     validateId(data.id);
-    return Response.json({ poem: await createPoem(getPoemDb(), data.id, input) }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
+    return Response.json({ poem: await createPoem(getPoemDb(), data.id, input, getMediaValidator()) }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) { return apiError(error); }
 }

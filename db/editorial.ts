@@ -2,13 +2,14 @@ import { AppError } from '../lib/access';
 import { validImageId } from './images';
 import { validateId, validateRevision, type Database } from './poems';
 import type { ContentKind, EditorSnapshot } from '../lib/editorial';
+import { parseTranslationProvenance } from '../lib/translation-provenance';
 export function contentKind(value: unknown): asserts value is ContentKind {
-  if (value !== 'poem' && value !== 'video') throw new AppError(400, 'Categoria este nevalidă.');
+  if (value !== 'poem' && value !== 'video' && value !== 'book') throw new AppError(400, 'Categoria este nevalidă.');
 }
 export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new AppError(400, 'Schița lipsește.');
   const data = value as Record<string, unknown>; validateId(data.id); validateRevision(data.revision);
-  if (kind === 'video' && !validImageId(data.id)) throw new AppError(400, 'Identificator video nevalid.');
+  if (kind !== 'poem' && !validImageId(data.id)) throw new AppError(400, 'Identificator nevalid.');
   if (typeof data.isNew !== 'boolean') throw new AppError(400, 'Starea schiței este nevalidă.');
   const result: EditorSnapshot = { id: data.id, title: '', revision: data.revision, isNew: data.isNew };
   const limits = kind === 'poem' ? { title: 180, author: 120, theme: 80, content: 30000, translated_title: 180, translated_theme: 80, translated_content: 30000 } : { title: 180, author: 120, description: 5000 };
@@ -16,12 +17,22 @@ export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot
     if (data[key] !== undefined && data[key] !== null && (typeof data[key] !== 'string' || data[key].length > limit)) throw new AppError(400, 'Un câmp al schiței depășește limita sau este nevalid.');
     result[key] = data[key] ?? '';
   }
-  for (const field of kind === 'poem' ? ['image_id','audio_ro_id','audio_en_id'] : ['file_id']) {
+  for (const field of kind === 'poem' ? ['image_id','audio_ro_id','audio_en_id'] : kind === 'book' ? ['file_id','image_id'] : ['file_id']) {
     if (data[field] && !validImageId(data[field])) throw new AppError(400, 'Fișierul schiței este nevalid.');
-    result[field] = data[field] || (kind === 'video' ? '' : null);
+    result[field] = data[field] || (field === 'file_id' ? '' : null);
   }
   if (kind === 'poem') { if (data.source_language !== 'ro' && data.source_language !== 'en-US') throw new AppError(400, 'Limba schiței este nevalidă.'); result.source_language = data.source_language; }
+  if (kind === 'poem') {
+    const provenance = parseTranslationProvenance(data.translation_provenance);
+    if (data.translation_provenance != null && !provenance) throw new AppError(400, 'Asocierea traducerii este nevalidă.');
+    result.translation_provenance = provenance;
+  }
   result.pendingFiles = data.pendingFiles === true;
+  if (kind === 'book') {
+    result.pendingBookFile = data.pendingBookFile === true;
+    result.pendingCover = data.pendingCover === true;
+    result.pendingFiles = result.pendingFiles || result.pendingBookFile || result.pendingCover;
+  }
   return result;
 }
 export async function saveDraft(db: Database, kind: ContentKind, id: unknown, value: unknown) {
@@ -45,6 +56,6 @@ export async function recoveryItem(db: Database, kind: ContentKind, source: stri
   const table = source === 'drafts' ? 'content_drafts' : 'content_history';
   const row = await db.prepare(`SELECT snapshot, entity_id FROM ${table} WHERE id=? AND kind=?`).bind(id,kind).first<{ snapshot: string; entity_id: string }>();
   if (!row) throw new AppError(404, 'Versiunea nu mai există.');
-  const current = await db.prepare(`SELECT revision FROM ${kind === 'poem' ? 'poems' : 'videos'} WHERE id=?`).bind(row.entity_id).first<{revision:number}>();
+  const current = await db.prepare(`SELECT revision FROM ${kind === 'poem' ? 'poems' : kind === 'book' ? 'books' : 'videos'} WHERE id=?`).bind(row.entity_id).first<{revision:number}>();
   return { snapshot: { ...JSON.parse(row.snapshot), id: !current && row.entity_id.startsWith('original-') ? crypto.randomUUID() : row.entity_id, revision: current?.revision ?? 1, isNew: !current } as EditorSnapshot };
 }

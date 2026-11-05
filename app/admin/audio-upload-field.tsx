@@ -38,7 +38,7 @@ export default function AudioUploadField({ field, label, selected, storedId, dis
   return <div className="audio-upload-field">
     <label htmlFor={field}>Înregistrare — {label} <span className="optional-label">(opțional)</span></label>
     <input id={field} type="file" accept={AUDIO_ACCEPT} disabled={disabled} aria-describedby={`${field}-help`} onChange={event => { choose(event.target.files?.[0]); event.target.value = ''; }} />
-    <p id={`${field}-help`} className="field-help">MP3, WAV, M4A sau OGG, maximum 25 MB. Fișierul se încarcă la salvarea poemului.</p>
+    <p id={`${field}-help`} className="field-help">MP3, WAV PCM, M4A AAC sau OGG Opus/Vorbis, maximum 25 MB și 30 de minute. Fișierul se încarcă și este verificat integral la salvarea poemului.</p>
     <p className="field-help">{selected ? `${selected.file.name} · nesalvat` : storedId ? 'Înregistrare salvată.' : 'Nicio înregistrare încărcată.'}</p>
     {(selected || storedId) && <>
       <AudioPreview key={selected?.id || storedId} selected={selected} storedId={storedId} label={label} />

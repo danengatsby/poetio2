@@ -1,6 +1,9 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- Serve the already rendered page without an image proxy. */
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import type { BookPageText } from '@/lib/book-text';
+import BookTextView from './book-text-view';
+import useReadingPreferences from './use-reading-preferences';
 import { ArrowLeft, ArrowRight, CornerDownLeft, ZoomIn, ZoomOut } from 'lucide-react';
 import { readingPages, readingPositionKey, restoredPage } from '@/lib/book-reading';
 
@@ -13,13 +16,15 @@ function subscribeLayout(listener: () => void) {
 const layoutSnapshot = () => window.matchMedia(phoneQuery).matches ? 'single' : 'spread';
 const serverLayout = () => 'unknown';
 
-export default function BookReader({ fileId, title, language = 'ro' }: { fileId: string; title: string; language?: 'ro' | 'en-US' }) {
-  return <Reader key={fileId} fileId={fileId} title={title} language={language} />;
+type ReaderProps = { fileId: string; title: string; language?: 'ro' | 'en-US'; preview?: boolean; previewText?: BookPageText };
+export default function BookReader(props: ReaderProps) {
+  return <Reader key={`${props.fileId}:${props.preview ? props.previewText?.page ?? 1 : 'public'}`} {...props} />;
 }
-function Reader({ fileId, title, language }: { fileId: string; title: string; language: 'ro' | 'en-US' }) {
+function Reader({ fileId, title, language = 'ro', preview = false, previewText }: ReaderProps) {
   const ro = language === 'ro';
   const layout = useSyncExternalStore(subscribeLayout, layoutSnapshot, serverLayout);
-  const single = layout === 'single';
+  const { preferences: { mode, textSize }, storageAvailable, setPreferences, resetPreferences } = useReadingPreferences();
+  const single = layout === 'single' || mode === 'text';
   const [pages, setPages] = useState(0), [page, setPage] = useState(1), [input, setInput] = useState('1');
   const [retry, setRetry] = useState(0), [failed, setFailed] = useState(false), [loaded, setLoaded] = useState<number[]>([]), [imageFailed, setImageFailed] = useState(false);
   const [zoom, setZoom] = useState(false), [zoomPage, setZoomPage] = useState<number | null>(null);
@@ -33,12 +38,13 @@ function Reader({ fileId, title, language }: { fileId: string; title: string; la
   const focusedZoom = zoomPage !== null && visiblePages.includes(zoomPage) ? zoomPage : null;
   const enlarged = zoom || focusedZoom !== null;
 
-  function remember(number: number) {
+  const remember = useCallback((number: number) => {
+    if (preview) return;
     try {
       localStorage.setItem(readingPositionKey(fileId), JSON.stringify({ page: number }));
       setMemoryAvailable(true);
     } catch { setMemoryAvailable(false); }
-  }
+  }, [fileId, preview]);
   function resetScroll() { requestAnimationFrame(() => viewport.current?.scrollTo({ left: 0, top: 0 })); }
   function togglePageZoom(number: number) {
     setZoom(false); setZoomPage(current => current === number ? null : number);
@@ -59,8 +65,8 @@ function Reader({ fileId, title, language }: { fileId: string; title: string; la
       if (!Number.isSafeInteger(data.pages) || data.pages < 1) throw new Error('Invalid pages');
       if (controller.signal.aborted) return;
       if (!initialized.current) {
-        let saved = 1;
-        try { saved = restoredPage(localStorage.getItem(readingPositionKey(fileId)), data.pages); }
+        let saved = preview ? Math.min(previewText?.page ?? 1, data.pages) : 1;
+        try { if (!preview) saved = restoredPage(localStorage.getItem(readingPositionKey(fileId)), data.pages); }
         catch { setMemoryAvailable(false); }
         setPage(saved); setInput(String(saved)); setResumed(saved > 1 ? saved : null);
         initialized.current = true;
@@ -68,7 +74,7 @@ function Reader({ fileId, title, language }: { fileId: string; title: string; la
       setPages(data.pages);
     }).catch(() => { if (!controller.signal.aborted) setFailed(true); });
     return () => controller.abort();
-  }, [fileId, retry]);
+  }, [fileId, retry, preview, previewText?.page]);
 
   function go(next: number) {
     if (!Number.isSafeInteger(next) || next < 1 || next > pages) { setInput(String(page)); return; }
@@ -98,16 +104,22 @@ function Reader({ fileId, title, language }: { fileId: string; title: string; la
         <button className="secondary-button" type="submit" aria-label={ro ? 'Mergi la pagină' : 'Go to page'} title={ro ? 'Mergi la pagină' : 'Go to page'}><CornerDownLeft size={18} aria-hidden="true" /><span className="book-control-text">{ro ? 'Mergi' : 'Go'}</span></button>
       </form>
       <button className="secondary-button" aria-label={nextLabel} title={nextLabel} disabled={lastVisible === pages} onClick={next}><span className="book-control-text">{ro ? 'Înainte' : 'Next'}</span><ArrowRight size={18} aria-hidden="true" /></button>
-      <button className="secondary-button" aria-label={zoomLabel} title={zoomLabel} aria-pressed={enlarged} onClick={toggleZoom}>{enlarged ? <ZoomOut size={18} aria-hidden="true" /> : <ZoomIn size={18} aria-hidden="true" />}<span className="book-control-text">{zoomLabel}</span></button>
+      {mode === 'original' && <button className="secondary-button" aria-label={zoomLabel} title={zoomLabel} aria-pressed={enlarged} onClick={toggleZoom}>{enlarged ? <ZoomOut size={18} aria-hidden="true" /> : <ZoomIn size={18} aria-hidden="true" />}<span className="book-control-text">{zoomLabel}</span></button>}
     </nav>;
   }
   return <section className="book-reader protected-book-reader" data-layout={layout} aria-label={ro ? 'Citire carte' : 'Book reader'}>
     <p className="book-reader-note">{ro ? 'Poetio — doar pentru lectură' : 'Poetio — reading only'}</p>
-    {failed || imageFailed ? <div role="alert"><p>{ro ? 'Pagina cărții nu poate fi încărcată. Reîncearcă.' : 'The book page could not be loaded. Try again.'}</p><button className="secondary-button" onClick={() => { setFailed(false); setImageFailed(false); setLoaded([]); setRetry(value => value + 1); }}>{ro ? 'Reîncearcă' : 'Try again'}</button></div> : null}
+    <div className="book-reader-modes" role="group" aria-label={ro ? 'Preferințe de lectură' : 'Reading preferences'}>
+      <button type="button" className="secondary-button" aria-pressed={mode === 'original'} onClick={() => setPreferences({ mode: 'original' })}>{ro ? 'Pagina originală' : 'Original page'}</button>
+      <button type="button" className="secondary-button" aria-pressed={mode === 'text'} onClick={() => { setPreferences({ mode: 'text' }); setZoom(false); setZoomPage(null); }}>Text</button>
+      <button type="button" className="secondary-button" onClick={() => { resetPreferences(); setZoom(false); setZoomPage(null); resetScroll(); }}>{ro ? 'Resetează preferințele' : 'Reset reading preferences'}</button>
+    </div>
+    <p className="book-reader-note book-preferences-note" role="status">{storageAvailable ? (ro ? 'Modul de lectură și dimensiunea textului se păstrează pentru cărți în acest browser. Resetarea nu șterge pagina memorată.' : 'Reading mode and text size are saved for books in this browser. Resetting keeps your saved page.') : (ro ? 'Preferințele nu pot fi salvate în acest browser. Le poți folosi în continuare până la reîncărcare.' : 'This browser cannot save reading preferences. You can still use them until you reload.')}</p>
+    {failed || (mode === 'original' && imageFailed) ? <div role="alert"><p>{ro ? 'Pagina cărții nu poate fi încărcată. Reîncearcă.' : 'The book page could not be loaded. Try again.'}</p><button className="secondary-button" onClick={() => { setFailed(false); setImageFailed(false); setLoaded([]); setRetry(value => value + 1); }}>{ro ? 'Reîncearcă' : 'Try again'}</button></div> : null}
     {pages > 0 && layout !== 'unknown' && <>
       {navigation('top')}
       <p className="book-reader-note book-visible-pages" aria-live="polite">{ro ? `${visiblePages.length === 2 ? 'Paginile' : 'Pagina'} ${firstVisible}${lastVisible > firstVisible ? `–${lastVisible}` : ''} din ${pages}` : `${visiblePages.length === 2 ? 'Pages' : 'Page'} ${firstVisible}${lastVisible > firstVisible ? `–${lastVisible}` : ''} of ${pages}`}</p>
-      <div ref={frame} className="book-page-frame">
+      {mode === 'text' ? <BookTextView previewText={previewText} fileId={fileId} page={page} pages={pages} ro={ro} size={textSize} onSizeChange={value => setPreferences({ textSize: value })} onGo={go} onRead={remember} /> : <div ref={frame} className="book-page-frame">
         <button className="book-side-arrow book-side-previous" aria-label={previousLabel} disabled={firstVisible === 1} onClick={previous}><span aria-hidden="true">←</span></button>
         <div ref={viewport} className={`book-page-viewport${zoom ? ' book-page-zoom' : ''}${focusedZoom !== null ? ' book-page-single-zoom' : ''}`} tabIndex={0} aria-label={ro ? 'Pagina cărții; săgețile schimbă pagina, Escape închide mărirea' : 'Book page; arrow keys turn pages, Escape exits zoom'} onKeyDown={event => {
           if (event.altKey || event.ctrlKey || event.metaKey) return;
@@ -122,10 +134,10 @@ function Reader({ fileId, title, language }: { fileId: string; title: string; la
           </div>
         </div>
         <button className="book-side-arrow book-side-next" aria-label={nextLabel} disabled={lastVisible === pages} onClick={next}><span aria-hidden="true">→</span></button>
-      </div>
+      </div>}
       {navigation('bottom')}
-      <p className="book-reader-note book-position-note" role="status">{!memoryAvailable ? (ro ? 'Poziția nu poate fi memorată în acest browser.' : 'This browser cannot save your reading position.') : resumed ? (ro ? `Lectura a fost reluată de la pagina ${resumed}. Poziția se păstrează în acest browser.` : `Reading resumed at page ${resumed}. Your position is saved in this browser.`) : (ro ? 'Poziția de lectură se păstrează în acest browser.' : 'Your reading position is saved in this browser.')}</p>
+      <p className="book-reader-note book-position-note" role="status">{preview ? (ro ? 'Previzualizarea nu schimbă pagina memorată de cititor.' : 'Preview keeps your saved reading position.') : !memoryAvailable ? (ro ? 'Poziția nu poate fi memorată în acest browser.' : 'This browser cannot save your reading position.') : resumed ? (ro ? `Lectura a fost reluată de la pagina ${resumed}. Poziția se păstrează în acest browser.` : `Reading resumed at page ${resumed}. Your position is saved in this browser.`) : (ro ? 'Poziția de lectură se păstrează în acest browser.' : 'Your reading position is saved in this browser.')}</p>
     </>}
-    {!failed && !imageFailed && (!pages || !visiblePages.length || !visiblePages.every(number => loaded.includes(number))) && <p role="status">{ro ? 'Se încarcă paginile…' : 'Loading pages…'}</p>}
+    {!failed && (!pages || !visiblePages.length || (mode === 'original' && !imageFailed && !visiblePages.every(number => loaded.includes(number)))) && <p role="status">{ro ? 'Se încarcă paginile…' : 'Loading pages…'}</p>}
   </section>;
 }

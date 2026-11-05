@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh private Poetio operations status every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=1min
+Unit=poetio-status.service
+
+[Install]
+WantedBy=timers.target

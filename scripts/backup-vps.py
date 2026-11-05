@@ -4,6 +4,7 @@ import argparse
 import datetime as dt
 import fcntl
 import hashlib
+from html.parser import HTMLParser
 import json
 import os
 from pathlib import Path
@@ -17,6 +18,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit
 
 MEDIA = {"poem_images": ("images", "poem-images"), "poem_audio": ("audio", "poem-audio"),
          "video_files": ("videos", "videos"), "book_files": ("books", "books")}
@@ -80,6 +82,8 @@ def copy_configuration(target, config_dir):
         "systemd/poetio.service": "/etc/systemd/system/poetio.service",
         "systemd/poetio-backup.service": "/etc/systemd/system/poetio-backup.service",
         "systemd/poetio-backup.timer": "/etc/systemd/system/poetio-backup.timer",
+        "systemd/poetio-status.service": "/etc/systemd/system/poetio-status.service",
+        "systemd/poetio-status.timer": "/etc/systemd/system/poetio-status.timer",
         "nginx/poetio-cloud": "/etc/nginx/sites-enabled/poetio-cloud",
         "nginx/poetio-vps": "/etc/nginx/sites-enabled/poetio-vps",
         "nginx/poetio-comments-rate.conf": "/etc/nginx/conf.d/poetio-comments-rate.conf",
@@ -124,6 +128,50 @@ def verify_payload(root):
     return manifest
 
 
+class CollectionPage(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.ids = []
+        self.next = None
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == 'a' and 'poem-card' in attrs.get('class', '').split() and attrs.get('data-poem-id'):
+            self.ids.append(attrs['data-poem-id'])
+        if tag == 'a' and 'next' in attrs.get('rel', '').split():
+            self.next = attrs.get('href')
+
+
+def check_poem_collection(fetch, expected_ids, body):
+    checked, found, seen = [], [], set()
+    path = '/'
+    while True:
+        if path in seen:
+            raise RuntimeError('Restored collection pagination loops')
+        seen.add(path)
+        page = CollectionPage()
+        page.feed(body.decode('utf-8'))
+        # Older archives contain the complete collection without card IDs.
+        if path == '/' and not page.ids and not page.next and all(identifier.encode() in body for identifier in expected_ids):
+            return ['/']
+        found.extend(page.ids)
+        checked.append(path)
+        if len(found) > len(expected_ids) or len(found) != len(set(found)):
+            raise RuntimeError('Restored collection duplicates saved poems')
+        if not page.next:
+            break
+        target = urlsplit(page.next)
+        if target.scheme or target.netloc or target.path != '/' or not page.ids:
+            raise RuntimeError('Invalid restored collection pagination')
+        path = target.path + ('?' + target.query if target.query else '')
+        status, body = fetch(path)
+        if status != 200:
+            raise RuntimeError('Restored collection page unavailable')
+    if found != expected_ids:
+        raise RuntimeError('Restored collection is missing or reordering saved poems')
+    return checked
+
+
 def smoke_restore(root):
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
@@ -156,11 +204,9 @@ def smoke_restore(root):
             else:
                 raise RuntimeError("Restored application did not become healthy")
             with read_db(root / "data/poetio.sqlite3") as db:
-                expected_ids = {path: [row[0] for row in db.execute(f"SELECT id FROM {table}")]
+                expected_ids = {path: [row[0] for row in db.execute(f"SELECT id FROM {table} ORDER BY created_at, id")]
                                 for path, table in [("/", "poems"), ("/video", "videos"), ("/carti", "books")]}
-            if any(identifier.encode() not in body for identifier in expected_ids["/"]):
-                raise RuntimeError("Restored homepage is missing saved poems")
-            checked = ["/"]
+            checked = check_poem_collection(fetch, expected_ids['/'], body)
             for path in ["/autor", "/video", "/carti"]:
                 status, body = fetch(path)
                 if status != 200 or b"Poetio" not in body:

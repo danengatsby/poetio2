@@ -1,4 +1,5 @@
 import { getPoemDb } from '@/db/binding';
+import { getBookValidator } from '@/db/book-binding';
 import { updateBook, deleteBook } from '@/db/books';
 import { apiError, readJson, requireSafeMutation } from '@/lib/access';
 export const dynamic = 'force-dynamic';
@@ -9,7 +10,7 @@ export async function PUT(request: Request, context: Context) {
     requireSafeMutation(request);
     const { id } = await context.params;
     const data = await readJson(request);
-    return Response.json({ book: await updateBook(getPoemDb(), id, data?.revision, data) }, { headers });
+    return Response.json({ book: await updateBook(getPoemDb(), id, data?.revision, data, getBookValidator()) }, { headers });
   } catch (error) { return apiError(error); }
 }
 export async function DELETE(request: Request, context: Context) {

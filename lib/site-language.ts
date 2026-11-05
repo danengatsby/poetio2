@@ -1,9 +1,17 @@
 import type { PoemLanguage } from './poem-types';
 
 export const SITE_LANGUAGE_COOKIE = 'poetio-language';
+export const SITE_LANGUAGE_HEADER = 'x-poetio-language';
 
-export function siteLanguage(value?: string): PoemLanguage {
-  return value === 'en-US' ? 'en-US' : 'ro';
+export function siteLanguage(value?: string | null, preference?: string | null): PoemLanguage {
+  if (value === 'ro' || value === 'en-US') return value;
+  return preference === 'en-US' ? 'en-US' : 'ro';
+}
+
+export function withSiteLanguage(href: string, language: PoemLanguage) {
+  const url = new URL(href, 'https://poetio.invalid');
+  url.searchParams.set('lang', language);
+  return url.pathname + url.search + url.hash;
 }
 
 export function rememberSiteLanguage(language: PoemLanguage) {
@@ -11,6 +19,11 @@ export function rememberSiteLanguage(language: PoemLanguage) {
   try {
     document.cookie = `${SITE_LANGUAGE_COOKIE}=${language}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
   } catch { /* The selector remains usable when preference cookies are blocked. */ }
+  // Keep an explicit URL in step with in-place selectors, without discarding
+  // the reader position or an unsent comment. Preserve filters and fragments.
+  try {
+    history.replaceState(history.state, '', withSiteLanguage(location.href, language));
+  } catch { /* In-memory selection still works when history cannot be changed. */ }
 }
 
 export const siteCopy = {

@@ -1,3 +1,4 @@
+import type { TranslationProvenance } from './translation-provenance';
 export type PoemLanguage = 'ro' | 'en-US';
 
 export type Poem = {
@@ -10,6 +11,7 @@ export type Poem = {
   translated_title: string | null;
   translated_theme: string | null;
   translated_content: string | null;
+  translation_provenance?: TranslationProvenance | null;
   image_id: string | null;
   audio_ro_id: string | null;
   audio_en_id: string | null;
@@ -28,4 +30,5 @@ export type PoemInput = Pick<Poem, 'title' | 'author' | 'theme' | 'content'> & {
   translated_title?: string | null;
   translated_theme?: string | null;
   translated_content?: string | null;
+  translation_provenance?: TranslationProvenance | null;
 };

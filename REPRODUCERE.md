@@ -24,7 +24,8 @@ Pe Ubuntu, testele de randare PDF și backup necesită și dependențe de sistem
 ```sh
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends \
-  poppler-utils fonts-dejavu-core fontconfig python3 gnupg
+  poppler-utils util-linux tesseract-ocr tesseract-ocr-ron tesseract-ocr-eng \
+  fonts-dejavu-core fontconfig python3 gnupg
 ```
 
 Python trebuie să ofere `hashlib.file_digest` și filtrul `data` pentru `tarfile.extractall` (Python 3.12 sau mai nou). Scripturile Linux folosesc și utilitarele uzuale `bash`, `timeout`, `flock`, `curl` și `sha256sum`.

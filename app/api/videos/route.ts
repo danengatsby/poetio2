@@ -1,3 +1,4 @@
+import { getMediaValidator } from '@/db/media-binding';
 import { getPoemDb } from '@/db/binding';
 import { createVideo, listVideos } from '@/db/videos';
 import { apiError, readJson, requireOwner, requireSafeMutation } from '@/lib/access';
@@ -11,6 +12,6 @@ export async function POST(request: Request) {
   try {
     requireSafeMutation(request);
     const data = await readJson(request);
-    return Response.json({ video: await createVideo(getPoemDb(), data?.id, data) }, { status: 201, headers });
+    return Response.json({ video: await createVideo(getPoemDb(), data?.id, data, getMediaValidator()) }, { status: 201, headers });
   } catch (error) { return apiError(error); }
 }

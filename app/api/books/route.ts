@@ -1,4 +1,5 @@
 import { getPoemDb } from '@/db/binding';
+import { getBookValidator } from '@/db/book-binding';
 import { createBook, listBooks } from '@/db/books';
 import { apiError, readJson, requireOwner, requireSafeMutation } from '@/lib/access';
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,6 @@ export async function POST(request: Request) {
   try {
     requireSafeMutation(request);
     const data = await readJson(request);
-    return Response.json({ book: await createBook(getPoemDb(), data?.id, data) }, { status: 201, headers });
+    return Response.json({ book: await createBook(getPoemDb(), data?.id, data, getBookValidator()) }, { status: 201, headers });
   } catch (error) { return apiError(error); }
 }

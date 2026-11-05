@@ -3,6 +3,7 @@ import { validImageId } from './images';
 import { validateRevision, type Database } from './poems';
 import { getVideoFile } from './video-files';
 import type { Video, VideoInput, VideoWithCommentCount } from '../lib/video-types';
+import { requireReadyMedia, type MediaValidator } from './media-validation';
 
 export function validateVideoId(id: unknown): asserts id is string {
   if (!validImageId(id)) throw new AppError(400, 'Identificatorul video este nevalid.');
@@ -20,9 +21,10 @@ export function validateVideo(value: unknown): VideoInput {
   validateVideoId(data.file_id);
   return { title: read('title', 180, 'Titlu', true), author: read('author', 120, 'Autor'), description: read('description', 5000, 'Descriere'), file_id: data.file_id };
 }
-async function requireFile(db: Database, id: string) {
+async function requireFile(db: Database, id: string, validator?: MediaValidator) {
   const file = await getVideoFile(db, id);
   if (!file || !isOwnerEmail(file.owner_email)) throw new AppError(400, 'Încarcă fișierul video înainte de salvare.');
+  await requireReadyMedia(file, 'video', validator);
 }
 export async function listVideos(db: Database): Promise<VideoWithCommentCount[]> {
   return (await db.prepare(`SELECT videos.*, (SELECT COUNT(*) FROM video_comments WHERE video_id = videos.id AND status = 'approved') AS comment_count
@@ -31,20 +33,20 @@ export async function listVideos(db: Database): Promise<VideoWithCommentCount[]>
 export function getVideo(db: Database, id: string) { return db.prepare('SELECT * FROM videos WHERE id = ?').bind(id).first<Video>(); }
 const matches = (video: Video, input: VideoInput) => video.title === input.title && video.author === input.author && video.description === input.description && video.file_id === input.file_id;
 
-export async function createVideo(db: Database, id: string, value: unknown) {
+export async function createVideo(db: Database, id: string, value: unknown, validator?: MediaValidator) {
   validateVideoId(id);
   const input = validateVideo(value);
-  await requireFile(db, input.file_id);
+  await requireFile(db, input.file_id, validator);
   const now = Date.now();
   await db.prepare('INSERT INTO videos (id, title, author, description, file_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT(id) DO NOTHING').bind(id, input.title, input.author, input.description, input.file_id, now, now).run();
   const video = await getVideo(db, id);
   if (!video || !matches(video, input)) throw new AppError(409, 'Videoul a fost deja salvat cu alt conținut. Reîncarcă lista.');
   return video;
 }
-export async function updateVideo(db: Database, id: string, revision: number, value: unknown) {
+export async function updateVideo(db: Database, id: string, revision: number, value: unknown, validator?: MediaValidator) {
   validateVideoId(id); validateRevision(revision);
   const input = validateVideo(value);
-  await requireFile(db, input.file_id);
+  await requireFile(db, input.file_id, validator);
   const result = await db.prepare('UPDATE videos SET title = ?, author = ?, description = ?, file_id = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?').bind(input.title, input.author, input.description, input.file_id, Date.now(), id, revision).run();
   const video = await getVideo(db, id);
   if (!video) throw new AppError(404, 'Videoul a fost șters. Datele introduse rămân în formular.');

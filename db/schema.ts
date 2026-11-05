@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const poemImages = sqliteTable('poem_images', {
   id: text('id').primaryKey(),
@@ -32,13 +32,14 @@ export const poems = sqliteTable('poems', {
   translatedTitle: text('translated_title'),
   translatedTheme: text('translated_theme'),
   translatedContent: text('translated_content'),
+  translationProvenance: text('translation_provenance'),
   imageId: text('image_id').references(() => poemImages.id),
   audioRoId: text('audio_ro_id').references(() => poemAudio.id),
   audioEnId: text('audio_en_id').references(() => poemAudio.id),
   revision: integer('revision').notNull().default(1),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
-}, (table) => [index('idx_poems_image_id').on(table.imageId), index('idx_poems_audio_ro_id').on(table.audioRoId), index('idx_poems_audio_en_id').on(table.audioEnId)]);
+}, (table) => [index('idx_poems_collection_order').on(table.createdAt, table.id), index('idx_poems_image_id').on(table.imageId), index('idx_poems_audio_ro_id').on(table.audioRoId), index('idx_poems_audio_en_id').on(table.audioEnId)]);
 
 export const poemComments = sqliteTable('poem_comments', {
   id: text('id').primaryKey(),
@@ -123,6 +124,15 @@ export const books = sqliteTable('books', {
   updatedAt: integer('updated_at').notNull(),
 }, (table) => [index('idx_books_file_id').on(table.fileId), index('idx_books_image_id').on(table.imageId)]);
 
+export const bookPageTexts = sqliteTable('book_page_texts', {
+  fileId: text('file_id').notNull().references(() => bookFiles.id, { onDelete: 'cascade' }),
+  page: integer('page').notNull(),
+  content: text('content').notNull(),
+  language: text('language').notNull().default('und'),
+  revision: integer('revision').notNull().default(1),
+  updatedAt: integer('updated_at').notNull(),
+}, table => [primaryKey({ columns: [table.fileId, table.page] })]);
+
 export const bookComments = sqliteTable('book_comments', {
   id: text('id').primaryKey(),
   bookId: text('book_id').notNull().references(() => books.id, { onDelete: 'cascade' }),
@@ -153,4 +163,4 @@ export const contentDrafts = sqliteTable('content_drafts', {
   title: text('title').notNull(),
   snapshot: text('snapshot').notNull(),
   createdAt: integer('created_at').notNull(),
-}, table => [index('idx_content_drafts_created').on(table.kind, table.createdAt, table.id)]);
+}, table => [index('idx_content_drafts_created').on(table.kind, table.createdAt, table.id), index('idx_content_drafts_entity').on(table.kind, table.entityId, table.createdAt, table.id)]);

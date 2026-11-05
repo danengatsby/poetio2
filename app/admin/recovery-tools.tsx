@@ -7,7 +7,7 @@ import './recovery.css';
 async function request(path: string, options: RequestInit = {}) {
   const response = await fetch(path, { ...options, cache: 'no-store', headers: { 'Content-Type': 'application/json', ...options.headers } });
   const data = await response.json().catch(() => null);
-  if (!response.ok || !data) throw new Error(data?.error || 'Recuperarea nu este disponibilă. Reîncarcă lista.');
+  if (!response.ok || !data) throw Object.assign(new Error(data?.error || 'Recuperarea nu este disponibilă. Reîncarcă lista.'), { status: response.status });
   return data;
 }
 function readLocal(kind: ContentKind): LocalDraft[] {
@@ -74,7 +74,14 @@ export default function RecoveryTools({ kind, draft, dirty, pendingFiles, disabl
     try {
       let snapshot = preview.snapshot;
       if(preview.source === 'local') {
-        const plural=kind==='poem'?'poems':'videos';const data=await request('/api/'+plural);const current=data[plural].find((item:EditorSnapshot)=>item.id===snapshot.id);
+        let current: EditorSnapshot | undefined;
+        if (kind === 'poem') {
+          try { current = (await request('/api/poems/' + encodeURIComponent(snapshot.id))).poem; }
+          catch (error) { if ((error as { status?: number }).status !== 404) throw error; }
+        } else {
+          const plural = kind === 'book' ? 'books' : 'videos';
+          const data = await request('/api/' + plural); current = data[plural].find((item: EditorSnapshot) => item.id === snapshot.id);
+        }
         snapshot={...snapshot,id:!current&&snapshot.id.startsWith('original-')?crypto.randomUUID():snapshot.id,revision:current?.revision??1,isNew:!current};
       } else snapshot=(await request(`/api/admin/recovery/${kind}/${preview.source}/${preview.id}`)).snapshot;
       onRecover(snapshot);setNotice('Versiunea este pregătită pentru editor. Verifică datele și salvează pentru a publica.' + (snapshot.pendingFiles ? ' Selectează din nou fișierele care nu fuseseră încărcate.' : ''));

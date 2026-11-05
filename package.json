@@ -9,16 +9,17 @@
     "install:ci": "bash scripts/install-ci.sh",
     "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vite",
     "build": "npm run build:images && bash scripts/build-verified.sh",
-    "build:vps": "npm run verify:security && npm run build:images && POETIO_RUNTIME=node vinext build",
+    "build:vps": "npm run verify:security && npm run build:images && POETIO_RUNTIME=node vinext build && node scripts/verify-vps-assets.mjs",
     "start:vps": "node scripts/start-vps.mjs",
-    "test:vps": "node --test tests/poems.test.mjs tests/vps-storage.test.mjs tests/book-renderer.test.mjs tests/image-renderer.test.mjs tests/book-reading.test.mjs tests/editorial-migration.test.mjs",
+    "test:vps": "node --test tests/media-validator.test.mjs tests/poems.test.mjs tests/vps-storage.test.mjs tests/book-renderer.test.mjs tests/book-text.test.mjs tests/image-renderer.test.mjs tests/book-reading.test.mjs tests/editorial-migration.test.mjs tests/vps-assets.test.mjs tests/operations.test.mjs tests/poem-reading.test.mjs tests/draft-recovery.test.mjs",
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run build && node --test tests/*.test.mjs",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate",
     "verify:security": "node scripts/verify-security-runtime.mjs",
     "test:backup": "PYTHONDONTWRITEBYTECODE=1 python3 tests/backup-vps.test.py",
-    "build:images": "node scripts/build-images.mjs"
+    "build:images": "node scripts/build-images.mjs",
+    "test:operations": "node --test tests/operations.test.mjs tests/poem-reading.test.mjs && PYTHONDONTWRITEBYTECODE=1 python3 tests/operations-status.test.py"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

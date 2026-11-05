@@ -1,16 +1,18 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import { getPoemDb } from '@/db/binding';
 import type { VideoWithCommentCount } from '@/lib/video-types';
 import { listVideos } from '@/db/videos';
 import { isOwnerEmail } from '@/lib/access';
-import { SITE_LANGUAGE_COOKIE, siteLanguage } from '@/lib/site-language';
+import { requestLanguage } from '@/lib/request-language';
 import { getChatGPTUser } from '../chatgpt-auth';
 import VideoGallery from './video-gallery';
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Video — Poetio', description: 'Colecția video Poetio.' };
+export async function generateMetadata(): Promise<Metadata> {
+  const language = await requestLanguage();
+  return { title: 'Video — Poetio', description: language === 'ro' ? 'Colecția video Poetio.' : 'The Poetio video collection.' };
+}
 export default async function VideoPage() {
-  const language = siteLanguage((await cookies()).get(SITE_LANGUAGE_COOKIE)?.value);
+  const language = await requestLanguage();
   const canAdmin = isOwnerEmail((await getChatGPTUser())?.email);
   let videos: VideoWithCommentCount[] = [];
   let failed = false;

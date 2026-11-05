@@ -3,7 +3,23 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 const code = ts.transpileModule(readFileSync(new URL('../lib/book-reading.ts', import.meta.url), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText;
-const { readingPositionKey, restoredPage, readingPages } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+const { readingPositionKey, restoredPage, readingPages, readingPreferencesKey, restoredReadingPreferences } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+
+test('reading preferences reject corrupt or unsupported values without affecting bookmarks', () => {
+  const defaults = { mode: 'original', textSize: 1.25 };
+  for (const value of [null, '', 'invalid', 'null', '[]', '1', 'true', '"text"', '{}']) assert.deepEqual(restoredReadingPreferences(value), defaults);
+  for (const textSize of [null, true, '1.5', -1, 0, .75, 1.3, 2.75, 1e308]) assert.deepEqual(restoredReadingPreferences(JSON.stringify({ mode: 'text', textSize })), { mode: 'text', textSize: 1.25 });
+  assert.deepEqual(restoredReadingPreferences('{"mode":"image","textSize":1.5}'), { mode: 'original', textSize: 1.5 });
+  assert.deepEqual(restoredReadingPreferences('{"mode":"text","textSize":1e400}'), { mode: 'text', textSize: 1.25 });
+  assert.notEqual(readingPreferencesKey, readingPositionKey('any-pdf'));
+});
+
+test('reading preferences preserve supported modes and every font step', () => {
+  for (const mode of ['original', 'text']) for (let textSize = 1; textSize <= 2.5; textSize += .25) {
+    const preferences = { mode, textSize };
+    assert.deepEqual(restoredReadingPreferences(JSON.stringify({ ...preferences, page: 18 })), preferences);
+  }
+});
 
 test('saved position validates malformed data, clamps to available pages and isolates PDF versions', () => {
   for (const value of [null, '', 'invalid', 'null', '[]', '{}', '{"page":0}', '{"page":-4}', '{"page":"7"}', '{"page":1.5}', '{"page":9007199254740992}']) assert.equal(restoredPage(value, 104), 1);

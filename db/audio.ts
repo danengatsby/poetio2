@@ -2,6 +2,7 @@ import { AppError, isOwnerEmail } from '../lib/access';
 import { MAX_AUDIO_BYTES } from '../lib/poem-audio';
 import { validImageId } from './images';
 import type { Database } from './poems';
+import { requireReadyMedia, validateMediaUpload, type MediaValidator } from './media-validation';
 
 export const validAudioId = validImageId;
 export type StoredAudio = {
@@ -14,8 +15,7 @@ export type AudioBucket = {
   get(key: string, options?: { range: AudioRange }): Promise<{ body: ReadableStream; size: number } | null>;
 };
 
-// Check the container signature as well as the declared type. Playback still
-// depends on the recording's codec being supported by the listener's browser.
+// Cheap envelope check; full server decoding is required before persistence.
 export function audioType(bytes: Uint8Array): string {
   const text = (start: number, end: number) => String.fromCharCode(...bytes.subarray(start, end));
   if (bytes.length >= 44 && text(0, 4) === 'RIFF' && text(8, 12) === 'WAVE') return 'audio/wav';
@@ -65,14 +65,15 @@ export function getAudio(db: Database, id: string) {
   return db.prepare('SELECT * FROM poem_audio WHERE id = ?').bind(id).first<StoredAudio>();
 }
 
-export async function requireAvailableAudio(db: Database, id: string | null | undefined) {
+export async function requireAvailableAudio(db: Database, id: string | null | undefined, validator?: MediaValidator) {
   if (!id) return;
   if (!validAudioId(id)) throw new AppError(400, 'Înregistrarea selectată este nevalidă.');
   const audio = await getAudio(db, id);
   if (!audio || !isOwnerEmail(audio.owner_email)) throw new AppError(400, 'Înregistrarea nu a fost încărcată în acest cont. Încarcă fișierul din nou.');
+  await requireReadyMedia(audio, 'audio', validator);
 }
 
-export async function saveAudio(db: Database, bucket: AudioBucket, request: Request) {
+export async function saveAudio(db: Database, bucket: AudioBucket, request: Request, validator?: MediaValidator) {
   const id = request.headers.get('x-upload-id');
   if (!validAudioId(id)) throw new AppError(400, 'Identificatorul încărcării este nevalid.');
   const { bytes, contentType } = await readAudioBytes(request);
@@ -81,8 +82,10 @@ export async function saveAudio(db: Database, bucket: AudioBucket, request: Requ
   const existing = await getAudio(db, id);
   if (existing) {
     if (existing.owner_email !== owner || existing.content_hash !== hash) throw new AppError(409, 'Această încărcare există deja. Selectează înregistrarea din nou.');
+    await requireReadyMedia(existing, 'audio', validator);
     return existing;
   }
+  await validateMediaUpload(bytes, 'audio', contentType, hash, validator);
   let fileName = 'inregistrare';
   try { fileName = decodeURIComponent(request.headers.get('x-file-name') || fileName); } catch { /* Safe display fallback. */ }
   fileName = fileName.replace(/[\u0000-\u001f\u007f/\\]/g, '').slice(0, 200) || 'inregistrare';

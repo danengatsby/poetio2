@@ -2,6 +2,8 @@
 
 Implementare pentru poeme și video, 14 septembrie 2026.
 
+**Actualizare, 26 septembrie 2026:** aceeași infrastructură include acum cărți în surse, cu migrarea `0013`, recuperarea PDF/copertă și avertizarea pentru fișierele neîncărcate. Vezi [RECUPERARE-CARTI.md](RECUPERARE-CARTI.md). Această extindere nu a fost publicată; rezultatele de deploy de mai jos privesc versiunea din 14 septembrie.
+
 ## Pagini publice
 
 - `/poeme/{id}`: titlu, autor, text complet cu strofe, audio disponibil pentru limba afișată și comentarii moderate.

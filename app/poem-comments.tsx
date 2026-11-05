@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 
 import type { PoemLanguage } from '@/lib/poem-types';
 import { commentCountLabel, COMMENT_NAME_LIMIT, COMMENT_BODY_LIMIT, type ReaderComment } from '@/lib/poem-comments';
 import './poem-comments.css';
+import useCommentDraft from './use-comment-draft';
 
 const copy = {
   ro: { title: 'Comentarii', intro: 'Ce ți-a transmis acest poem? Lasă câteva gânduri.', name: 'Numele tău', body: 'Comentariul tău', note: 'Numele și comentariul vor fi publice după aprobarea administratorului. Te rugăm să păstrezi un ton respectuos.', send: 'Trimite comentariul', sending: 'Se trimite…', loading: 'Se încarcă comentariile…', empty: 'Fii primul care lasă un comentariu.', more: 'Mai multe comentarii', retry: 'Reîncearcă', loadError: 'Comentariile nu pot fi încărcate momentan.', sendError: 'Comentariul nu a putut fi publicat. Textul tău a fost păstrat; încearcă din nou.', slow: 'Ai trimis prea multe comentarii. Așteaptă un minut și încearcă din nou.', success: 'Comentariul a fost primit și va apărea după aprobarea administratorului.' },
@@ -16,6 +17,9 @@ export default function PoemComments({ poemId, language, onCountChange }: { poem
 }
 
 export function ReaderComments({ endpoint, language, intro, onCountChange }: { endpoint: string; language: PoemLanguage; intro?: string; onCountChange?: (total: number) => void }) {
+  return <CommentForm key={endpoint} endpoint={endpoint} language={language} intro={intro} onCountChange={onCountChange} />;
+}
+function CommentForm({ endpoint, language, intro, onCountChange }: { endpoint: string; language: PoemLanguage; intro?: string; onCountChange?: (total: number) => void }) {
   const labels = copy[language];
   const id = useId();
   const [total, setTotal] = useState<number | null>(null);
@@ -25,13 +29,18 @@ export function ReaderComments({ endpoint, language, intro, onCountChange }: { e
   const [reload, setReload] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [name, setName] = useState('');
-  const [content, setContent] = useState('');
+  const recovery = useCommentDraft(endpoint);
+  const { name, content } = recovery.draft;
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<'sendError' | 'slow' | null>(null);
   const [saved, setSaved] = useState(false);
   const pending = useRef(false);
-  const attempt = useRef<{ id: string; name: string; content: string } | null>(null);
+  useEffect(() => {
+    if (!sending && (recovery.available || (!name && !content))) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [sending, recovery.available, name, content]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -60,12 +69,12 @@ export function ReaderComments({ endpoint, language, intro, onCountChange }: { e
     setSending(true); setSendError(null); setSaved(false);
     try {
       // Reuse the request ID after a lost response to avoid posting twice.
-      if (!attempt.current || attempt.current.name !== name.trim() || attempt.current.content !== content.trim()) attempt.current = { id: crypto.randomUUID(), name: name.trim(), content: content.trim() };
-      const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(attempt.current) });
+      const attempt = recovery.attempt();
+      const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(attempt), signal: AbortSignal.timeout(30000) });
       if (!response.ok) { setSendError(response.status === 429 ? 'slow' : 'sendError'); return; }
       const data = await response.json() as { received?: boolean };
       if (!data.received) throw new Error('Receipt unavailable');
-      setContent(''); setSaved(true); attempt.current = null;
+      recovery.clear(); setSaved(true);
       load(0);
     } catch { setSendError('sendError'); }
     finally { pending.current = false; setSending(false); }
@@ -76,12 +85,13 @@ export function ReaderComments({ endpoint, language, intro, onCountChange }: { e
     <p className="comments-intro">{intro ?? labels.intro}</p>
     <form onSubmit={submit} className="comment-form" aria-describedby={`${id}-note`}>
       <label htmlFor={`${id}-name`}>{labels.name}</label>
-      <input id={`${id}-name`} name="name" autoComplete="name" required maxLength={COMMENT_NAME_LIMIT} value={name} disabled={sending} onChange={event => { setName(event.target.value); setSaved(false); }} />
+      <input id={`${id}-name`} name="name" autoComplete="name" required maxLength={COMMENT_NAME_LIMIT} value={name} disabled={sending || !recovery.ready} onChange={event => { recovery.change({ name: event.target.value }); setSaved(false); }} />
       <label htmlFor={`${id}-content`}>{labels.body}</label>
-      <textarea id={`${id}-content`} name="comment" rows={4} required maxLength={COMMENT_BODY_LIMIT} value={content} disabled={sending} onChange={event => { setContent(event.target.value); setSaved(false); }} aria-describedby={`${id}-length`} />
+      <textarea id={`${id}-content`} name="comment" rows={4} required maxLength={COMMENT_BODY_LIMIT} value={content} disabled={sending || !recovery.ready} onChange={event => { recovery.change({ content: event.target.value }); setSaved(false); }} aria-describedby={`${id}-length`} />
       <span id={`${id}-length`} className="comment-length">{content.length} / {COMMENT_BODY_LIMIT}</span>
       <p id={`${id}-note`} className="comment-note">{labels.note}</p>
       <button type="submit" className="primary-button" disabled={sending || !name.trim() || !content.trim()}>{sending ? labels.sending : labels.send}</button>
+      {(name || content) && <><p className="comment-note" role="status">{recovery.available ? (language === 'ro' ? 'Schița se păstrează în această filă la schimbarea limbii și reîncărcare, cel mult 24 de ore.' : 'The draft survives language changes and reloads in this tab for up to 24 hours.') : (language === 'ro' ? 'Browserul nu permite păstrarea schiței. Copiază textul înainte de a părăsi pagina.' : 'This browser cannot save the draft. Copy your text before leaving this page.')}</p><button type="button" className="secondary-button" disabled={sending} onClick={() => { if (window.confirm(language === 'ro' ? 'Ștergi numele și comentariul netrimis?' : 'Discard the name and unsent comment?')) { recovery.clear(); setSendError(null); setSaved(false); } }}>{language === 'ro' ? 'Abandonează schița' : 'Discard draft'}</button></>}
       {sendError && <p role="alert" className="comment-error">{labels[sendError]}</p>}
       <p role="status" className="comment-status">{saved ? labels.success : ''}</p>
     </form>

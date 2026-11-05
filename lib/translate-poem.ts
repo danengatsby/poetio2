@@ -1,5 +1,6 @@
 import { AppError } from './access';
 import type { PoemInput } from './poem-types';
+import { translationProvenance, type TranslationProvenance } from './translation-provenance';
 
 export type TranslationConfig = { OPENAI_API_KEY?: string; OPENAI_TRANSLATION_MODEL?: string };
 export type EnglishTranslation = { translated_title: string; translated_theme: string; translated_content: string };
@@ -26,7 +27,7 @@ export function parseTranslation(value: unknown, original: Original): EnglishTra
   return { translated_title: result.title.trim(), translated_theme: original.theme.trim() ? result.theme.trim() : '', translated_content: content };
 }
 
-export async function translatePoem(original: Original, config: TranslationConfig, fetcher: typeof fetch = fetch): Promise<EnglishTranslation> {
+export async function translatePoem(original: Original, config: TranslationConfig, fetcher: typeof fetch = fetch): Promise<EnglishTranslation & { translation_provenance: TranslationProvenance }> {
   if (!config.OPENAI_API_KEY?.trim()) throw new AppError(503, 'Serviciul de traducere nu este încă activat. Textul rămâne în formular; poți salva doar originalul.');
   const sourceLines = original.content.split('\n');
   const controller = new AbortController();
@@ -55,7 +56,9 @@ export async function translatePoem(original: Original, config: TranslationConfi
     const content = data.output?.filter(item => item.type === 'message').flatMap(item => item.content || []) || [];
     if (content.some(item => item.type === 'refusal')) throw unavailable();
     const text = content.filter(item => item.type === 'output_text').map(item => item.text || '').join('');
-    return parseTranslation(JSON.parse(text), original);
+    const translated = parseTranslation(JSON.parse(text), original);
+    const provenance = await translationProvenance({ ...original, author: '', source_language: 'ro', ...translated }, 'automatic');
+    return { ...translated, translation_provenance: provenance };
   } catch (error) {
     if (error instanceof AppError) throw error;
     // Never log credentials, upstream bodies, or unpublished poem text.

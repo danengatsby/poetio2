@@ -1,0 +1,20 @@
+[Unit]
+Description=Read-only Poetio backup status summary
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=root
+Group=poetio
+ExecStart=/usr/bin/python3 /usr/local/sbin/poetio-status
+RuntimeDirectory=poetio-status
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=yes
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/run/poetio-status
+RestrictAddressFamilies=AF_UNIX
+

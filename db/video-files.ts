@@ -3,13 +3,14 @@ import { MAX_VIDEO_BYTES } from '../lib/video-types';
 import { validImageId } from './images';
 import type { Database } from './poems';
 import { audioRange, type AudioBucket, type AudioRange } from './audio';
+import { requireReadyMedia, validateMediaUpload, type MediaValidator } from './media-validation';
 
 export const validVideoFileId = validImageId;
 export type StoredVideoFile = {
   id: string; object_key: string; file_name: string; content_type: string;
   byte_size: number; content_hash: string; owner_email: string; created_at: number;
 };
-// Validate the declared container before storing; the browser checks codec support.
+// Cheap envelope check; full server decoding is required before persistence.
 export function videoType(bytes: Uint8Array): string {
   const text = (start: number, end: number) => String.fromCharCode(...bytes.subarray(start, end));
   if (bytes.length >= 32 && text(4, 8) === 'ftyp' && /^(isom|iso[2-9]|mp4[12]|avc1|M4V |dash)$/.test(text(8, 12))) return 'video/mp4';
@@ -46,7 +47,7 @@ export function getVideoFile(db: Database, id: string) {
   return db.prepare('SELECT * FROM video_files WHERE id = ?').bind(id).first<StoredVideoFile>();
 }
 
-export async function saveVideoFile(db: Database, bucket: AudioBucket, request: Request) {
+export async function saveVideoFile(db: Database, bucket: AudioBucket, request: Request, validator?: MediaValidator) {
   const id = request.headers.get('x-upload-id');
   if (!validVideoFileId(id)) throw new AppError(400, 'Identificatorul încărcării este nevalid.');
   const { bytes, contentType } = await readVideoBytes(request);
@@ -55,8 +56,10 @@ export async function saveVideoFile(db: Database, bucket: AudioBucket, request: 
   const existing = await getVideoFile(db, id);
   if (existing) {
     if (existing.owner_email !== owner || existing.content_hash !== hash) throw new AppError(409, 'Această încărcare există deja. Selectează videoul din nou.');
+    await requireReadyMedia(existing, 'video', validator);
     return existing;
   }
+  await validateMediaUpload(bytes, 'video', contentType, hash, validator);
   let fileName = 'video';
   try { fileName = decodeURIComponent(request.headers.get('x-file-name') || fileName); } catch { /* Safe display fallback. */ }
   fileName = fileName.replace(/[\u0000-\u001f\u007f/\\]/g, '').slice(0, 200) || 'video';

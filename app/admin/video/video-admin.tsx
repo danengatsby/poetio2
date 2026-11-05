@@ -5,7 +5,8 @@ import { MAX_VIDEO_BYTES, VIDEO_ACCEPT, videoFileType, type Video } from '@/lib/
 import RecoveryTools from '../recovery-tools';
 import type { EditorSnapshot } from '@/lib/editorial';
 import ThemeToggle from '../../theme-toggle';
-import VideoPlayer from '../../video/video-player';
+import VideoReading from '../../video/video-reading';
+import ReaderPreview from '../reader-preview';
 import '../../video/video.css';
 
 type Draft = Pick<Video, 'id' | 'title' | 'author' | 'description' | 'file_id' | 'revision'> & { isNew: boolean };
@@ -123,7 +124,7 @@ export default function VideoAdmin({ initialVideos, initialError, signInHref }: 
   }
   return <div className="admin-page video-admin" lang="ro">
     <a className="skip-link" href="#main">Mergi la administrarea video</a>
-    <header className="site-header shell"><a href="/" className="wordmark">Poetio<span aria-hidden="true">✳</span></a><span className="private-label">Administrare privată</span><nav className="header-nav" aria-label="Navigare administrare"><a className="nav-link" href="/admin">Poeme</a><a className="nav-link" href="/admin/video" aria-current="page">Video</a><a className="nav-link" href="/admin/carti">Cărți</a><a className="nav-link" href="/admin/comentarii">Comentarii</a><a className="nav-link" href="/video">Vezi videourile ↗</a><ThemeToggle /></nav></header>
+    <header className="site-header shell"><a href="/" className="wordmark">Poetio<span aria-hidden="true">✳</span></a><span className="private-label">Administrare privată</span><nav className="header-nav" aria-label="Navigare administrare"><a className="nav-link" href="/admin">Poeme</a><a className="nav-link" href="/admin/video" aria-current="page">Video</a><a className="nav-link" href="/admin/carti">Cărți</a><a className="nav-link" href="/admin/comentarii">Comentarii</a><a className="nav-link" href="/video">Vezi videourile ↗</a><a className="nav-link" href="/admin/functionare">Funcționare</a><ThemeToggle /></nav></header>
     <main id="main" className="admin-main shell">
       <div className="admin-heading"><div><p className="eyebrow">Colecția ta în imagini</p><h1>Videourile tale<span className="count">({videos.length})</span></h1><p>Adaugă un video sau alege unul din colecție pentru a-l modifica.</p></div><button className="primary-button" disabled={busy || !available} onClick={() => guard(() => replace(blank()))}>＋ Adaugă video</button></div>
       {error && <div className="admin-error" role="alert"><p>{error}</p>{authRequired && <a href={signInHref} target="_blank" rel="noopener noreferrer">Autentifică-te într-o filă nouă, apoi reîncearcă</a>}</div>}
@@ -138,14 +139,17 @@ export default function VideoAdmin({ initialVideos, initialError, signInHref }: 
             <label>Autor <span className="optional-label">(opțional)</span><input maxLength={120} value={draft.author} onChange={event => { setDraft({ ...draft, author: event.target.value }); setSuccess(''); }} /></label>
             <label>Descriere <span className="optional-label">(opțional)</span><textarea rows={5} maxLength={5000} value={draft.description} onChange={event => { setDraft({ ...draft, description: event.target.value }); setSuccess(''); }} /></label>
             <label>Fișier video<input ref={input} type="file" accept={VIDEO_ACCEPT} onChange={event => choose(event.target.files?.[0])} aria-describedby="video-upload-help" /></label>
-            <p id="video-upload-help" className="video-file-help">MP4 sau WebM, maximum 100 MB. Fișierul ales se încarcă la salvare. Redarea depinde de codecul acceptat de browser.</p>
+            <p id="video-upload-help" className="video-file-help">MP4 H.264/AAC sau WebM VP8/VP9 cu Opus/Vorbis, maximum 100 MB, 30 de minute și 4K la 60 fps. Fișierul se încarcă și este verificat integral la salvare.</p>
             {selected && <><p className="video-file-name">{selected.file.name} · {(selected.file.size / 1024 / 1024).toFixed(1)} MB</p><button type="button" className="secondary-button" onClick={() => { setSelected(null); uploadedId.current = null; }}>Renunță la fișierul ales</button></>}
           </fieldset>
-          {(selected || draft.file_id) && <VideoPlayer key={selected?.url || draft.file_id} src={selected?.url || `/api/video-files/${draft.file_id}`} title={draft.title || 'Previzualizare video'} />}
-          {progress !== null && <div role="status"><p>{progress === 100 ? 'Fișierul este procesat…' : `Se încarcă: ${progress}%`}</p><progress value={progress} max={100} aria-label="Progresul încărcării" /><button type="button" className="secondary-button" onClick={() => upload.current?.abort()}>Anulează încărcarea</button></div>}
+          {progress !== null && <div role="status"><p>{progress === 100 ? 'Se verifică integral imaginea și sunetul…' : `Se încarcă: ${progress}%`}</p><progress value={progress} max={100} aria-label="Progresul încărcării" /><button type="button" className="secondary-button" onClick={() => upload.current?.abort()}>Anulează încărcarea</button></div>}
           <div className="editor-actions"><button className="primary-button" type="submit" disabled={busy || !available}>{busy ? 'Se salvează…' : 'Salvează video'}</button><button className="secondary-button" type="button" disabled={busy || !dirty} onClick={() => guard(() => replace(baseline))}>Renunță la modificări</button></div>
           {!draft.isNew && <div className="delete-area"><button type="button" className="delete-button" disabled={busy} onClick={() => { void remove(); }}>Șterge video</button></div>}
-        </form> : <div className="editor-empty"><span aria-hidden="true">▷</span><h2>Adaugă primul tău video</h2><p>Alege un fișier de pe calculator și completează titlul.</p><button className="primary-button" disabled={busy || !available} onClick={() => replace(blank())}>Adaugă video</button></div>}</section>
+        </form> : <div className="editor-empty"><span aria-hidden="true">▷</span><h2>Adaugă primul tău video</h2><p>Alege un fișier de pe calculator și completează titlul.</p><button className="primary-button" disabled={busy || !available} onClick={() => replace(blank())}>Adaugă video</button></div>}
+          {draft && <ReaderPreview disabled={busy} note={<p>Fișierul selectat se redă local și se încarcă pe server numai la salvare. Pornește redarea și verifică sunetul; RO/EN schimbă comenzile, nu traduce conținutul videoului.</p>}>
+            {language => <VideoReading video={draft} src={selected?.url || (draft.file_id ? `/api/video-files/${draft.file_id}` : undefined)} language={language} mediaStatus />}
+          </ReaderPreview>}
+        </section>
       </div>
     </main><footer className="admin-footer shell"><span>Poetio · Administrare video</span><a href="/video">Vezi pagina Video ↗</a></footer>
   </div>;

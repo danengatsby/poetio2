@@ -14,6 +14,22 @@ spec.loader.exec_module(backup)
 
 
 class BackupTests(unittest.TestCase):
+    def test_collection_restore_checks_every_page_and_rejects_missing_or_repeated_poems(self):
+        first = b'<a class="poem-card" data-poem-id="a"></a><a rel="next" href="/?page=2&amp;lang=ro#collection">Next</a>'
+        last = b'<a class="poem-card" data-poem-id="b"></a>'
+        def fetch(path):
+            self.assertEqual(path, '/?page=2&lang=ro')
+            return 200, last
+        self.assertEqual(backup.check_poem_collection(fetch, ['a','b'], first), ['/', '/?page=2&lang=ro'])
+        with self.assertRaisesRegex(RuntimeError, 'missing'):
+            backup.check_poem_collection(lambda _: (200, b''), ['a','b'], first)
+        with self.assertRaisesRegex(RuntimeError, 'duplicates'):
+            backup.check_poem_collection(lambda _: (200, first), ['a','b'], first)
+        external = first.replace(b'/?page=2&amp;lang=ro#collection', b'https://outside.test/')
+        with self.assertRaisesRegex(RuntimeError, 'Invalid'):
+            backup.check_poem_collection(fetch, ['a','b'], external)
+        self.assertEqual(backup.check_poem_collection(fetch, ['old-id'], b'Legacy collection old-id'), ['/'])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
@@ -25,6 +41,10 @@ class BackupTests(unittest.TestCase):
             self.db.execute(f"CREATE TABLE {table}(object_key TEXT, byte_size INTEGER, content_hash TEXT)")
         self.db.execute("CREATE TABLE poems(id TEXT PRIMARY KEY, content TEXT)")
         self.db.execute("INSERT INTO poems VALUES('poem', 'Vers nou în WAL')")
+        self.db.execute("CREATE TABLE book_page_texts(file_id TEXT, page INTEGER, content TEXT)")
+        self.db.execute("INSERT INTO book_page_texts VALUES('book', 1, 'Transcriere corectată — ș, ț')")
+        self.db.execute("CREATE TABLE content_history(kind TEXT, snapshot TEXT)")
+        self.db.execute("INSERT INTO content_history VALUES('book', '{\"description\":\"Carte ștearsă\"}')")
         self.db.commit()
 
     def tearDown(self):
@@ -36,6 +56,8 @@ class BackupTests(unittest.TestCase):
         backup.snapshot_data(self.data, target)
         with backup.read_db(target / "poetio.sqlite3") as db:
             self.assertEqual(db.execute("SELECT content FROM poems").fetchone()[0], "Vers nou în WAL")
+            self.assertEqual(db.execute("SELECT content FROM book_page_texts").fetchone()[0], "Transcriere corectată — ș, ț")
+            self.assertEqual(json.loads(db.execute("SELECT snapshot FROM content_history WHERE kind='book'").fetchone()[0])["description"], "Carte ștearsă")
 
     def test_missing_or_corrupt_media_rejects_snapshot(self):
         key = "poem-images/72766231-67aa-4db8-9123-77071144a730/" + "a" * 64

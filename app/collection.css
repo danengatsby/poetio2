@@ -1,0 +1,12 @@
+.collection-filters{display:flex;flex-wrap:wrap;gap:1rem;align-items:end;padding:1.5rem 0;border-top:1px solid var(--line)}
+.collection-filters label{display:grid;gap:.5rem;flex:1 1 12rem;min-width:0;font-size:.875rem}
+.collection-filters label:first-of-type{flex-grow:2}
+.collection-filters :is(input,select){width:100%;min-width:0;min-height:2.75rem;padding:.65rem .75rem;border:1px solid var(--line);border-radius:0;background:var(--paper);color:var(--ink);font:inherit}
+.collection-filters :is(input,select):focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.collection-reset{color:var(--blue);text-decoration:underline;padding:.75rem 0}
+.collection-results{font-size:.875rem;color:var(--text-muted);margin:0 0 1.5rem}
+.collection-pagination{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1rem;margin-top:2rem}
+.collection-pagination>span{font-size:.875rem;color:var(--text-muted)}
+.collection .poem-card :is(h3,p,.card-meta,.card-bottom){overflow-wrap:anywhere}
+.collection .poem-card>p{white-space:pre-line}
+@media(max-width:420px){.collection-filters label{flex-basis:100%}.collection-pagination{flex-direction:column;align-items:stretch;text-align:center}.collection-pagination .secondary-button{justify-content:center}}

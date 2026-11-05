@@ -85,6 +85,41 @@
       "when": 1789418610061,
       "tag": "0011_editorial_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1790437279139,
+      "tag": "0012_book_page_texts",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1790446226663,
+      "tag": "0013_book_editorial_recovery",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1790449429589,
+      "tag": "0014_poem_collection_order",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1790612914836,
+      "tag": "0015_translation_provenance",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1790621443506,
+      "tag": "0016_book_text_recovery",
+      "breakpoints": true
     }
   ]
 }

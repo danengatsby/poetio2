@@ -3,13 +3,14 @@ import { MAX_BOOK_BYTES } from '../lib/book-types';
 import { validImageId } from './images';
 import type { Database } from './poems';
 import { audioRange, type AudioBucket, type AudioRange } from './audio';
+import { validateBookUpload, type BookValidator } from './book-validation';
 
 export const validBookFileId = validImageId;
 export type StoredBookFile = {
   id: string; object_key: string; file_name: string; content_type: string;
   byte_size: number; content_hash: string; owner_email: string; created_at: number;
 };
-// Check the PDF signature before storage; the browser renders the document.
+// This is only a format check; checkUpload must also parse and render the PDF.
 export function bookType(bytes: Uint8Array): string {
   if (bytes.length >= 8 && /^%PDF-[12]\.[0-9]/.test(String.fromCharCode(...bytes.subarray(0, 8)))) return 'application/pdf';
   throw new AppError(415, 'Fișierul nu este un PDF valid.');
@@ -44,7 +45,7 @@ export function getBookFile(db: Database, id: string) {
   return db.prepare('SELECT * FROM book_files WHERE id = ?').bind(id).first<StoredBookFile>();
 }
 
-export async function saveBookFile(db: Database, bucket: AudioBucket, request: Request) {
+export async function saveBookFile(db: Database, bucket: AudioBucket, request: Request, validator?: BookValidator) {
   const id = request.headers.get('x-upload-id');
   if (!validBookFileId(id)) throw new AppError(400, 'Identificatorul încărcării este nevalid.');
   const { bytes, contentType } = await readBookBytes(request);
@@ -53,8 +54,11 @@ export async function saveBookFile(db: Database, bucket: AudioBucket, request: R
   const existing = await getBookFile(db, id);
   if (existing) {
     if (existing.owner_email !== owner || existing.content_hash !== hash) throw new AppError(409, 'Această încărcare există deja. Selectează fișierul PDF din nou.');
+    await validateBookUpload(bytes, validator);
     return existing;
   }
+  // Preflight uses temporary storage. Invalid uploads never enter the bucket/DB.
+  await validateBookUpload(bytes, validator);
   let fileName = 'carte.pdf';
   try { fileName = decodeURIComponent(request.headers.get('x-file-name') || fileName); } catch { /* Safe display fallback. */ }
   fileName = fileName.replace(/[\u0000-\u001f\u007f/\\]/g, '').slice(0, 200) || 'carte.pdf';
