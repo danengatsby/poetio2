@@ -1,5 +1,7 @@
 # Schițe și istoric pentru cărți
 
+**Actualizare, 6 noiembrie 2026:** schițele și noile versiuni din istoric păstrează ambele coperți și linkurile de achiziție. Fișierele neîncărcate sunt urmărite separat pentru fiecare copertă. Detalii în [Coperți și achiziție](COPERTI-ACHIZITIE.md).
+
 În `/admin/carti`, modificările titlului, autorului, descrierii și referințelor PDF/copertă se salvează automat în browser. După redeschidere, folosește „Recuperează schițe și versiuni”, previzualizează copia și apasă „Încarcă în editor, fără publicare”. Copiile locale rămân pe dispozitivul respectiv; ștergerea datelor browserului le elimină.
 
 „Salvează schița pe server” păstrează explicit o copie privată, inclusiv o carte incompletă sau fără PDF. O poți recupera din alt browser autentificat. O salvare cu alte date creează o copie nouă, iar reîncercarea aceleiași cereri nu creează duplicate. Lista este paginată; schițele pot fi șterse individual.
