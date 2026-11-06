@@ -15,6 +15,7 @@ import { imageDecoder } from '../server/image-decoder.mjs';
 import { openBookRenderer } from '../server/book-renderer.mjs';
 import { openBookBucket } from '../server/vps-storage.mjs';
 import { bookFixture, finishedBookValidation } from './book-fixture.mjs';
+import { migrateBookCovers } from '../scripts/migrate-book-covers-vps.mjs';
 
 const output = mkdtempSync(join(tmpdir(), 'stillword-tests-'));
 writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
@@ -73,6 +74,61 @@ function database() {
 }
 const id = '72766231-67aa-4db8-9123-77071144a730';
 const input = { title: 'Întoarcere', author: 'Autor de test', theme: 'Amintiri', content: '  Întâiul vers\nAl doilea vers\n\nO nouă strofă — ș, ț, ă, î, â.\n' };
+
+test('two book covers keep independent purchase links, private drafts and history, and withdraw both public images', async () => {
+  const db = database(), fileId = crypto.randomUUID(), bookId = crypto.randomUUID(), first = crypto.randomUUID(), second = crypto.randomUUID();
+  try {
+    await db.prepare('INSERT INTO book_files VALUES(?,?,?,?,?,?,?,?)').bind(fileId,'fixture','book.pdf','application/pdf',1,'hash','pensio53@gmail.com',1).run();
+    for (const id of [first, second]) await db.prepare('INSERT INTO poem_images VALUES(?,?,?,?,?,?,?,?)').bind(id,'fixture-'+id,'cover.png','image/png',1,'hash-'+id,'pensio53@gmail.com',1).run();
+    const bucket = { get: async () => ({ size: 1, body: new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array([1])); controller.close(); } }) }) };
+    const imageRequest = new Request('https://poetio.cloud/api/images/'+second);
+    assert.equal((await serveImage(db,bucket,undefined,imageRequest,second)).status,404);
+    const entry = { title:'Două ediții',author:'Autor',description:'Carte cu două coperți',file_id:fileId,image_id:first,image_2_id:second,purchase_url_1:'https://example.com/edition-1?source=poetio',purchase_url_2:'https://example.org/edition-2' };
+    let saved = await books.createBook(db,bookId,entry,readyBookValidator);
+    assert.equal(saved.purchase_url_1,entry.purchase_url_1); assert.equal(saved.image_2_id,second);
+    await books.createBook(db,bookId,entry,readyBookValidator);
+    assert.equal((await db.prepare("SELECT COUNT(*) n FROM content_history WHERE kind='book'").first()).n,1);
+    const visible = await serveImage(db,bucket,undefined,imageRequest,second);
+    assert.equal(visible.status,200); const etag = visible.headers.get('etag'); await visible.arrayBuffer();
+    // Older clients changing metadata cannot silently erase the new fields.
+    saved = await books.updateBook(db,bookId,1,{title:'Titlu nou',author:entry.author,description:entry.description,file_id:fileId,image_id:first},readyBookValidator);
+    assert.equal(saved.image_2_id,second); assert.equal(saved.purchase_url_2,entry.purchase_url_2);
+    const changed = {...entry,title:saved.title,purchase_url_2:'https://example.org/edition-2/new'};
+    saved = await books.updateBook(db,bookId,2,changed,readyBookValidator);
+    await assert.rejects(books.updateBook(db,bookId,2,entry,readyBookValidator),{status:409});
+    const draftId=crypto.randomUUID();
+    await editorial.saveDraft(db,'book',draftId,{...saved,isNew:false,pendingCover2:true});
+    const draft=(await editorial.recoveryItem(db,'book','drafts',draftId)).snapshot;
+    assert.equal(draft.purchase_url_1,entry.purchase_url_1);assert.equal(draft.purchase_url_2,changed.purchase_url_2);assert.equal(draft.image_2_id,second);assert.equal(draft.pendingCover2,true);assert.equal(draft.pendingFiles,true);
+    for (const url of ['javascript:alert(1)','data:text/html,unsafe','file:///etc/passwd','//example.com/path','https://name:password@example.com','https://example.com/\nunsafe','https://example.com/'+'x'.repeat(2048)]) {
+      assert.throws(()=>books.validateBook({...entry,purchase_url_2:url}),{status:400},url);
+    }
+    await books.deleteBook(db,bookId,3);
+    const history=(await db.prepare("SELECT id,snapshot FROM content_history WHERE kind='book' ORDER BY id DESC LIMIT 1").first());
+    const snapshot=JSON.parse(history.snapshot); assert.equal(snapshot.image_id,first);assert.equal(snapshot.image_2_id,second);assert.equal(snapshot.purchase_url_2,changed.purchase_url_2);
+    assert.equal((await editorial.recoveryItem(db,'book','history',String(history.id))).snapshot.isNew,true);
+    const cached = new Request(imageRequest.url,{headers:{'If-None-Match':etag}});
+    assert.equal((await serveImage(db,bucket,undefined,cached,second)).status,404);
+    assert.equal((await serveImage(db,bucket,undefined,new Request('https://poetio.cloud/api/images/'+first),first)).status,404);
+  } finally { db.close(); }
+});
+
+test('book cover migration preserves legacy books and history, repeats safely and detects partial schemas', () => {
+  const directory=mkdtempSync(join(tmpdir(),'poetio-cover-migration-')),file=join(directory,'db.sqlite3');
+  let db=new DatabaseSync(file);
+  try {
+    for(const name of readdirSync(new URL('../drizzle/',import.meta.url)).filter(name=>name.endsWith('.sql')&&name<'0019').sort())db.exec(readFileSync(new URL('../drizzle/'+name,import.meta.url),'utf8'));
+    db.exec("INSERT INTO book_files VALUES('pdf','fixture','book.pdf','application/pdf',1,'hash','pensio53@gmail.com',1); INSERT INTO books(id,title,author,description,file_id,revision,created_at,updated_at) VALUES('book','Titlu','Autor','Text','pdf',8,1,2)");
+    const before=db.prepare('SELECT * FROM books').get(),history=db.prepare('SELECT * FROM content_history').all();db.close();
+    assert.equal(migrateBookCovers(file),true);assert.equal(migrateBookCovers(file),false);
+    db=new DatabaseSync(file);const after=db.prepare('SELECT * FROM books').get();
+    assert.deepEqual(Object.fromEntries(Object.keys(before).map(key=>[key,after[key]])),{...before});
+    assert.equal(after.image_2_id,null);assert.equal(after.purchase_url_1,null);assert.equal(after.purchase_url_2,null);
+    assert.deepEqual(db.prepare('SELECT * FROM content_history').all(),history);
+    db.exec('DROP TRIGGER history_book_delete');db.close();db=null;
+    assert.throws(()=>migrateBookCovers(file),/Partial or unexpected/);
+  } finally { db?.close();rmSync(directory,{recursive:true,force:true}); }
+});
 
 test('book text corrections preserve Unicode, detect stale edits, and override regenerated text', async () => {
   const db = database();

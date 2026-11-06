@@ -3,6 +3,7 @@ import { validImageId } from './images';
 import { validateId, validateRevision, type Database } from './poems';
 import type { ContentKind, EditorSnapshot } from '../lib/editorial';
 import { parseTranslationProvenance } from '../lib/translation-provenance';
+import { MAX_PURCHASE_URL } from '../lib/book-types';
 export function contentKind(value: unknown): asserts value is ContentKind {
   if (value !== 'poem' && value !== 'video' && value !== 'book') throw new AppError(400, 'Categoria este nevalidă.');
 }
@@ -17,7 +18,7 @@ export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot
     if (data[key] !== undefined && data[key] !== null && (typeof data[key] !== 'string' || data[key].length > limit)) throw new AppError(400, 'Un câmp al schiței depășește limita sau este nevalid.');
     result[key] = data[key] ?? '';
   }
-  for (const field of kind === 'poem' ? ['image_id','audio_ro_id','audio_en_id'] : kind === 'book' ? ['file_id','image_id'] : ['file_id']) {
+  for (const field of kind === 'poem' ? ['image_id','audio_ro_id','audio_en_id'] : kind === 'book' ? ['file_id','image_id','image_2_id'] : ['file_id']) {
     if (data[field] && !validImageId(data[field])) throw new AppError(400, 'Fișierul schiței este nevalid.');
     result[field] = data[field] || (field === 'file_id' ? '' : null);
   }
@@ -29,9 +30,14 @@ export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot
   }
   result.pendingFiles = data.pendingFiles === true;
   if (kind === 'book') {
+    for (const field of ['purchase_url_1', 'purchase_url_2']) {
+      if (data[field] != null && (typeof data[field] !== 'string' || data[field].length > MAX_PURCHASE_URL)) throw new AppError(400, 'Linkul de achiziție al schiței este nevalid sau prea lung.');
+      result[field] = data[field] ?? '';
+    }
     result.pendingBookFile = data.pendingBookFile === true;
     result.pendingCover = data.pendingCover === true;
-    result.pendingFiles = result.pendingFiles || result.pendingBookFile || result.pendingCover;
+    result.pendingCover2 = data.pendingCover2 === true;
+    result.pendingFiles = result.pendingFiles || result.pendingBookFile || result.pendingCover || result.pendingCover2;
   }
   return result;
 }

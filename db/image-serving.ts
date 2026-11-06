@@ -15,7 +15,7 @@ export async function serveImage(db: Database, bucket: ImageBucket, renderer: Im
   if (!image) return missing();
   const owner = isOwnerEmail(request.headers.get('oai-authenticated-user-email'));
   // Re-check attachment before any 304 or derivative response, including cache hits.
-  if (!owner && !await db.prepare('SELECT id FROM poems WHERE image_id = ? LIMIT 1').bind(id).first() && !await db.prepare('SELECT id FROM books WHERE image_id = ? LIMIT 1').bind(id).first()) return missing();
+  if (!owner && !await db.prepare('SELECT id FROM poems WHERE image_id = ? LIMIT 1').bind(id).first() && !await db.prepare('SELECT id FROM books WHERE image_id = ? OR image_2_id = ? LIMIT 1').bind(id, id).first()) return missing();
   const optimized = width !== null && renderer;
   const etag = `"${image.content_hash}${optimized ? `-webp-v1-${width}` : ''}"`;
   const headers = new Headers({ 'Content-Type': optimized ? 'image/webp' : image.content_type,
