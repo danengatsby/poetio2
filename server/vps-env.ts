@@ -6,6 +6,7 @@ import { openImageRenderer } from './image-renderer.mjs';
 import { imageDecoder } from './image-decoder.mjs';
 import { openBookRenderer } from './book-renderer.mjs';
 import { openMediaValidator } from './media-validator.mjs';
+import { openVideoPoster } from './video-poster.mjs';
 import { join } from 'node:path';
 import { openDatabase, openImageBucket, openAudioBucket, openVideoBucket, openBookBucket } from './vps-storage.mjs';
 
@@ -19,6 +20,7 @@ let videoBucket: ReturnType<typeof openVideoBucket> | undefined;
 let bookBucket: ReturnType<typeof openBookBucket> | undefined;
 let bookRenderer: ReturnType<typeof openBookRenderer> | undefined;
 let mediaValidator: ReturnType<typeof openMediaValidator> | undefined;
+let videoPoster: ReturnType<typeof openVideoPoster> | undefined;
 let bookSearch: ReturnType<typeof createBookSearch> | undefined;
 const dataDirectory = () => process.env.POETIO_DATA_DIR || '/var/lib/poetio';
 
@@ -29,6 +31,7 @@ export const env = {
   ADMIN_AUTH_MODE: 'basic',
   IMAGE_DECODER: imageDecoder,
   get MEDIA_VALIDATOR() { return mediaValidator ??= getOperations().observe('media', openMediaValidator(dataDirectory())); },
+  get VIDEO_POSTER() { return videoPoster ??= getOperations().observe('media', openVideoPoster(dataDirectory())); },
   get IMAGE_RENDERER() { return imageRenderer ??= getOperations().observe('image', openImageRenderer(dataDirectory())); },
   get DB() { return database ??= openDatabase(join(dataDirectory(), 'poetio.sqlite3')); },
   get BUCKET() { return bucket ??= openImageBucket(join(dataDirectory(), 'images')); },

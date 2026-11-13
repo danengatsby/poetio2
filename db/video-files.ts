@@ -2,7 +2,7 @@ import { AppError, isOwnerEmail } from '../lib/access';
 import { MAX_VIDEO_BYTES } from '../lib/video-types';
 import { validImageId } from './images';
 import type { Database } from './poems';
-import { audioRange, type AudioBucket, type AudioRange } from './audio';
+import { audioRange, etagMatches, type AudioBucket, type AudioRange } from './audio';
 import { requireReadyMedia, validateMediaUpload, type MediaValidator } from './media-validation';
 
 export const validVideoFileId = validImageId;
@@ -79,7 +79,9 @@ export async function serveVideoFile(db: Database, bucket: AudioBucket, request:
   if (!video) return missing();
   const owner = isOwnerEmail(request.headers.get('oai-authenticated-user-email'));
   if (!owner && !await db.prepare('SELECT id FROM videos WHERE file_id = ? LIMIT 1').bind(id).first()) return missing();
-  const headers = new Headers({ 'Content-Type': video.content_type, 'Accept-Ranges': 'bytes', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', ETag: `"${video.content_hash}"` });
+  const etag = `"${video.content_hash}"`;
+  const headers = new Headers({ 'Content-Type': video.content_type, 'Accept-Ranges': 'bytes', 'Cache-Control': owner ? 'private, no-store' : 'private, no-cache', 'X-Content-Type-Options': 'nosniff', ETag: etag });
+  if (etagMatches(request, etag)) return new Response(null, { status: 304, headers });
   let range: AudioRange | null = null;
   // HEAD describes the entire representation; If-Range only permits a partial
   // response for this exact immutable recording.

@@ -109,6 +109,12 @@ export function audioRange(header: string | null, size: number): AudioRange | nu
   return { offset, length: last - offset + 1 };
 }
 
+// Browsers may keep a public file but must ask before reusing it, so a
+// withdrawn recording or film stops playing from cache as well.
+export function etagMatches(request: Request, etag: string) {
+  return Boolean(request.headers.get('if-none-match')?.split(',').some(value => value.trim() === '*' || value.trim().replace(/^W\//, '') === etag));
+}
+
 export async function serveAudio(db: Database, bucket: AudioBucket, request: Request, id: string) {
   const missing = () => new Response(null, { status: 404, headers: { 'Cache-Control': 'private, no-store' } });
   if (!validAudioId(id)) return missing();
@@ -116,7 +122,9 @@ export async function serveAudio(db: Database, bucket: AudioBucket, request: Req
   if (!audio) return missing();
   const owner = isOwnerEmail(request.headers.get('oai-authenticated-user-email'));
   if (!owner && !await db.prepare('SELECT id FROM poems WHERE audio_ro_id = ? OR audio_en_id = ? LIMIT 1').bind(id, id).first()) return missing();
-  const headers = new Headers({ 'Content-Type': audio.content_type, 'Accept-Ranges': 'bytes', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', ETag: `"${audio.content_hash}"` });
+  const etag = `"${audio.content_hash}"`;
+  const headers = new Headers({ 'Content-Type': audio.content_type, 'Accept-Ranges': 'bytes', 'Cache-Control': owner ? 'private, no-store' : 'private, no-cache', 'X-Content-Type-Options': 'nosniff', ETag: etag });
+  if (etagMatches(request, etag)) return new Response(null, { status: 304, headers });
   let range: AudioRange | null = null;
   // HEAD describes the entire representation; If-Range only permits a partial
   // response for this exact immutable recording.

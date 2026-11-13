@@ -6,7 +6,7 @@ import SiteLogo from '../site-logo';
 import { useCallback, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import type { VideoWithCommentCount } from '@/lib/video-types';
+import { videoPosterPath, type VideoWithCommentCount } from '@/lib/video-types';
 import type { PoemLanguage } from '@/lib/poem-types';
 import { rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
 import SiteHeader from '../site-header';
@@ -64,7 +64,7 @@ export default function VideoGallery({ videos, initialLanguage, canAdmin, failed
         {current && <>
           <div className="reader-top"><span className="reader-brand">Poetio<span aria-hidden="true">✳</span></span><DialogClose className="reader-close" aria-label={ro ? 'Închide videoul' : 'Close video'}>×</DialogClose></div>
           <article className="video-article"><DialogTitle ref={title} tabIndex={-1} className="reader-title">{current.title}</DialogTitle>{current.author && <p className="reader-author">{current.author}</p>}
-            <VideoPlayer key={`${current.id}:${current.file_id}`} src={`/api/video-files/${current.file_id}`} title={current.title} language={language} />
+            <VideoPlayer key={`${current.id}:${current.file_id}`} src={`/api/video-files/${current.file_id}`} poster={videoPosterPath(current.file_id)} title={current.title} language={language} />
             <DialogDescription className="video-description">{current.description || (ro ? 'Video din colecția Poetio.' : 'A video from the Poetio collection.')}</DialogDescription>
           </article>
           <a className="content-page-link" href={withSiteLanguage(contentPath('video',current.id),language)}>{ro?'Deschide pagina videoului ↗':'Open video page ↗'}</a>

@@ -1,0 +1,11 @@
+[Unit]
+Description=Check every ten minutes for Poetio comments awaiting moderation
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=10min
+AccuracySec=1min
+Unit=poetio-notify.service
+
+[Install]
+WantedBy=timers.target

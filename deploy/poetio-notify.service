@@ -1,0 +1,21 @@
+[Unit]
+Description=Poetio email notice for comments awaiting moderation
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=poetio
+Group=poetio
+# Optional. Without SMTP settings the notice exits without reading anything.
+EnvironmentFile=-/etc/poetio/notify.env
+ExecStart=/usr/bin/python3 /usr/local/sbin/poetio-notify-comments
+StateDirectory=poetio-notify
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SyslogIdentifier=poetio-notify

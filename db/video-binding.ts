@@ -7,3 +7,8 @@ export function getVideoBucket(): AudioBucket {
   if (!bucket) throw new Error('Video storage unavailable');
   return bucket;
 }
+
+// Still frames need a local renderer; only the Node runtime provides one.
+export function hasVideoPosters() {
+  return Boolean((env as unknown as { VIDEO_POSTER?: unknown }).VIDEO_POSTER);
+}
