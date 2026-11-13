@@ -71,6 +71,8 @@
   "overrides": {
     "@esbuild-kit/core-utils": {
       "esbuild": "0.25.12"
-    }
+    },
+    "@vercel/og": "1.0.3",
+    "fflate": "0.7.5"
   }
 }
