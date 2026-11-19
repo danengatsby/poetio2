@@ -16,8 +16,26 @@ export async function fetchBookText(fileId: string, page: number, signal: AbortS
   return response.json();
 }
 
+/** Return UTF-16 offsets into the displayed page, including when folding changes its length. */
 export function textMatch(text: string, query: string) {
-  return foldSearch(text.normalize('NFC')).indexOf(foldSearch(query.normalize('NFC')));
+  const needle = foldSearch(query.normalize('NFC'));
+  if (!needle) return null;
+  const normalized = text.normalize('NFC');
+  const folded = foldSearch(normalized);
+  const start = folded.indexOf(needle);
+  if (start < 0) return null;
+  const end = start + needle.length;
+  if (text === normalized && text.length === folded.length) return { start, end };
+
+  let offset = 0;
+  let originalStart = 0;
+  for (const { segment, index } of new Intl.Segmenter().segment(text)) {
+    const next = offset + foldSearch(segment.normalize('NFC')).length;
+    if (offset <= start && start < next) originalStart = index;
+    if (next >= end) return { start: originalStart, end: index + segment.length };
+    offset = next;
+  }
+  return null;
 }
 
 export type BookSearchResult = {

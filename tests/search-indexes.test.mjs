@@ -20,6 +20,7 @@ for (const folder of ['db', 'lib']) {
 }
 process.on('exit', () => rmSync(compiled, { recursive: true, force: true }));
 const require = createRequire(import.meta.url);
+const { textMatch } = require(join(compiled, 'lib/book-text.js'));
 const { createBookSearch } = require(join(compiled, 'db/book-search.js'));
 const { listPoemCards } = require(join(compiled, 'db/poem-collection.js'));
 const { listAdminPoems } = require(join(compiled, 'db/poem-admin-list.js'));
@@ -81,6 +82,30 @@ test('indexed poem searches preserve literal substring, diacritic, short-query a
   sqlite.prepare('DELETE FROM poems WHERE id=?').run(other);
   assert.equal((await listPoemCards(db, { q: 'proaspata' })).total, 0);
   assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM poem_search').get().n, 1);
+});
+
+test('pasted Romanian search terms match composed terms in poems, themes and the editor', async t => {
+  const { sqlite, path } = fixture(t), db = openDatabase(path); t.after(() => db.close());
+  const id = poem(sqlite, 'În labirintul amintirilor');
+  for (const q of ['În labirintul', 'În labirintul'.normalize('NFD'), 'In labirintul']) {
+    assert.deepEqual((await listPoemCards(db, { q, theme: 'Lumină'.normalize('NFD') })).poems.map(p => p.id), [id]);
+    assert.deepEqual((await listAdminPoems(db, { q })).poems.map(p => p.id), [id]);
+  }
+});
+
+test('book matches address the original text after composition and case expansion', () => {
+  for (const [text, query, expected] of [
+    ['Șară', 'Șa'.normalize('NFD'), 'Șa'],
+    ['Șară'.normalize('NFD'), 'sa', 'Șa'.normalize('NFD')],
+    ['Café bun'.normalize('NFD'), 'bun', 'bun'],
+    ['İarna vine', 'vine', 'vine'],
+    ['🌙 ȘȚ', 'st', 'ȘȚ'],
+  ]) {
+    const range = textMatch(text, query);
+    assert.ok(range);
+    assert.equal(text.slice(range.start, range.end), expected);
+  }
+  assert.equal(textMatch('Pagină', 'absent'), null);
 });
 
 test('book searches paginate reusable text, survive service recreation and expose current corrections immediately', async t => {

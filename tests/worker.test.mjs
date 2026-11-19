@@ -101,7 +101,7 @@ test('built Worker protects administration and persists API changes into the ren
     assert.equal(admin.headers.get('cache-control'), 'private, no-store');
     assert.match(adminHtml, /Imaginea poemului/);
     assert.match(adminHtml, /Limba textului original/);
-    assert.match(adminHtml, /O marți obișnuită/);
+    assert.match(adminHtml, /An ordinary Tuesday/);
     assert.match(adminHtml, /Textul traducerii/);
     assert.doesNotMatch(adminHtml, /test-worker-key/);
     assert.match(adminHtml, /Înregistrările poemului/);
@@ -109,13 +109,16 @@ test('built Worker protects administration and persists API changes into the ren
       assert.equal((await mf.dispatchFetch(base + path)).status, 401);
       assert.equal((await mf.dispatchFetch(base + path, { headers: { 'oai-authenticated-user-email': 'outsider@example.test' } })).status, 403);
     }
-    const pageResponse = await mf.dispatchFetch(base + '/api/admin/poems?q=blue', { headers: owner });
+    const pageResponse = await mf.dispatchFetch(base + '/api/admin/poems?q=ordinary%20Tuesday', { headers: owner });
     assert.equal(pageResponse.status, 200); assert.equal(pageResponse.headers.get('Cache-Control'), 'private, no-store');
     const page = await pageResponse.json(); assert(page.poems.length > 0 && page.poems.length <= 20);
     assert(!('content' in page.poems[0]) && !('translated_content' in page.poems[0]));
     const selected = await mf.dispatchFetch(base + '/api/poems/' + page.poems[0].id, { headers: owner });
     assert.equal(selected.status, 200); assert.equal(selected.headers.get('Cache-Control'), 'private, no-store');
-    assert((await selected.json()).poem.content.length > 0);
+    const selectedPoem = (await selected.json()).poem;
+    assert.equal(selectedPoem.title, 'An ordinary Tuesday');
+    assert.equal(selectedPoem.translated_title, 'O marți obișnuită');
+    assert.ok(selectedPoem.content && selectedPoem.translated_content);
     assert.equal((await mf.dispatchFetch(base + '/api/poems/00000000-0000-4000-8000-000000000000', { headers: owner })).status, 404);
     const audioId = 'bf1a4071-8aa4-4e52-8bf2-690d49d72683';
     const audioBytes = wavFixture();

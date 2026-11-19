@@ -1,6 +1,6 @@
 'use client';
 /* eslint-disable @next/next/no-html-link-for-pages -- Use document navigation with the existing administration. */
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { MAX_VIDEO_BYTES, VIDEO_ACCEPT, videoFileType, type Video } from '@/lib/video-types';
 import RecoveryTools from '../recovery-tools';
 import type { EditorSnapshot } from '@/lib/editorial';
@@ -34,11 +34,15 @@ export default function VideoAdmin({ initialVideos, initialError, signInHref }: 
   const [success, setSuccess] = useState('');
   const [authRequired, setAuthRequired] = useState(false);
   const upload = useRef<XMLHttpRequest | null>(null);
-  const uploadedId = useRef<string | null>(null);
+  const [uploadedId, setUploadedId] = useState<string | null>(null);
+  const [missingFile, setMissingFile] = useState(false);
   const locked = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const title = useRef<HTMLInputElement>(null);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(baseline) || selected !== null;
+  const dirty = JSON.stringify(draft) !== JSON.stringify(baseline) || selected !== null || missingFile;
+  const needsFile = missingFile && !selected;
+  const recoveryDraft = useMemo(() => draft && selected && uploadedId
+    ? { ...draft, file_id: uploadedId } : draft, [draft, selected, uploadedId]);
   useEffect(() => () => { if (selected) URL.revokeObjectURL(selected.url); }, [selected]);
   useEffect(() => () => upload.current?.abort(), []);
   useEffect(() => {
@@ -49,7 +53,7 @@ export default function VideoAdmin({ initialVideos, initialError, signInHref }: 
   }, [dirty, busy]);
   function report(error: unknown) { setError(error instanceof Error ? error.message : 'Operația nu a reușit. Reîncearcă.'); setAuthRequired(error instanceof RequestError && error.status === 401); }
   function replace(value: Draft | null) {
-    setDraft(value); setBaseline(value); setSelected(null); uploadedId.current = null;
+    setDraft(value); setBaseline(value); setSelected(null); setUploadedId(null); setMissingFile(false);
     setError(''); setSuccess(''); setAuthRequired(false); setProgress(null);
     if (input.current) input.current.value = '';
     requestAnimationFrame(() => title.current?.focus());
@@ -65,7 +69,7 @@ export default function VideoAdmin({ initialVideos, initialError, signInHref }: 
     if (!videoFileType(file)) { setError('Alege un fișier MP4 sau WebM.'); return; }
     if (!file.size || file.size > MAX_VIDEO_BYTES) { setError('Alege un fișier video de maximum 100 MB, care nu este gol.'); return; }
     setSelected({ file, id: crypto.randomUUID(), url: URL.createObjectURL(file) });
-    uploadedId.current = null;
+    setUploadedId(null);
     if (input.current) input.current.value = '';
   }
   function uploadFile(file: Selected): Promise<string> {
@@ -91,13 +95,17 @@ export default function VideoAdmin({ initialVideos, initialError, signInHref }: 
   async function save(event: FormEvent) {
     event.preventDefault();
     if (!draft || locked.current) return;
-    if (!selected && !draft.file_id) { setError('Alege un fișier video.'); return; }
+    if (needsFile || (!selected && !draft.file_id)) { setError('Alege un fișier video.'); return; }
     locked.current = true; setBusy(true); setError(''); setSuccess(''); setAuthRequired(false);
     try {
       let fileId = draft.file_id;
       if (selected) {
-        if (uploadedId.current !== selected.id) { setProgress(0); uploadedId.current = await uploadFile(selected); }
-        fileId = uploadedId.current!;
+        if (uploadedId) fileId = uploadedId;
+        else {
+          setProgress(0);
+          fileId = await uploadFile(selected);
+          setUploadedId(fileId);
+        }
       }
       setProgress(null);
       const data = await request(draft.isNew ? '/api/videos' : `/api/videos/${draft.id}`, { method: draft.isNew ? 'POST' : 'PUT', body: JSON.stringify({ ...draft, file_id: fileId }) });
@@ -129,7 +137,13 @@ export default function VideoAdmin({ initialVideos, initialError, signInHref }: 
       <div className="admin-heading"><div><p className="eyebrow">Colecția ta în imagini</p><h1>Videourile tale<span className="count">({videos.length})</span></h1><p>Adaugă un video sau alege unul din colecție pentru a-l modifica.</p></div><button className="primary-button" disabled={busy || !available} onClick={() => guard(() => replace(blank()))}>＋ Adaugă video</button></div>
       {error && <div className="admin-error" role="alert"><p>{error}</p>{authRequired && <a href={signInHref} target="_blank" rel="noopener noreferrer">Autentifică-te într-o filă nouă, apoi reîncearcă</a>}</div>}
       {success && <p className="admin-success" role="status">{success}</p>}
-      <RecoveryTools kind="video" draft={draft as EditorSnapshot | null} dirty={dirty} pendingFiles={selected !== null} disabled={busy} onRecover={snapshot => guard(() => { const current = videos.find(item => item.id === snapshot.id); replace({ ...blank(), ...snapshot } as Draft); setBaseline(current ? fromVideo(current) : null); })} />
+      <RecoveryTools kind="video" draft={recoveryDraft as EditorSnapshot | null} dirty={dirty} pendingFiles={selected ? !uploadedId : missingFile} disabled={busy} onRecover={snapshot => guard(() => {
+        const current = videos.find(item => item.id === snapshot.id);
+        const { pendingFiles, ...fields } = snapshot;
+        replace({ ...blank(), ...fields } as Draft);
+        setMissingFile(pendingFiles === true);
+        setBaseline(current ? fromVideo(current) : null);
+      })} />
       <div className="admin-workspace">
         <aside className="poem-list" aria-label="Videouri salvate"><div className="poem-list-heading"><h2>Videouri</h2><button className="secondary-button" disabled={busy} onClick={() => guard(() => { void refresh(); })}>Reîncarcă</button></div><ul>{videos.map(video => <li key={video.id}><button className={draft?.id === video.id ? 'selected' : undefined} aria-current={draft?.id === video.id ? 'true' : undefined} disabled={busy} onClick={() => guard(() => replace(fromVideo(video)))}><span className="list-title">{video.title}</span><span className="list-author">{video.author || 'Video'}</span></button></li>)}</ul>{!videos.length && <p className="list-empty">{available ? 'Nu ai adăugat încă videouri.' : 'Lista nu este disponibilă.'}</p>}</aside>
         <section className="editor-panel" aria-label="Editor video">{draft ? <form onSubmit={save}>
@@ -140,14 +154,18 @@ export default function VideoAdmin({ initialVideos, initialError, signInHref }: 
             <label>Descriere <span className="optional-label">(opțional)</span><textarea rows={5} maxLength={5000} value={draft.description} onChange={event => { setDraft({ ...draft, description: event.target.value }); setSuccess(''); }} /></label>
             <label>Fișier video<input ref={input} type="file" accept={VIDEO_ACCEPT} onChange={event => choose(event.target.files?.[0])} aria-describedby="video-upload-help" /></label>
             <p id="video-upload-help" className="video-file-help">MP4 H.264/AAC sau WebM VP8/VP9 cu Opus/Vorbis, maximum 100 MB, 30 de minute și 4K la 60 fps. Fișierul se încarcă și este verificat integral la salvare.</p>
-            {selected && <><p className="video-file-name">{selected.file.name} · {(selected.file.size / 1024 / 1024).toFixed(1)} MB</p><button type="button" className="secondary-button" onClick={() => { setSelected(null); uploadedId.current = null; }}>Renunță la fișierul ales</button></>}
+            {needsFile && <div role="status">
+              <p>Fișierul ales pentru această schiță trebuie selectat din nou înainte de salvare.</p>
+              {draft.file_id && <button type="button" className="secondary-button" onClick={() => setMissingFile(false)}>Folosește fișierul deja asociat schiței</button>}
+            </div>}
+            {selected && <><p className="video-file-name">{selected.file.name} · {(selected.file.size / 1024 / 1024).toFixed(1)} MB</p><button type="button" className="secondary-button" onClick={() => { setSelected(null); setUploadedId(null); }}>Renunță la fișierul ales</button></>}
           </fieldset>
           {progress !== null && <div role="status"><p>{progress === 100 ? 'Se verifică integral imaginea și sunetul…' : `Se încarcă: ${progress}%`}</p><progress value={progress} max={100} aria-label="Progresul încărcării" /><button type="button" className="secondary-button" onClick={() => upload.current?.abort()}>Anulează încărcarea</button></div>}
-          <div className="editor-actions"><button className="primary-button" type="submit" disabled={busy || !available}>{busy ? 'Se salvează…' : 'Salvează video'}</button><button className="secondary-button" type="button" disabled={busy || !dirty} onClick={() => guard(() => replace(baseline))}>Renunță la modificări</button></div>
+          <div className="editor-actions"><button className="primary-button" type="submit" disabled={busy || !available || needsFile}>{busy ? 'Se salvează…' : 'Salvează video'}</button><button className="secondary-button" type="button" disabled={busy || !dirty} onClick={() => guard(() => replace(baseline))}>Renunță la modificări</button></div>
           {!draft.isNew && <div className="delete-area"><button type="button" className="delete-button" disabled={busy} onClick={() => { void remove(); }}>Șterge video</button></div>}
         </form> : <div className="editor-empty"><span aria-hidden="true">▷</span><h2>Adaugă primul tău video</h2><p>Alege un fișier de pe calculator și completează titlul.</p><button className="primary-button" disabled={busy || !available} onClick={() => replace(blank())}>Adaugă video</button></div>}
           {draft && <ReaderPreview disabled={busy} note={<p>Fișierul selectat se redă local și se încarcă pe server numai la salvare. Pornește redarea și verifică sunetul; RO/EN schimbă comenzile, nu traduce conținutul videoului.</p>}>
-            {language => <VideoReading video={draft} src={selected?.url || (draft.file_id ? `/api/video-files/${draft.file_id}` : undefined)} language={language} mediaStatus />}
+            {language => <VideoReading video={draft} src={selected?.url || (!needsFile && draft.file_id ? `/api/video-files/${draft.file_id}` : undefined)} language={language} mediaStatus />}
           </ReaderPreview>}
         </section>
       </div>

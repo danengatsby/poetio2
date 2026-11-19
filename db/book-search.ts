@@ -70,7 +70,9 @@ export function createBookSearch(db: Database, renderer: TextRenderer) {
     const unavailable = (await db.prepare("SELECT COUNT(*) AS n FROM book_search_pages WHERE file_id = ? AND source = 'missing'").bind(file.id).first<{ n: number }>())!.n;
     return { ...progress, unavailable, total, offset, hasMore: offset + results.length < total,
       results: results.map(row => {
-        const index = textMatch(row.content, query), start = Math.max(0, index - 60), end = Math.min(row.content.length, index + query.length + 100);
+        const match = textMatch(row.content, query);
+        const start = Math.max(0, (match?.start ?? 0) - 60);
+        const end = Math.min(row.content.length, (match?.end ?? 0) + 100);
         return { page: row.page, excerpt: `${start ? '…' : ''}${row.content.slice(start, end)}${end < row.content.length ? '…' : ''}` };
       }) };
   }

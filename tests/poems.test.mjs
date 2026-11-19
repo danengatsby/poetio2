@@ -1178,7 +1178,9 @@ test('collection bounds Unicode excerpts, input lengths and URL parameters', asy
     const url = new URL(href, 'https://example.test');
     assert.equal(url.searchParams.get('q'), '<script>&Ș'); assert.equal(url.searchParams.get('page'), '2');
     assert.equal(url.hash, '#collection');
-    assert.equal(collectionReturnHref(href, 'ro'), href);
+    assert.equal(collectionReturnHref(href, 'en-US'), href);
+    url.searchParams.set('lang', 'ro');
+    assert.equal(collectionReturnHref(href, 'ro'), url.pathname + url.search + url.hash);
     for (const invalid of ['https://elsewhere.test/', '//elsewhere.test/', 'javascript:alert(1)', '/admin']) assert.equal(collectionReturnHref(invalid, 'ro'), '/?lang=ro#collection');
     assert.deepEqual(await listPoemCards(db, { page: '2' }), await listPoemCards(db), 'Last page remains reachable after the collection shrinks');
   } finally { db.close(); }

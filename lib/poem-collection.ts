@@ -17,8 +17,8 @@ export function collectionQuery(params: CollectionParams, fallback: PoemLanguage
   const language = value('lang');
   const translation = value('translation');
   const filters: CollectionFilters = {
-    q: Array.from(value('q').trim()).slice(0, 120).join(''),
-    theme: Array.from(value('theme').trim()).slice(0, 80).join(''),
+    q: Array.from(value('q').trim().normalize('NFC')).slice(0, 120).join(''),
+    theme: Array.from(value('theme').trim().normalize('NFC')).slice(0, 80).join(''),
     translation: translation === 'with' || translation === 'without' ? translation : 'all',
     language: siteLanguage(language, fallback),
   };
@@ -41,7 +41,7 @@ export function collectionReturnHref(value: string | undefined, language: PoemLa
     const url = new URL(value, 'https://collection.invalid');
     if (!value.startsWith('/') || url.origin !== 'https://collection.invalid' || url.pathname !== '/') return fallback;
     const query = collectionQuery(Object.fromEntries(url.searchParams), language);
-    return collectionHref(query.filters, query.page);
+    return collectionHref({ ...query.filters, language }, query.page);
   } catch { return fallback; }
 }
 

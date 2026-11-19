@@ -12,7 +12,7 @@ export default function BookTextView({ previewText, fileId, page, ro, size, onSi
   const focusPage = useRef(false);
   useEffect(() => () => controller.current?.abort(), []);
   async function search(term: string, offset = 0, retry = false) {
-    term = term.trim();
+    term = term.trim().normalize('NFC');
     if (term.length < 2) return;
     controller.current?.abort();
     const abort = new AbortController(); controller.current = abort;
@@ -20,9 +20,9 @@ export default function BookTextView({ previewText, fileId, page, ro, size, onSi
     try {
       // An unsaved editor preview searches only its own page and stays private.
       if (previewText) {
-        const index = textMatch(previewText.text, term);
-        setResult({ status: 'ready', pages: 1, scanned: 1, unavailable: 0, total: index >= 0 ? 1 : 0, offset: 0, hasMore: false,
-          results: index >= 0 ? [{ page: previewText.page, excerpt: previewText.text.slice(Math.max(0, index - 60), index + term.length + 100) }] : [] });
+        const match = textMatch(previewText.text, term);
+        setResult({ status: 'ready', pages: 1, scanned: 1, unavailable: 0, total: match ? 1 : 0, offset: 0, hasMore: false,
+          results: match ? [{ page: previewText.page, excerpt: previewText.text.slice(Math.max(0, match.start - 60), match.end + 100) }] : [] });
         return;
       }
       do {
@@ -87,10 +87,10 @@ function TextPage({ fileId, page, ro, size, query, onRead, onReady }: { fileId: 
 }
 function TextPageContent({ data, ro, size, query }: { data: BookPageText; ro: boolean; size: number; query: string }) {
   const page = data.page;
-  const index = query ? textMatch(data.text, query) : -1;
+  const match = textMatch(data.text, query);
   return <article className="book-text-page" aria-labelledby="book-text-heading">
     <h3 id="book-text-heading" tabIndex={-1}>{ro ? 'Pagina' : 'Page'} {page}</h3>
     <p className="book-reader-note">{data.reviewed ? (ro ? 'Text verificat de administrator.' : 'Text reviewed by the administrator.') : data.source === 'edited' ? (ro ? 'Transcriere neverificată.' : 'Unreviewed transcription.') : data.source === 'ocr' ? (ro ? 'Text recunoscut automat din imagine, neverificat. Pot exista greșeli sau omisiuni.' : 'Unreviewed text recognized from the image. Errors or omissions may remain.') : (ro ? 'Text extras automat, neverificat. Ordinea de lectură poate necesita corectare.' : 'Unreviewed extracted text. Reading order may need correction.')}</p>
-    {data.text ? <div className="book-readable-text" lang={data.language} dir="auto" style={{ fontSize: `${size}rem` }}>{index < 0 ? data.text : <>{data.text.slice(0, index)}<mark>{data.text.slice(index, index + query.length)}</mark>{data.text.slice(index + query.length)}</>}</div> : <p>{ro ? 'Nu s-a putut recunoaște text pe această pagină. Consultă originalul; pagina poate necesita transcriere sau descriere manuală.' : 'No text could be recognized on this page. Use the original; a manual transcription or description may be needed.'}</p>}
+    {data.text ? <div className="book-readable-text" lang={data.language} dir="auto" style={{ fontSize: `${size}rem` }}>{!match ? data.text : <>{data.text.slice(0, match.start)}<mark>{data.text.slice(match.start, match.end)}</mark>{data.text.slice(match.end)}</>}</div> : <p>{ro ? 'Nu s-a putut recunoaște text pe această pagină. Consultă originalul; pagina poate necesita transcriere sau descriere manuală.' : 'No text could be recognized on this page. Use the original; a manual transcription or description may be needed.'}</p>}
   </article>;
 }
