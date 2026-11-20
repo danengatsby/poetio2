@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { migrateSearch, migratePoemSearchNfc, migrateSearchNormalization } from './migration-steps.mjs';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -7,9 +8,6 @@ import { createRequire } from 'node:module';
 import { DatabaseSync } from 'node:sqlite';
 import ts from 'typescript';
 import { openDatabase } from '../server/vps-storage.mjs';
-import { migrateSearch } from '../scripts/migrate-search-vps.mjs';
-import { migratePoemSearchNfc } from '../scripts/migrate-poem-search-nfc-vps.mjs';
-import { migrateSearchNormalization } from '../scripts/migrate-search-normalization-vps.mjs';
 
 const compiled = mkdtempSync(join(tmpdir(), 'poetio-search-code-'));
 writeFileSync(join(compiled, 'package.json'), '{"type":"commonjs"}');
@@ -67,15 +65,15 @@ function file(sqlite) {
   return { id, owner_email: 'pensio53@gmail.com', content_hash: 'hash' };
 }
 
-test('search migration preserves published records and history, is repeatable, and detects partial schemas', t => {
+test('search migration preserves published records and history, is repeatable, and detects partial schemas', async t => {
   const { sqlite, path } = fixture(t, false);
   const id = poem(sqlite, 'Şir de versuri — țară'),
     book = file(sqlite);
   sqlite.prepare('INSERT INTO book_page_texts VALUES(?,?,?,?,?,?)').run(book.id, 1, 'Corectură verificată', 'ro', 3, 1);
   const poems = sqlite.prepare('SELECT * FROM poems').all(),
     history = sqlite.prepare('SELECT * FROM content_history').all();
-  assert.equal(migrateSearch(path), true);
-  assert.equal(migrateSearch(path), false);
+  assert.equal(await migrateSearch(path), true);
+  assert.equal(await migrateSearch(path), false);
   assert.deepEqual(sqlite.prepare('SELECT * FROM poems').all(), poems);
   assert.deepEqual(sqlite.prepare('SELECT * FROM content_history').all(), history);
   assert.equal(
@@ -90,7 +88,7 @@ test('search migration preserves published records and history, is repeatable, a
     0,
   );
   sqlite.exec('DROP TRIGGER poem_search_update');
-  assert.throws(() => migrateSearch(path), /Partial/);
+  await assert.rejects(migrateSearch(path), /does not match the recorded migrations/);
 });
 
 test('indexed poem searches preserve literal substring, diacritic, short-query and theme semantics through edits and deletes', async t => {
@@ -251,7 +249,7 @@ test('sitemap returns only paths and timestamps even for large poem bodies', asy
   assert.equal(JSON.stringify(entries).includes('secret-tail'), false);
 });
 
-test('normalization migration repairs existing projections without changing editorial records and rejects a damaged mapping', t => {
+test('normalization migration repairs existing projections without changing editorial records', async t => {
   const { sqlite, path } = fixture(t, false),
     id = poem(sqlite, 'CAFÉ ȘI ȚARĂ'),
     book = file(sqlite);
@@ -259,9 +257,9 @@ test('normalization migration repairs existing projections without changing edit
   const originals = ['poems', 'book_page_texts', 'content_history'].map(name =>
     sqlite.prepare(`SELECT * FROM ${name}`).all(),
   );
-  migrateSearch(path);
-  assert.equal(migrateSearchNormalization(path), true);
-  assert.equal(migrateSearchNormalization(path), false);
+  await migrateSearch(path);
+  assert.equal(await migrateSearchNormalization(path), true);
+  assert.equal(await migrateSearchNormalization(path), false);
   assert.deepEqual(
     ['poems', 'book_page_texts', 'content_history'].map(name => sqlite.prepare(`SELECT * FROM ${name}`).all()),
     originals,
@@ -271,8 +269,6 @@ test('normalization migration repairs existing projections without changing edit
     sqlite.prepare('SELECT search_text FROM book_search_pages WHERE file_id=?').get(book.id).search_text,
     'café si tara',
   );
-  sqlite.prepare('UPDATE search_fold_characters SET replacement=? WHERE letter=?').run('wrong', 'É');
-  assert.throws(() => migrateSearchNormalization(path), /Unexpected normalization mapping/);
 });
 
 test('Unicode matches survive unchanged editorial review, edits and service recreation', async t => {

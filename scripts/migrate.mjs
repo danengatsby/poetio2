@@ -1,7 +1,7 @@
 // Applies drizzle/*.sql in order and records each file in `schema_migrations`.
 //
 //   node scripts/migrate.mjs status /var/lib/poetio/poetio.sqlite3
-//   node scripts/migrate.mjs apply  /var/lib/poetio/poetio.sqlite3 [--create] [--baseline <name>]
+//   node scripts/migrate.mjs apply  /var/lib/poetio/poetio.sqlite3 [--create] [--baseline <name>] [--target <name>]
 //
 // A database created before this runner has no ledger. On the first `apply`, its
 // schema is compared with the schema each prefix of the migrations produces on an
@@ -114,6 +114,13 @@ function readLedger(db, migrations) {
   return rows;
 }
 
+/** Differences between the schema and what the recorded migrations produce, or ''. */
+function schemaDrift(db, migrations, recorded) {
+  const expected = expectedSchemas(migrations.slice(0, recorded)).at(-1);
+  const current = schemaOf(db).join('\n');
+  return current === expected ? '' : describeDifference(current, expected);
+}
+
 export function status(file, { directory } = {}) {
   if (!file || !existsSync(file)) throw new Error('Existing Poetio database required.');
   const migrations = listMigrations(directory);
@@ -132,6 +139,7 @@ export function status(file, { directory } = {}) {
       ledger: true,
       applied: rows.length,
       latest: rows.at(-1)?.name ?? null,
+      schema_matches: !schemaDrift(db, migrations, rows.length),
       incomplete: rows.filter(row => !row.completed_at).map(row => row.name),
       pending: migrations.slice(rows.length).map(migration => migration.name),
     };
@@ -140,9 +148,12 @@ export function status(file, { directory } = {}) {
   }
 }
 
-export async function migrate(file, { directory, hooks = defaultHooks, create = false, baseline } = {}) {
+export async function migrate(file, { directory, hooks = defaultHooks, create = false, baseline, target } = {}) {
   if (!file || (!create && !existsSync(file))) throw new Error('Existing Poetio database required.');
   const migrations = listMigrations(directory);
+  // `target` stops after that migration; later ones stay pending.
+  const last = target ? migrations.findIndex(migration => migration.name === target) : migrations.length - 1;
+  if (last === -1) throw new Error(`Unknown target migration ${target}.`);
   const result = { baseline: null, applied: [], completed: [] };
   const db = new DatabaseSync(file);
   try {
@@ -168,8 +179,15 @@ export async function migrate(file, { directory, hooks = defaultHooks, create = 
       }
     }
 
-    const recorded = new Map(readLedger(db, migrations).map(row => [row.name, row]));
-    for (const migration of migrations) {
+    const rows = readLedger(db, migrations);
+    // A schema changed by hand since the last run is reviewed before anything else is applied.
+    const drift = schemaDrift(db, migrations, rows.length);
+    if (drift)
+      throw new Error(
+        `The schema does not match the recorded migrations (up to ${rows.at(-1)?.name ?? 'none'}); review it before migrating:\n${drift}`,
+      );
+    const recorded = new Map(rows.map(row => [row.name, row]));
+    for (const migration of migrations.slice(0, last + 1)) {
       if (!recorded.has(migration.name)) {
         db.exec('BEGIN IMMEDIATE');
         try {
@@ -214,13 +232,19 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   else if (command === 'apply')
     console.log(
       JSON.stringify(
-        await migrate(file, { create: options.includes('--create'), baseline: option('--baseline') }),
+        await migrate(file, {
+          create: options.includes('--create'),
+          baseline: option('--baseline'),
+          target: option('--target'),
+        }),
         null,
         2,
       ),
     );
   else {
-    console.error('Usage: node scripts/migrate.mjs status|apply <database> [--create] [--baseline <name>]');
+    console.error(
+      'Usage: node scripts/migrate.mjs status|apply <database> [--create] [--baseline <name>] [--target <name>]',
+    );
     process.exit(64);
   }
 }

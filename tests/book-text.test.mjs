@@ -1,12 +1,12 @@
 import test from 'node:test';
+import { migrateBookText } from './migration-steps.mjs';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash, randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { openBookRenderer } from '../server/book-renderer.mjs';
-import { migrateBookText } from '../scripts/migrate-book-text-vps.mjs';
 import { bookFixture } from './book-fixture.mjs';
 import sharp from 'sharp';
 
@@ -123,11 +123,17 @@ test('book text migration preserves data, can be repeated and rejects incompatib
   const directory = await mkdtemp(join(tmpdir(), 'poetio-text-migration-'));
   const file = join(directory, 'poetio.sqlite3');
   try {
-    assert.throws(() => migrateBookText(file), /existing/);
+    await assert.rejects(migrateBookText(file), /Existing Poetio database required/);
     let db = new DatabaseSync(file);
-    db.exec("CREATE TABLE book_files (id TEXT PRIMARY KEY); INSERT INTO book_files VALUES ('original');");
+    for (const name of (await readdir(new URL('../drizzle/', import.meta.url)))
+      .filter(name => name.endsWith('.sql') && name < '0012')
+      .sort())
+      db.exec(await readFile(new URL('../drizzle/' + name, import.meta.url), 'utf8'));
+    db.exec(
+      "INSERT INTO book_files (id, object_key, file_name, content_type, byte_size, content_hash, owner_email, created_at) VALUES ('original', 'books/original.pdf', 'carte.pdf', 'application/pdf', 1, 'hash', 'owner@example.com', 1);",
+    );
     db.close();
-    assert.equal(migrateBookText(file), true);
+    assert.equal(await migrateBookText(file), true);
     db = new DatabaseSync(file);
     db.prepare('INSERT INTO book_page_texts VALUES (?, ?, ?, ?, ?, ?)').run(
       'original',
@@ -138,13 +144,13 @@ test('book text migration preserves data, can be repeated and rejects incompatib
       1,
     );
     db.close();
-    assert.equal(migrateBookText(file), false);
+    assert.equal(await migrateBookText(file), false);
     db = new DatabaseSync(file);
     assert.equal(db.prepare('SELECT content FROM book_page_texts').get().content, 'Text verificat — ș, ț.');
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
     db.exec('DROP TABLE book_page_texts; CREATE TABLE book_page_texts(file_id TEXT);');
     db.close();
-    assert.throws(() => migrateBookText(file), /Unexpected/);
+    await assert.rejects(migrateBookText(file), /does not match the recorded migrations/);
     assert.match(
       await readFile(new URL('../drizzle/0012_book_page_texts.sql', import.meta.url), 'utf8'),
       /ON DELETE cascade/,

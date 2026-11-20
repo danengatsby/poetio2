@@ -1,20 +1,22 @@
 import test from 'node:test';
+import {
+  migrateEditorial,
+  migrateBookEditorial,
+  migratePoemCollection,
+  migrateBookTextRecovery,
+} from './migration-steps.mjs';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { migrateEditorial } from '../scripts/migrate-editorial-vps.mjs';
-import { migrateBookEditorial } from '../scripts/migrate-book-editorial-vps.mjs';
-import { migratePoemCollection } from '../scripts/migrate-poem-collection-vps.mjs';
-import { migrateBookTextRecovery } from '../scripts/migrate-book-text-recovery-vps.mjs';
 
 test('text recovery migration preserves existing transcriptions, seeds once and detects partial schema', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'poetio-text-recovery-')),
     file = join(directory, 'db.sqlite3');
   let db;
   try {
-    assert.throws(() => migrateBookTextRecovery(file), /Existing/);
+    await assert.rejects(migrateBookTextRecovery(file), /Existing Poetio database required/);
     db = new DatabaseSync(file);
     for (const name of (await readdir(new URL('../drizzle/', import.meta.url)))
       .filter(name => name.endsWith('.sql') && name < '0016')
@@ -25,8 +27,8 @@ test('text recovery migration preserves existing transcriptions, seeds once and 
     );
     const before = db.prepare('SELECT * FROM book_page_texts').all();
     db.close();
-    assert.equal(migrateBookTextRecovery(file), true);
-    assert.equal(migrateBookTextRecovery(file), false);
+    assert.equal(await migrateBookTextRecovery(file), true);
+    assert.equal(await migrateBookTextRecovery(file), false);
     db = new DatabaseSync(file);
     assert.deepEqual(db.prepare('SELECT * FROM book_page_texts').all(), before);
     const history = () => db.prepare("SELECT * FROM content_history WHERE kind='book-text'").all();
@@ -38,7 +40,7 @@ test('text recovery migration preserves existing transcriptions, seeds once and 
     assert.deepEqual(db.prepare('SELECT * FROM book_page_texts').all(), before);
     db.exec('DROP TRIGGER history_book_text_update');
     db.close();
-    assert.throws(() => migrateBookTextRecovery(file), /Partial/);
+    await assert.rejects(migrateBookTextRecovery(file), /does not match the recorded migrations/);
     db = new DatabaseSync(file);
     assert.deepEqual(db.prepare('SELECT * FROM book_page_texts').all(), before);
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
@@ -53,20 +55,24 @@ test('collection index migration preserves poems, is repeatable and rejects a co
     file = join(directory, 'db.sqlite3');
   let db;
   try {
-    assert.throws(() => migratePoemCollection(file), /Existing/);
+    await assert.rejects(migratePoemCollection(file), /Existing Poetio database required/);
     db = new DatabaseSync(file);
+    for (const name of (await readdir(new URL('../drizzle/', import.meta.url)))
+      .filter(name => name.endsWith('.sql') && name < '0014')
+      .sort())
+      db.exec(await readFile(new URL('../drizzle/' + name, import.meta.url), 'utf8'));
     db.exec(
-      "CREATE TABLE poems(id TEXT PRIMARY KEY, created_at INTEGER, content TEXT); INSERT INTO poems VALUES('poem',1,'Vers păstrat');",
+      "INSERT INTO poems (id, title, author, content, created_at, updated_at) VALUES ('poem', 'Titlu', 'Autor', 'Vers păstrat', 1, 1);",
     );
     const before = db.prepare('SELECT * FROM poems').all();
     db.close();
-    assert.equal(migratePoemCollection(file), true);
-    assert.equal(migratePoemCollection(file), false);
+    assert.equal(await migratePoemCollection(file), true);
+    assert.equal(await migratePoemCollection(file), false);
     db = new DatabaseSync(file);
     assert.deepEqual(db.prepare('SELECT * FROM poems').all(), before);
     db.exec('DROP INDEX idx_poems_collection_order; CREATE INDEX idx_poems_collection_order ON poems(content);');
     db.close();
-    assert.throws(() => migratePoemCollection(file), /Unexpected/);
+    await assert.rejects(migratePoemCollection(file), /does not match the recorded migrations/);
     db = new DatabaseSync(file);
     assert.deepEqual(db.prepare('SELECT * FROM poems').all(), before);
   } finally {
@@ -88,8 +94,8 @@ test('editorial migration captures current content once and history rolls back w
     );
     const before = db.prepare('SELECT * FROM poems').all();
     db.close();
-    assert.equal(migrateEditorial(file), true);
-    assert.equal(migrateEditorial(file), false);
+    assert.equal(await migrateEditorial(file), true);
+    assert.equal(await migrateEditorial(file), false);
     db = new DatabaseSync(file);
     assert.deepEqual(db.prepare('SELECT * FROM poems').all(), before);
     assert.equal(db.prepare('SELECT count(*) n FROM content_history').get().n, 1);
@@ -109,7 +115,7 @@ test('book editorial migration snapshots existing books once and rolls history b
     file = join(directory, 'db.sqlite3');
   let db;
   try {
-    assert.throws(() => migrateBookEditorial(file), /existing/);
+    await assert.rejects(migrateBookEditorial(file), /Existing Poetio database required/);
     db = new DatabaseSync(file);
     for (const name of (await readdir(new URL('../drizzle/', import.meta.url)))
       .filter(name => name.endsWith('.sql') && name < '0013')
@@ -120,8 +126,8 @@ test('book editorial migration snapshots existing books once and rolls history b
     );
     const before = db.prepare('SELECT * FROM books').all();
     db.close();
-    assert.equal(migrateBookEditorial(file), true);
-    assert.equal(migrateBookEditorial(file), false);
+    assert.equal(await migrateBookEditorial(file), true);
+    assert.equal(await migrateBookEditorial(file), false);
     db = new DatabaseSync(file);
     assert.deepEqual(db.prepare('SELECT * FROM books').all(), before);
     const history = () => db.prepare("SELECT * FROM content_history WHERE kind='book'").all();
@@ -141,7 +147,7 @@ test('book editorial migration snapshots existing books once and rolls history b
     assert.deepEqual(db.prepare('SELECT * FROM books').all(), before);
     db.exec('DROP TRIGGER reject_history; DROP TRIGGER history_book_update;');
     db.close();
-    assert.throws(() => migrateBookEditorial(file), /Partial/);
+    await assert.rejects(migrateBookEditorial(file), /does not match the recorded migrations/);
     db = new DatabaseSync(file);
     assert.equal(db.prepare('PRAGMA integrity_check').get().integrity_check, 'ok');
   } finally {
@@ -151,12 +157,12 @@ test('book editorial migration snapshots existing books once and rolls history b
 });
 
 test('translation migration preserves legacy content, captures provenance atomically, and rejects partial schemas', async () => {
-  const { migrateTranslationProvenance } = await import('../scripts/migrate-translation-provenance-vps.mjs');
+  const { migrateTranslationProvenance } = await import('./migration-steps.mjs');
   const directory = await mkdtemp(join(tmpdir(), 'poetio-translation-migration-')),
     file = join(directory, 'db.sqlite3');
   let db;
   try {
-    assert.throws(() => migrateTranslationProvenance(file), /Existing/);
+    await assert.rejects(migrateTranslationProvenance(file), /Existing Poetio database required/);
     db = new DatabaseSync(file);
     for (const name of (await readdir(new URL('../drizzle/', import.meta.url)))
       .filter(name => name.endsWith('.sql') && name < '0015')
@@ -168,8 +174,8 @@ test('translation migration preserves legacy content, captures provenance atomic
     const before = db.prepare('SELECT * FROM poems').get(),
       history = db.prepare('SELECT * FROM content_history').all();
     db.close();
-    assert.equal(migrateTranslationProvenance(file), true);
-    assert.equal(migrateTranslationProvenance(file), false);
+    assert.equal(await migrateTranslationProvenance(file), true);
+    assert.equal(await migrateTranslationProvenance(file), false);
     db = new DatabaseSync(file);
     assert.deepEqual({ ...db.prepare('SELECT * FROM poems').get() }, { ...before, translation_provenance: null });
     assert.deepEqual(db.prepare('SELECT * FROM content_history').all(), history);
@@ -189,7 +195,7 @@ test('translation migration preserves legacy content, captures provenance atomic
     assert.deepEqual(JSON.parse(deleted.snapshot).translation_provenance, provenance);
     db.exec('DROP TRIGGER history_poem_update;');
     db.close();
-    assert.throws(() => migrateTranslationProvenance(file), /Partial/);
+    await assert.rejects(migrateTranslationProvenance(file), /does not match the recorded migrations/);
     db = new DatabaseSync(file);
     assert.equal(db.prepare('PRAGMA integrity_check').get().integrity_check, 'ok');
   } finally {

@@ -53,7 +53,14 @@ test('creates a database, applies every migration with its data step, then does 
   db.close();
 
   assert.deepEqual(await migrate(file), { baseline: null, applied: [], completed: [] });
-  assert.deepEqual(status(file), { ledger: true, applied: migrations.length, latest, incomplete: [], pending: [] });
+  assert.deepEqual(status(file), {
+    ledger: true,
+    applied: migrations.length,
+    latest,
+    schema_matches: true,
+    incomplete: [],
+    pending: [],
+  });
 });
 
 test('records a database migrated before the ledger existed without running anything', async t => {
@@ -139,4 +146,33 @@ test('repeats only the data step after it failed', async t => {
   assert.deepEqual(await migrate(file, { hooks }), { baseline: null, applied: [], completed: [latest] });
   assert.equal(calls.length, 1);
   assert.deepEqual(status(file).incomplete, []);
+});
+
+test('stops at a target migration and continues from there later', async t => {
+  const file = legacyDatabase(t, '0010');
+  const { calls, hooks } = countingHooks();
+  const first = await migrate(file, { target: '0012_book_page_texts', hooks });
+  assert.equal(first.baseline, '0009_book_comments');
+  assert.deepEqual(first.applied, ['0010_comment_moderation', '0011_editorial_recovery', '0012_book_page_texts']);
+  assert.deepEqual(status(file).pending[0], '0013_book_editorial_recovery');
+  assert.deepEqual((await migrate(file, { target: '0012_book_page_texts', hooks })).applied, []);
+  const rest = await migrate(file, { hooks });
+  assert.equal(rest.applied.at(-1), latest);
+  assert.equal(calls.length, 1);
+  await assert.rejects(migrate(file, { target: '9999_missing' }), /Unknown target migration/);
+});
+
+test('refuses to continue when the schema was changed by hand after migrating', async t => {
+  const file = legacyDatabase(t, '0019');
+  const { hooks } = countingHooks();
+  await migrate(file, { target: '0018_search_normalization', hooks });
+  const db = new DatabaseSync(file);
+  db.exec('DROP TRIGGER poem_search_update');
+  db.close();
+  assert.equal(status(file).schema_matches, false);
+  await assert.rejects(
+    migrate(file, { hooks }),
+    /does not match the recorded migrations \(up to 0018_search_normalization\)[\s\S]*missing    trigger poem_search_update/,
+  );
+  assert.deepEqual(status(file).pending, ['0019_book_purchase_covers', latest]);
 });

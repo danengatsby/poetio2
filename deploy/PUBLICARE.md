@@ -41,6 +41,8 @@ npm run migrate -- apply /cale/poetio.sqlite3
 
 Dacă o migrare are nevoie și de un pas de date (de exemplu reconstruirea unui index), acesta stă în `scripts/migrations/NNNN_nume.mjs` și trebuie să poată fi repetat. Un fișier SQL deja aplicat nu se mai modifică: runner-ul refuză baza dacă suma nu mai corespunde. La publicare, numărul de rânduri din tabelele editoriale trebuie să rămână același. Tabelele de căutare, `collection_meta` și registrul migrărilor sunt exceptate.
 
+La fiecare rulare, runner-ul compară schema cu cea pe care o produc migrările înregistrate și se oprește dacă ea a fost modificată de mână. `--target <nume>` aplică migrările doar până la cea indicată. Scripturile `scripts/migrate-*-vps.mjs`, pomenite în documentele mai vechi, au fost înlocuite de runner, care aplică aceleași fișiere SQL.
+
 O bază creată înainte de runner primește registrul la prima rulare. Schema ei se compară cu schema fiecărui prefix al migrărilor, iar dacă nu corespunde exact niciunuia, runner-ul se oprește fără să scrie.
 
 ## Testele de browser

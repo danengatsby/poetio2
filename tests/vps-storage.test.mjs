@@ -1,18 +1,20 @@
-import { migrateCommentModeration } from '../scripts/migrate-comment-moderation-vps.mjs';
 import assert from 'node:assert/strict';
+import {
+  migrateAudioDatabase,
+  migrateCommentsDatabase,
+  migrateAboutCommentsDatabase,
+  migrateVideoDatabase,
+  migrateVideoCommentsDatabase,
+  migrateBookDatabase,
+  migrateBookCommentsDatabase,
+  migrateCommentModeration,
+} from './migration-steps.mjs';
 import test from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdtemp, rm, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase, openImageBucket, openAudioBucket, openVideoBucket } from '../server/vps-storage.mjs';
-import { migrateAudioDatabase } from '../scripts/migrate-audio-vps.mjs';
-import { migrateVideoCommentsDatabase } from '../scripts/migrate-video-comments-vps.mjs';
-import { migrateBookCommentsDatabase } from '../scripts/migrate-book-comments-vps.mjs';
-import { migrateBookDatabase } from '../scripts/migrate-book-vps.mjs';
-import { migrateVideoDatabase } from '../scripts/migrate-video-vps.mjs';
-import { migrateAboutCommentsDatabase } from '../scripts/migrate-about-comments-vps.mjs';
-import { migrateCommentsDatabase } from '../scripts/migrate-comments-vps.mjs';
 import { wavFixture } from './audio-fixture.mjs';
 
 test('SQLite changes survive reopening and failed batches roll back', async () => {
@@ -105,8 +107,8 @@ test('audio migration preserves existing poems and can safely run twice', async 
     ).run('original-1', 'Lumină', 'Autor', 'Primul vers\n\nAl doilea.', 7, 1000, 2000);
     const before = { ...db.prepare('SELECT * FROM poems').get() };
     db.close();
-    assert.equal(migrateAudioDatabase(file), true);
-    assert.equal(migrateAudioDatabase(file), false);
+    assert.equal(await migrateAudioDatabase(file), true);
+    assert.equal(await migrateAudioDatabase(file), false);
     db = new DatabaseSync(file);
     assert.deepEqual(
       { ...db.prepare('SELECT * FROM poems').get() },
@@ -131,8 +133,8 @@ test('comment migration preserves poems and comments survive a database reopen',
     ).run('original-1', 'Lumină', 'Autor', 'Primul vers', 7, 1000, 2000);
     const before = { ...db.prepare('SELECT * FROM poems').get() };
     db.close();
-    assert.equal(migrateCommentsDatabase(file), true);
-    assert.equal(migrateCommentsDatabase(file), false);
+    assert.equal(await migrateCommentsDatabase(file), true);
+    assert.equal(await migrateCommentsDatabase(file), false);
     db = new DatabaseSync(file);
     assert.deepEqual({ ...db.prepare('SELECT * FROM poems').get() }, before);
     db.prepare('INSERT INTO poem_comments VALUES (?, ?, ?, ?, ?)').run(
@@ -146,8 +148,8 @@ test('comment migration preserves poems and comments survive a database reopen',
     db = new DatabaseSync(file);
     assert.equal(db.prepare('SELECT content FROM poem_comments').get().content, 'O emoție.\nMulțumesc!');
     db.close();
-    assert.equal(migrateAboutCommentsDatabase(file), true);
-    assert.equal(migrateAboutCommentsDatabase(file), false);
+    assert.equal(await migrateAboutCommentsDatabase(file), true);
+    assert.equal(await migrateAboutCommentsDatabase(file), false);
     db = new DatabaseSync(file);
     assert.deepEqual({ ...db.prepare('SELECT * FROM poems').get() }, before);
     assert.equal(db.prepare('SELECT content FROM poem_comments').get().content, 'O emoție.\nMulțumesc!');
@@ -181,14 +183,14 @@ test('video migration preserves the collection, video files persist and serve ra
     ).run('original-1', 'Poem existent', 'Autor', 'Vers', 7, 1000, 2000);
     const before = { ...db.prepare('SELECT * FROM poems').get() };
     db.close();
-    assert.equal(migrateVideoDatabase(file), true);
-    assert.equal(migrateVideoDatabase(file), false);
-    assert.equal(migrateVideoCommentsDatabase(file), true);
-    assert.equal(migrateVideoCommentsDatabase(file), false);
-    assert.equal(migrateBookDatabase(file), true);
-    assert.equal(migrateBookDatabase(file), false);
-    assert.equal(migrateBookCommentsDatabase(file), true);
-    assert.equal(migrateBookCommentsDatabase(file), false);
+    assert.equal(await migrateVideoDatabase(file), true);
+    assert.equal(await migrateVideoDatabase(file), false);
+    assert.equal(await migrateVideoCommentsDatabase(file), true);
+    assert.equal(await migrateVideoCommentsDatabase(file), false);
+    assert.equal(await migrateBookDatabase(file), true);
+    assert.equal(await migrateBookDatabase(file), false);
+    assert.equal(await migrateBookCommentsDatabase(file), true);
+    assert.equal(await migrateBookCommentsDatabase(file), false);
     db = new DatabaseSync(file);
     assert.deepEqual({ ...db.prepare('SELECT * FROM poems').get() }, before);
     const key = `videos/72766231-67aa-4db8-9123-77071144a730/${'c'.repeat(64)}`;
@@ -217,7 +219,7 @@ test('moderation migration preserves legacy visibility and never reapproves pend
       "INSERT INTO about_comments (id, name, content, created_at) VALUES ('legacy', 'Cititor', 'Text existent', 1000)",
     );
     db.close();
-    assert.equal(migrateCommentModeration(file), true);
+    assert.equal(await migrateCommentModeration(file), true);
     db = new DatabaseSync(file);
     assert.equal(db.prepare("SELECT status FROM about_comments WHERE id = 'legacy'").get().status, 'approved');
     for (const kind of ['poem', 'about', 'video', 'book']) {
@@ -229,7 +231,7 @@ test('moderation migration preserves legacy visibility and never reapproves pend
     );
     const before = db.prepare('SELECT * FROM about_comments ORDER BY id').all();
     db.close();
-    assert.equal(migrateCommentModeration(file), false);
+    assert.equal(await migrateCommentModeration(file), false);
     db = new DatabaseSync(file);
     assert.deepEqual(db.prepare('SELECT * FROM about_comments ORDER BY id').all(), before);
     assert.equal(db.prepare('PRAGMA integrity_check').get().integrity_check, 'ok');

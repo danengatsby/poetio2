@@ -1,4 +1,5 @@
 import { openMediaValidator } from '../server/media-validator.mjs';
+import { migrateBookCovers } from './migration-steps.mjs';
 import { openAudioBucket, openVideoBucket } from '../server/vps-storage.mjs';
 import { createHash } from 'node:crypto';
 import { readyMediaValidator, mediaFixture } from './media-fixture.mjs';
@@ -15,7 +16,6 @@ import { imageDecoder } from '../server/image-decoder.mjs';
 import { openBookRenderer } from '../server/book-renderer.mjs';
 import { openBookBucket } from '../server/vps-storage.mjs';
 import { bookFixture, finishedBookValidation } from './book-fixture.mjs';
-import { migrateBookCovers } from '../scripts/migrate-book-covers-vps.mjs';
 
 const output = mkdtempSync(join(tmpdir(), 'stillword-tests-'));
 writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
@@ -262,7 +262,7 @@ test('two book covers keep independent purchase links, private drafts and histor
   }
 });
 
-test('book cover migration preserves legacy books and history, repeats safely and detects partial schemas', () => {
+test('book cover migration preserves legacy books and history, repeats safely and detects partial schemas', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'poetio-cover-migration-')),
     file = join(directory, 'db.sqlite3');
   let db = new DatabaseSync(file);
@@ -277,8 +277,8 @@ test('book cover migration preserves legacy books and history, repeats safely an
     const before = db.prepare('SELECT * FROM books').get(),
       history = db.prepare('SELECT * FROM content_history').all();
     db.close();
-    assert.equal(migrateBookCovers(file), true);
-    assert.equal(migrateBookCovers(file), false);
+    assert.equal(await migrateBookCovers(file), true);
+    assert.equal(await migrateBookCovers(file), false);
     db = new DatabaseSync(file);
     const after = db.prepare('SELECT * FROM books').get();
     assert.deepEqual(Object.fromEntries(Object.keys(before).map(key => [key, after[key]])), { ...before });
@@ -289,7 +289,7 @@ test('book cover migration preserves legacy books and history, repeats safely an
     db.exec('DROP TRIGGER history_book_delete');
     db.close();
     db = null;
-    assert.throws(() => migrateBookCovers(file), /Partial or unexpected/);
+    await assert.rejects(migrateBookCovers(file), /does not match the recorded migrations/);
   } finally {
     db?.close();
     rmSync(directory, { recursive: true, force: true });
