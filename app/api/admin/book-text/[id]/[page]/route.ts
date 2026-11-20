@@ -12,8 +12,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const db = getPoemDb();
     const file = await readableBookFile(db, request, id);
     const query = new URL(request.url).searchParams;
-    return Response.json(await readBookText(db, file, textPageNumber(page), getBookTextRenderer(), query.get('ocr') === '1', query.get('manual') === '1'), { headers: { 'Cache-Control': 'private, no-store' } });
-  } catch (error) { return bookPageError(error); }
+    return Response.json(
+      await readBookText(
+        db,
+        file,
+        textPageNumber(page),
+        getBookTextRenderer(),
+        query.get('ocr') === '1',
+        query.get('manual') === '1',
+      ),
+      { headers: { 'Cache-Control': 'private, no-store' } },
+    );
+  } catch (error) {
+    return bookPageError(error);
+  }
 }
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string; page: string }> }) {
   try {
@@ -21,6 +33,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { id, page } = await params;
     const db = getPoemDb();
     const file = await readableBookFile(db, request, id);
-    return Response.json(await saveBookText(db, file, textPageNumber(page), await readJson(request, 400000), getBookTextRenderer()), { headers: { 'Cache-Control': 'private, no-store' } });
-  } catch (error) { return bookPageError(error); }
+    return Response.json(
+      await saveBookText(db, file, textPageNumber(page), await readJson(request, 400000), getBookTextRenderer()),
+      { headers: { 'Cache-Control': 'private, no-store' } },
+    );
+  } catch (error) {
+    return bookPageError(error);
+  }
 }

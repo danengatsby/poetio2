@@ -3,16 +3,8 @@
   "url": "https://poetio.cloud/",
   "method": "Chromium CDP Network.loadingFinished.encodedDataLength; cold context, then normal navigation in same context; scroll entire page",
   "viewport": {
-    "desktop": [
-      1440,
-      1000,
-      1
-    ],
-    "mobile": [
-      390,
-      844,
-      2
-    ]
+    "desktop": [1440, 1000, 1],
+    "mobile": [390, 844, 2]
   },
   "bytes": {
     "desktop": {

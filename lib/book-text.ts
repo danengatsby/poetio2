@@ -11,7 +11,10 @@ export type BookPageText = {
 };
 
 export async function fetchBookText(fileId: string, page: number, signal: AbortSignal): Promise<BookPageText> {
-  const response = await fetch(`/api/book-text/${fileId}/${page}`, { cache: 'no-store', signal: AbortSignal.any([signal, AbortSignal.timeout(120000)]) });
+  const response = await fetch(`/api/book-text/${fileId}/${page}`, {
+    cache: 'no-store',
+    signal: AbortSignal.any([signal, AbortSignal.timeout(120000)]),
+  });
   if (!response.ok) throw new Error('Text unavailable');
   return response.json();
 }
@@ -40,14 +43,27 @@ export function textMatch(text: string, query: string) {
 
 export type BookSearchResult = {
   status: 'preparing' | 'ready' | 'error';
-  pages: number; scanned: number; unavailable: number;
+  pages: number;
+  scanned: number;
+  unavailable: number;
   results: { page: number; excerpt: string }[];
-  total: number; offset: number; hasMore: boolean;
+  total: number;
+  offset: number;
+  hasMore: boolean;
 };
 
-export async function fetchBookSearch(fileId: string, query: string, offset: number, signal: AbortSignal, retry = false): Promise<BookSearchResult> {
+export async function fetchBookSearch(
+  fileId: string,
+  query: string,
+  offset: number,
+  signal: AbortSignal,
+  retry = false,
+): Promise<BookSearchResult> {
   const params = new URLSearchParams({ q: query, offset: String(offset), ...(retry ? { retry: '1' } : {}) });
-  const response = await fetch(`/api/book-text/${fileId}/search?${params}`, { cache: 'no-store', signal: AbortSignal.any([signal, AbortSignal.timeout(30000)]) });
+  const response = await fetch(`/api/book-text/${fileId}/search?${params}`, {
+    cache: 'no-store',
+    signal: AbortSignal.any([signal, AbortSignal.timeout(30000)]),
+  });
   if (!response.ok) throw new Error('Search unavailable');
   return response.json();
 }

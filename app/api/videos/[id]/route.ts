@@ -10,8 +10,13 @@ export async function PUT(request: Request, context: Context) {
     requireSafeMutation(request);
     const { id } = await context.params;
     const data = await readJson(request);
-    return Response.json({ video: await updateVideo(getPoemDb(), id, data?.revision, data, getMediaValidator()) }, { headers });
-  } catch (error) { return apiError(error); }
+    return Response.json(
+      { video: await updateVideo(getPoemDb(), id, data?.revision, data, getMediaValidator()) },
+      { headers },
+    );
+  } catch (error) {
+    return apiError(error);
+  }
 }
 export async function DELETE(request: Request, context: Context) {
   try {
@@ -20,5 +25,7 @@ export async function DELETE(request: Request, context: Context) {
     const data = await readJson(request);
     await deleteVideo(getPoemDb(), id, data?.revision);
     return Response.json({ deleted: true }, { headers });
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    return apiError(error);
+  }
 }

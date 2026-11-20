@@ -14,7 +14,9 @@ export async function PATCH(request: Request, context: Context) {
     const data = await readJson(request, 4096);
     const comment = await moderateComment(getPoemDb(), kind, id, data?.revision, data?.status);
     return Response.json({ comment }, { headers });
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    return apiError(error);
+  }
 }
 
 export async function DELETE(request: Request, context: Context) {
@@ -25,5 +27,7 @@ export async function DELETE(request: Request, context: Context) {
     const data = await readJson(request, 4096);
     await deleteModeratedComment(getPoemDb(), kind, id, data?.revision);
     return Response.json({ deleted: true }, { headers });
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    return apiError(error);
+  }
 }

@@ -16,7 +16,8 @@ export function isOwnerEmail(email: string | null | undefined) {
 export function requireOwner(request: Request) {
   // Sites dispatch supplies this authenticated header. No client-supplied roles.
   const email = request.headers.get('oai-authenticated-user-email');
-  if (!email) throw new AppError(401, 'Sesiunea a expirat. Autentifică-te din nou; textul introdus rămâne în formular.');
+  if (!email)
+    throw new AppError(401, 'Sesiunea a expirat. Autentifică-te din nou; textul introdus rămâne în formular.');
   if (!isOwnerEmail(email)) throw new AppError(403, 'Doar proprietarul site-ului poate administra poemele.');
 }
 
@@ -51,15 +52,26 @@ export async function readJson(request: Request, limit = 320_000) {
     const { value, done } = await reader.read();
     if (done) break;
     size += value.byteLength;
-    if (size > limit) { await reader.cancel(); throw new AppError(413, 'Poemul este prea lung.'); }
+    if (size > limit) {
+      await reader.cancel();
+      throw new AppError(413, 'Poemul este prea lung.');
+    }
     text += decoder.decode(value, { stream: true });
   }
   text += decoder.decode();
-  try { return JSON.parse(text); } catch { throw new AppError(400, 'Datele trimise nu pot fi citite.'); }
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new AppError(400, 'Datele trimise nu pot fi citite.');
+  }
 }
 
 export function apiError(error: unknown) {
-  if (error instanceof AppError) return Response.json({ error: error.message }, { status: error.status, headers: { 'Cache-Control': 'no-store' } });
+  if (error instanceof AppError)
+    return Response.json({ error: error.message }, { status: error.status, headers: { 'Cache-Control': 'no-store' } });
   console.error('Poem storage request failed', error);
-  return Response.json({ error: 'Poemele nu pot fi accesate momentan. Încearcă din nou; textul introdus nu s-a pierdut.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+  return Response.json(
+    { error: 'Poemele nu pot fi accesate momentan. Încearcă din nou; textul introdus nu s-a pierdut.' },
+    { status: 503, headers: { 'Cache-Control': 'no-store' } },
+  );
 }

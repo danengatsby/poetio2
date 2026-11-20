@@ -19,13 +19,25 @@ export function openDatabase(file) {
       const statement = sqlite.prepare(query);
       let bindings = [];
       return {
-        bind(...values) { bindings = values; return this; },
+        bind(...values) {
+          bindings = values;
+          return this;
+        },
         // node:sqlite returns null-prototype records; React's RSC transport
         // requires ordinary objects, matching D1's JSON result objects.
-        async first() { const row = statement.get(...bindings); return row ? { ...row } : null; },
-        async all() { return { results: statement.all(...bindings).map(row => ({ ...row })) }; },
-        async run() { return this[runStatement](); },
-        [runStatement]() { return { meta: { changes: Number(statement.run(...bindings).changes) } }; },
+        async first() {
+          const row = statement.get(...bindings);
+          return row ? { ...row } : null;
+        },
+        async all() {
+          return { results: statement.all(...bindings).map(row => ({ ...row })) };
+        },
+        async run() {
+          return this[runStatement]();
+        },
+        [runStatement]() {
+          return { meta: { changes: Number(statement.run(...bindings).changes) } };
+        },
       };
     },
     async batch(statements) {
@@ -40,7 +52,9 @@ export function openDatabase(file) {
         throw error;
       }
     },
-    close() { sqlite.close(); },
+    close() {
+      sqlite.close();
+    },
   };
 }
 
@@ -63,7 +77,12 @@ export function openBookBucket(directory) {
 
 function openMediaBucket(directory, prefix, label) {
   function objectPath(key) {
-    if (!new RegExp(`^${prefix}/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/[0-9a-f]{64}$`, 'i').test(key)) {
+    if (
+      !new RegExp(
+        `^${prefix}/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/[0-9a-f]{64}$`,
+        'i',
+      ).test(key)
+    ) {
       throw new Error(`Invalid ${label} storage key.`);
     }
     return join(directory, key);
@@ -77,7 +96,9 @@ function openMediaBucket(directory, prefix, label) {
         await writeFile(temporary, bytes, { flag: 'wx', mode: 0o600 });
         await rename(temporary, target);
       } finally {
-        await unlink(temporary).catch(error => { if (error.code !== 'ENOENT') throw error; });
+        await unlink(temporary).catch(error => {
+          if (error.code !== 'ENOENT') throw error;
+        });
       }
     },
     async get(key, options) {
@@ -86,7 +107,12 @@ function openMediaBucket(directory, prefix, label) {
         const details = await stat(target);
         if (!details.isFile()) return null;
         const range = options?.range;
-        return { body: Readable.toWeb(createReadStream(target, range ? { start: range.offset, end: range.offset + range.length - 1 } : undefined)), size: details.size };
+        return {
+          body: Readable.toWeb(
+            createReadStream(target, range ? { start: range.offset, end: range.offset + range.length - 1 } : undefined),
+          ),
+          size: details.size,
+        };
       } catch (error) {
         if (error.code === 'ENOENT') return null;
         throw error;

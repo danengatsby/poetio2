@@ -13,10 +13,28 @@ export default async function VideoAdminPage() {
   const user = await getChatGPTUser();
   const basic = (env as unknown as { ADMIN_AUTH_MODE?: string }).ADMIN_AUTH_MODE === 'basic';
   const signInHref = basic ? '/admin/video' : chatGPTSignInPath('/admin/video');
-  if (!user || !isOwnerEmail(user.email)) return <main className="unavailable shell" lang="ro"><h1>Administrare video</h1><p>Doar proprietarul site-ului poate administra videourile.</p>{!user && <a className="primary-button" href={signInHref}>Autentificare în administrare</a>}<Link className="secondary-button" href="/video" prefetch={false}>Vezi videourile</Link></main>;
+  if (!user || !isOwnerEmail(user.email))
+    return (
+      <main className="unavailable shell" lang="ro">
+        <h1>Administrare video</h1>
+        <p>Doar proprietarul site-ului poate administra videourile.</p>
+        {!user && (
+          <a className="primary-button" href={signInHref}>
+            Autentificare în administrare
+          </a>
+        )}
+        <Link className="secondary-button" href="/video" prefetch={false}>
+          Vezi videourile
+        </Link>
+      </main>
+    );
   let videos: Video[] = [];
   let failed = false;
-  try { videos = await listVideos(getPoemDb()); }
-  catch (error) { console.error('Video administration unavailable', error); failed = true; }
+  try {
+    videos = await listVideos(getPoemDb());
+  } catch (error) {
+    console.error('Video administration unavailable', error);
+    failed = true;
+  }
   return <VideoAdmin initialVideos={videos} initialError={failed} signInHref={signInHref} />;
 }

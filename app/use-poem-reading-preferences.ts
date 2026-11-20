@@ -1,6 +1,11 @@
 'use client';
 import { useSyncExternalStore } from 'react';
-import { defaultPoemReading, poemReadingKey, restoredPoemReading, type PoemReadingPreferences } from '@/lib/poem-reading';
+import {
+  defaultPoemReading,
+  poemReadingKey,
+  restoredPoemReading,
+  type PoemReadingPreferences,
+} from '@/lib/poem-reading';
 
 type Snapshot = { preferences: PoemReadingPreferences; storageAvailable: boolean };
 const serverSnapshot: Snapshot = { preferences: defaultPoemReading, storageAvailable: true };
@@ -17,17 +22,26 @@ function readStorage(): Snapshot {
 function getSnapshot() {
   // Read only in the browser. A stable, separate server snapshot avoids both
   // hydration mismatches and writing default values over saved preferences.
-  return clientSnapshot ??= readStorage();
+  return (clientSnapshot ??= readStorage());
 }
 function publish(next: Snapshot) {
   const previous = clientSnapshot;
-  if (previous?.preferences.width === next.preferences.width && previous.preferences.textSize === next.preferences.textSize && previous.storageAvailable === next.storageAvailable) return;
+  if (
+    previous?.preferences.width === next.preferences.width &&
+    previous.preferences.textSize === next.preferences.textSize &&
+    previous.storageAvailable === next.storageAvailable
+  )
+    return;
   clientSnapshot = next;
   listeners.forEach(listener => listener());
 }
 function storageChanged(event: StorageEvent) {
   if (event.key !== null && event.key !== poemReadingKey) return;
-  try { if (event.storageArea !== localStorage) return; } catch { return; }
+  try {
+    if (event.storageArea !== localStorage) return;
+  } catch {
+    return;
+  }
   publish(readStorage());
 }
 function subscribe(listener: () => void) {
@@ -48,14 +62,18 @@ function save(preferences: PoemReadingPreferences, reset = false) {
   try {
     if (reset) localStorage.removeItem(poemReadingKey);
     else localStorage.setItem(poemReadingKey, JSON.stringify(preferences));
-  } catch { storageAvailable = false; }
+  } catch {
+    storageAvailable = false;
+  }
   // A quota error or disabled storage must never disable the controls.
   publish({ preferences, storageAvailable });
 }
 function setPreferences(change: Partial<PoemReadingPreferences>) {
   save(restoredPoemReading(JSON.stringify({ ...getSnapshot().preferences, ...change })));
 }
-function resetPreferences() { save({ ...defaultPoemReading }, true); }
+function resetPreferences() {
+  save({ ...defaultPoemReading }, true);
+}
 const getServerSnapshot = () => serverSnapshot;
 
 export default function usePoemReadingPreferences() {

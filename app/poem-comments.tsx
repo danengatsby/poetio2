@@ -7,19 +7,88 @@ import './poem-comments.css';
 import useCommentDraft from './use-comment-draft';
 
 const copy = {
-  ro: { title: 'Comentarii', intro: 'Ce ți-a transmis acest poem? Lasă câteva gânduri.', name: 'Numele tău', body: 'Comentariul tău', note: 'Numele și comentariul vor fi publice după aprobarea administratorului. Te rugăm să păstrezi un ton respectuos.', send: 'Trimite comentariul', sending: 'Se trimite…', loading: 'Se încarcă comentariile…', empty: 'Fii primul care lasă un comentariu.', more: 'Mai multe comentarii', retry: 'Reîncearcă', loadError: 'Comentariile nu pot fi încărcate momentan.', sendError: 'Comentariul nu a putut fi publicat. Textul tău a fost păstrat; încearcă din nou.', slow: 'Ai trimis prea multe comentarii. Așteaptă un minut și încearcă din nou.', success: 'Comentariul a fost primit și va apărea după aprobarea administratorului.' },
-  'en-US': { title: 'Comments', intro: 'What did this poem bring to mind? Share a few thoughts.', name: 'Your name', body: 'Your comment', note: 'Your name and comment will be public after administrator approval. Please keep the conversation respectful.', send: 'Submit comment', sending: 'Submitting…', loading: 'Loading comments…', empty: 'Be the first to leave a comment.', more: 'More comments', retry: 'Try again', loadError: 'Comments could not be loaded right now.', sendError: 'Your comment could not be posted. Your text has been kept; please try again.', slow: 'You have posted too many comments. Wait a minute and try again.', success: 'Your comment has been received and will appear after administrator approval.' },
+  ro: {
+    title: 'Comentarii',
+    intro: 'Ce ți-a transmis acest poem? Lasă câteva gânduri.',
+    name: 'Numele tău',
+    body: 'Comentariul tău',
+    note: 'Numele și comentariul vor fi publice după aprobarea administratorului. Te rugăm să păstrezi un ton respectuos.',
+    send: 'Trimite comentariul',
+    sending: 'Se trimite…',
+    loading: 'Se încarcă comentariile…',
+    empty: 'Fii primul care lasă un comentariu.',
+    more: 'Mai multe comentarii',
+    retry: 'Reîncearcă',
+    loadError: 'Comentariile nu pot fi încărcate momentan.',
+    sendError: 'Comentariul nu a putut fi publicat. Textul tău a fost păstrat; încearcă din nou.',
+    slow: 'Ai trimis prea multe comentarii. Așteaptă un minut și încearcă din nou.',
+    success: 'Comentariul a fost primit și va apărea după aprobarea administratorului.',
+  },
+  'en-US': {
+    title: 'Comments',
+    intro: 'What did this poem bring to mind? Share a few thoughts.',
+    name: 'Your name',
+    body: 'Your comment',
+    note: 'Your name and comment will be public after administrator approval. Please keep the conversation respectful.',
+    send: 'Submit comment',
+    sending: 'Submitting…',
+    loading: 'Loading comments…',
+    empty: 'Be the first to leave a comment.',
+    more: 'More comments',
+    retry: 'Try again',
+    loadError: 'Comments could not be loaded right now.',
+    sendError: 'Your comment could not be posted. Your text has been kept; please try again.',
+    slow: 'You have posted too many comments. Wait a minute and try again.',
+    success: 'Your comment has been received and will appear after administrator approval.',
+  },
 };
 
-export default function PoemComments({ poemId, language, onCountChange }: { poemId: string; language: PoemLanguage; onCountChange?: (poemId: string, total: number) => void }) {
+export default function PoemComments({
+  poemId,
+  language,
+  onCountChange,
+}: {
+  poemId: string;
+  language: PoemLanguage;
+  onCountChange?: (poemId: string, total: number) => void;
+}) {
   const updateCount = useCallback((total: number) => onCountChange?.(poemId, total), [poemId, onCountChange]);
-  return <ReaderComments key={poemId} endpoint={`/api/poems/${poemId}/comments`} language={language} onCountChange={updateCount} />;
+  return (
+    <ReaderComments
+      key={poemId}
+      endpoint={`/api/poems/${poemId}/comments`}
+      language={language}
+      onCountChange={updateCount}
+    />
+  );
 }
 
-export function ReaderComments({ endpoint, language, intro, onCountChange }: { endpoint: string; language: PoemLanguage; intro?: string; onCountChange?: (total: number) => void }) {
-  return <CommentForm key={endpoint} endpoint={endpoint} language={language} intro={intro} onCountChange={onCountChange} />;
+export function ReaderComments({
+  endpoint,
+  language,
+  intro,
+  onCountChange,
+}: {
+  endpoint: string;
+  language: PoemLanguage;
+  intro?: string;
+  onCountChange?: (total: number) => void;
+}) {
+  return (
+    <CommentForm key={endpoint} endpoint={endpoint} language={language} intro={intro} onCountChange={onCountChange} />
+  );
 }
-function CommentForm({ endpoint, language, intro, onCountChange }: { endpoint: string; language: PoemLanguage; intro?: string; onCountChange?: (total: number) => void }) {
+function CommentForm({
+  endpoint,
+  language,
+  intro,
+  onCountChange,
+}: {
+  endpoint: string;
+  language: PoemLanguage;
+  intro?: string;
+  onCountChange?: (total: number) => void;
+}) {
   const labels = copy[language];
   const id = useId();
   const [total, setTotal] = useState<number | null>(null);
@@ -37,7 +106,10 @@ function CommentForm({ endpoint, language, intro, onCountChange }: { endpoint: s
   const pending = useRef(false);
   useEffect(() => {
     if (!sending && (recovery.available || (!name && !content))) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [sending, recovery.available, name, content]);
@@ -47,61 +119,188 @@ function CommentForm({ endpoint, language, intro, onCountChange }: { endpoint: s
     fetch(`${endpoint}?offset=${offset}`, { signal: controller.signal, cache: 'no-store' })
       .then(async response => {
         if (!response.ok) throw new Error('Comments unavailable');
-        const data = await response.json() as { comments: ReaderComment[]; hasMore: boolean; total?: number };
+        const data = (await response.json()) as { comments: ReaderComment[]; hasMore: boolean; total?: number };
         if (controller.signal.aborted) return;
-        setComments(previous => offset === 0 ? data.comments : [...previous, ...data.comments.filter(comment => !previous.some(item => item.id === comment.id))]);
-        if (typeof data.total === 'number') { setTotal(data.total); onCountChange?.(data.total); }
+        setComments(previous =>
+          offset === 0
+            ? data.comments
+            : [...previous, ...data.comments.filter(comment => !previous.some(item => item.id === comment.id))],
+        );
+        if (typeof data.total === 'number') {
+          setTotal(data.total);
+          onCountChange?.(data.total);
+        }
         setHasMore(data.hasMore);
         setLoading(false);
       })
-      .catch(() => { if (!controller.signal.aborted) { setLoadFailed(true); setLoading(false); } });
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setLoadFailed(true);
+          setLoading(false);
+        }
+      });
     return () => controller.abort();
   }, [endpoint, offset, reload, onCountChange]);
 
   function load(nextOffset: number) {
-    setLoading(true); setLoadFailed(false); setOffset(nextOffset); setReload(value => value + 1);
+    setLoading(true);
+    setLoadFailed(false);
+    setOffset(nextOffset);
+    setReload(value => value + 1);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending.current || !name.trim() || !content.trim()) return;
     pending.current = true;
-    setSending(true); setSendError(null); setSaved(false);
+    setSending(true);
+    setSendError(null);
+    setSaved(false);
     try {
       // Reuse the request ID after a lost response to avoid posting twice.
       const attempt = recovery.attempt();
-      const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(attempt), signal: AbortSignal.timeout(30000) });
-      if (!response.ok) { setSendError(response.status === 429 ? 'slow' : 'sendError'); return; }
-      const data = await response.json() as { received?: boolean };
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(attempt),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!response.ok) {
+        setSendError(response.status === 429 ? 'slow' : 'sendError');
+        return;
+      }
+      const data = (await response.json()) as { received?: boolean };
       if (!data.received) throw new Error('Receipt unavailable');
-      recovery.clear(); setSaved(true);
+      recovery.clear();
+      setSaved(true);
       load(0);
-    } catch { setSendError('sendError'); }
-    finally { pending.current = false; setSending(false); }
+    } catch {
+      setSendError('sendError');
+    } finally {
+      pending.current = false;
+      setSending(false);
+    }
   }
 
-  return <section className="poem-comments" aria-labelledby={`${id}-title`}>
-    <h2 id={`${id}-title`}>{total === null ? labels.title : commentCountLabel(total, language)}</h2>
-    <p className="comments-intro">{intro ?? labels.intro}</p>
-    <form onSubmit={submit} className="comment-form" aria-describedby={`${id}-note`}>
-      <label htmlFor={`${id}-name`}>{labels.name}</label>
-      <input id={`${id}-name`} name="name" autoComplete="name" required maxLength={COMMENT_NAME_LIMIT} value={name} disabled={sending || !recovery.ready} onChange={event => { recovery.change({ name: event.target.value }); setSaved(false); }} />
-      <label htmlFor={`${id}-content`}>{labels.body}</label>
-      <textarea id={`${id}-content`} name="comment" rows={4} required maxLength={COMMENT_BODY_LIMIT} value={content} disabled={sending || !recovery.ready} onChange={event => { recovery.change({ content: event.target.value }); setSaved(false); }} aria-describedby={`${id}-length`} />
-      <span id={`${id}-length`} className="comment-length">{content.length} / {COMMENT_BODY_LIMIT}</span>
-      <p id={`${id}-note`} className="comment-note">{labels.note}</p>
-      <button type="submit" className="primary-button" disabled={sending || !name.trim() || !content.trim()}>{sending ? labels.sending : labels.send}</button>
-      {(name || content) && <><p className="comment-note" role="status">{recovery.available ? (language === 'ro' ? 'Schița se păstrează în această filă la schimbarea limbii și reîncărcare, cel mult 24 de ore.' : 'The draft survives language changes and reloads in this tab for up to 24 hours.') : (language === 'ro' ? 'Browserul nu permite păstrarea schiței. Copiază textul înainte de a părăsi pagina.' : 'This browser cannot save the draft. Copy your text before leaving this page.')}</p><button type="button" className="secondary-button" disabled={sending} onClick={() => { if (window.confirm(language === 'ro' ? 'Ștergi numele și comentariul netrimis?' : 'Discard the name and unsent comment?')) { recovery.clear(); setSendError(null); setSaved(false); } }}>{language === 'ro' ? 'Abandonează schița' : 'Discard draft'}</button></>}
-      {sendError && <p role="alert" className="comment-error">{labels[sendError]}</p>}
-      <p role="status" className="comment-status">{saved ? labels.success : ''}</p>
-    </form>
-    {comments.length > 0 && <ol className="comment-list">{comments.map(comment => <li key={comment.id}>
-      <div className="comment-meta"><strong dir="auto">{comment.name}</strong><time dateTime={new Date(comment.created_at).toISOString()}>{new Intl.DateTimeFormat(language, { dateStyle: 'medium' }).format(comment.created_at)}</time></div>
-      <p dir="auto">{comment.content}</p>
-    </li>)}</ol>}
-    {loading && <p role="status" className="comment-note">{labels.loading}</p>}
-    {loadFailed && <div role="alert"><p>{labels.loadError}</p><button className="secondary-button" onClick={() => load(offset)}>{labels.retry}</button></div>}
-    {!loading && !loadFailed && !comments.length && <p className="comment-note">{labels.empty}</p>}
-    {hasMore && !loadFailed && <button className="secondary-button" disabled={loading} onClick={() => load(offset + 20)}>{labels.more}</button>}
-  </section>;
+  return (
+    <section className="poem-comments" aria-labelledby={`${id}-title`}>
+      <h2 id={`${id}-title`}>{total === null ? labels.title : commentCountLabel(total, language)}</h2>
+      <p className="comments-intro">{intro ?? labels.intro}</p>
+      <form onSubmit={submit} className="comment-form" aria-describedby={`${id}-note`}>
+        <label htmlFor={`${id}-name`}>{labels.name}</label>
+        <input
+          id={`${id}-name`}
+          name="name"
+          autoComplete="name"
+          required
+          maxLength={COMMENT_NAME_LIMIT}
+          value={name}
+          disabled={sending || !recovery.ready}
+          onChange={event => {
+            recovery.change({ name: event.target.value });
+            setSaved(false);
+          }}
+        />
+        <label htmlFor={`${id}-content`}>{labels.body}</label>
+        <textarea
+          id={`${id}-content`}
+          name="comment"
+          rows={4}
+          required
+          maxLength={COMMENT_BODY_LIMIT}
+          value={content}
+          disabled={sending || !recovery.ready}
+          onChange={event => {
+            recovery.change({ content: event.target.value });
+            setSaved(false);
+          }}
+          aria-describedby={`${id}-length`}
+        />
+        <span id={`${id}-length`} className="comment-length">
+          {content.length} / {COMMENT_BODY_LIMIT}
+        </span>
+        <p id={`${id}-note`} className="comment-note">
+          {labels.note}
+        </p>
+        <button type="submit" className="primary-button" disabled={sending || !name.trim() || !content.trim()}>
+          {sending ? labels.sending : labels.send}
+        </button>
+        {(name || content) && (
+          <>
+            <p className="comment-note" role="status">
+              {recovery.available
+                ? language === 'ro'
+                  ? 'Schița se păstrează în această filă la schimbarea limbii și reîncărcare, cel mult 24 de ore.'
+                  : 'The draft survives language changes and reloads in this tab for up to 24 hours.'
+                : language === 'ro'
+                  ? 'Browserul nu permite păstrarea schiței. Copiază textul înainte de a părăsi pagina.'
+                  : 'This browser cannot save the draft. Copy your text before leaving this page.'}
+            </p>
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={sending}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    language === 'ro'
+                      ? 'Ștergi numele și comentariul netrimis?'
+                      : 'Discard the name and unsent comment?',
+                  )
+                ) {
+                  recovery.clear();
+                  setSendError(null);
+                  setSaved(false);
+                }
+              }}
+            >
+              {language === 'ro' ? 'Abandonează schița' : 'Discard draft'}
+            </button>
+          </>
+        )}
+        {sendError && (
+          <p role="alert" className="comment-error">
+            {labels[sendError]}
+          </p>
+        )}
+        <p role="status" className="comment-status">
+          {saved ? labels.success : ''}
+        </p>
+      </form>
+      {comments.length > 0 && (
+        <ol className="comment-list">
+          {comments.map(comment => (
+            <li key={comment.id}>
+              <div className="comment-meta">
+                <strong dir="auto">{comment.name}</strong>
+                <time dateTime={new Date(comment.created_at).toISOString()}>
+                  {new Intl.DateTimeFormat(language, { dateStyle: 'medium' }).format(comment.created_at)}
+                </time>
+              </div>
+              <p dir="auto">{comment.content}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+      {loading && (
+        <p role="status" className="comment-note">
+          {labels.loading}
+        </p>
+      )}
+      {loadFailed && (
+        <div role="alert">
+          <p>{labels.loadError}</p>
+          <button className="secondary-button" onClick={() => load(offset)}>
+            {labels.retry}
+          </button>
+        </div>
+      )}
+      {!loading && !loadFailed && !comments.length && <p className="comment-note">{labels.empty}</p>}
+      {hasMore && !loadFailed && (
+        <button className="secondary-button" disabled={loading} onClick={() => load(offset + 20)}>
+          {labels.more}
+        </button>
+      )}
+    </section>
+  );
 }

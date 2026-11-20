@@ -14,8 +14,10 @@ for (const [name, path] of packages) {
   const [major, minor, patch] = version.split('.').map(Number);
   // GHSA-xqc2-xf4c-x3h3 (remote code execution in React Server Components)
   // affects 19.2.0-19.2.8; the earlier GHSA-wx67-qw84-cm4g needed 19.2.8.
-  assert(major > 19 || (major === 19 && (minor > 2 || (minor === 2 && patch >= 9))),
-    `${name} ${version}: upgrade for GHSA-xqc2-xf4c-x3h3`);
+  assert(
+    major > 19 || (major === 19 && (minor > 2 || (minor === 2 && patch >= 9))),
+    `${name} ${version}: upgrade for GHSA-xqc2-xf4c-x3h3`,
+  );
   versions.push(version);
   console.log(`${name}: ${version}`);
 }

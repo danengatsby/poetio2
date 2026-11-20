@@ -2,7 +2,15 @@ import { foldSearch } from '../lib/search-normalization';
 import type { PoemInput } from '../lib/poem-types';
 import type { Database, Statement } from './poems';
 
-const columns = ['title', 'author', 'theme', 'content', 'translated_title', 'translated_theme', 'translated_content'] as const;
+const columns = [
+  'title',
+  'author',
+  'theme',
+  'content',
+  'translated_title',
+  'translated_theme',
+  'translated_content',
+] as const;
 const assignments = columns.map(column => column + '=?').join(', ');
 const removePending = 'DELETE FROM poem_search_pending WHERE poem_id=?';
 
@@ -12,11 +20,14 @@ export async function writeIndexedPoem(db: Database, statement: Statement, id: s
   const values = columns.map(column => poem[column] ?? '');
   const batch = [statement];
   if (values.some(value => value !== value.normalize('NFC'))) {
-    batch.push(db.prepare(`UPDATE poem_search SET ${assignments} WHERE poem_id=? AND changes()=1`)
-      .bind(...values.map(foldSearch), id));
+    batch.push(
+      db
+        .prepare(`UPDATE poem_search SET ${assignments} WHERE poem_id=? AND changes()=1`)
+        .bind(...values.map(foldSearch), id),
+    );
   }
   batch.push(db.prepare(removePending + ' AND changes()=1').bind(id));
-  const [result] = await db.batch(batch) as { meta: { changes: number } }[];
+  const [result] = (await db.batch(batch)) as { meta: { changes: number } }[];
   return result;
 }
 
@@ -33,9 +44,14 @@ export async function rebuildPendingPoemSearch(db: Database, rebuildAll = false)
       const values = columns.map(column => row[column] ?? '');
       // The existing SQL triggers already indexed NFC originals at write time.
       if (rebuildAll || values.some(value => value !== value.normalize('NFC'))) {
-        statements.push(db.prepare(`UPDATE poem_search SET ${assignments} WHERE poem_id=?
-          AND EXISTS (SELECT 1 FROM poem_search_pending WHERE poem_id=? AND token=?)`)
-          .bind(...values.map(foldSearch), row.poem_id, row.poem_id, row.token));
+        statements.push(
+          db
+            .prepare(
+              `UPDATE poem_search SET ${assignments} WHERE poem_id=?
+          AND EXISTS (SELECT 1 FROM poem_search_pending WHERE poem_id=? AND token=?)`,
+            )
+            .bind(...values.map(foldSearch), row.poem_id, row.poem_id, row.token),
+        );
       }
       statements.push(db.prepare(removePending + ' AND token=?').bind(row.poem_id, row.token));
     }

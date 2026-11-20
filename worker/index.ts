@@ -1,6 +1,6 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
-import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
-import handler from "vinext/server/app-router-entry";
+import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from 'vinext/server/image-optimization';
+import handler from 'vinext/server/app-router-entry';
 import type { Database } from '../db/poems';
 
 interface Env {
@@ -30,20 +30,34 @@ const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname === "/_vinext/image") {
+    if (url.pathname === '/_vinext/image') {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
-      return handleImageOptimization(request, {
-        fetchAsset: (path) => env.ASSETS.fetch(new Request(new URL(path, request.url))),
-        transformImage: async (body, { width, format, quality }) => {
-          const result = await env.IMAGES.input(body).transform(width > 0 ? { width } : {}).output({ format, quality });
-          return result.response();
+      return handleImageOptimization(
+        request,
+        {
+          fetchAsset: path => env.ASSETS.fetch(new Request(new URL(path, request.url))),
+          transformImage: async (body, { width, format, quality }) => {
+            const result = await env.IMAGES.input(body)
+              .transform(width > 0 ? { width } : {})
+              .output({ format, quality });
+            return result.response();
+          },
         },
-      }, allowedWidths);
+        allowedWidths,
+      );
     }
 
     const response = await handler.fetch(request, env, ctx);
     const secured = new Response(response.body, response);
-    if (url.pathname === '/' || url.pathname === '/autor' || url.pathname === '/admin' || url.pathname.startsWith('/admin/') || url.pathname.startsWith('/api/poems') || url.pathname.startsWith('/api/images') || url.pathname.startsWith('/api/audio')) {
+    if (
+      url.pathname === '/' ||
+      url.pathname === '/autor' ||
+      url.pathname === '/admin' ||
+      url.pathname.startsWith('/admin/') ||
+      url.pathname.startsWith('/api/poems') ||
+      url.pathname.startsWith('/api/images') ||
+      url.pathname.startsWith('/api/audio')
+    ) {
       secured.headers.set('Cache-Control', 'private, no-store');
     }
     secured.headers.set('X-Content-Type-Options', 'nosniff');

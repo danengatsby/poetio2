@@ -11,16 +11,21 @@ export async function GET(request: Request, context: Context) {
     const { id } = await context.params;
     const offset = Number(new URL(request.url).searchParams.get('offset') ?? 0);
     return Response.json(await listComments(getPoemDb(), id, offset), { headers });
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    return apiError(error);
+  }
 }
 
 export async function POST(request: Request, context: Context) {
   try {
     requireSameOrigin(request);
-    if (request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') throw new AppError(415, 'Formatul cererii nu este acceptat.');
+    if (request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json')
+      throw new AppError(415, 'Formatul cererii nu este acceptat.');
     const { id } = await context.params;
     const input = await readJson(request, 16_384);
     await createComment(getPoemDb(), id, input);
     return Response.json({ received: true }, { status: 202, headers });
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    return apiError(error);
+  }
 }

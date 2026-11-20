@@ -25,11 +25,15 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   return contentMetadata({
     title: book.title,
     author: book.author,
-    description: excerpt(book.description, language === 'en-US'
-      ? `${book.title} — Read on Poetio.`
-      : `${book.title} — Citește pe Poetio.`),
+    description: excerpt(
+      book.description,
+      language === 'en-US' ? `${book.title} — Read on Poetio.` : `${book.title} — Citește pe Poetio.`,
+    ),
     path: contentPath('book', book.id),
-    image: book.image_id || book.image_2_id ? `/api/images/${book.image_id || book.image_2_id}?w=1280` : '/assets/poetio-balloons.png',
+    image:
+      book.image_id || book.image_2_id
+        ? `/api/images/${book.image_id || book.image_2_id}?w=1280`
+        : '/assets/poetio-balloons.png',
     language,
     type: 'book',
     published: book.created_at,

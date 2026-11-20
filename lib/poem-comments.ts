@@ -1,5 +1,7 @@
 export function commentCountLabel(count: number, language: 'ro' | 'en-US') {
-  return language === 'ro' ? `${count} ${count === 1 ? 'comentariu' : 'comentarii'}` : `${count} ${count === 1 ? 'comment' : 'comments'}`;
+  return language === 'ro'
+    ? `${count} ${count === 1 ? 'comentariu' : 'comentarii'}`
+    : `${count} ${count === 1 ? 'comment' : 'comments'}`;
 }
 
 export const COMMENT_NAME_LIMIT = 80;

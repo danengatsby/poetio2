@@ -6,8 +6,17 @@ export function restoredPoemReading(value: string | null): PoemReadingPreference
     const saved = value ? JSON.parse(value) : null;
     if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return { ...defaultPoemReading };
     return {
-      textSize: typeof saved.textSize === 'number' && Number.isFinite(saved.textSize) && saved.textSize >= 1 && saved.textSize <= 2 && Number.isInteger(saved.textSize * 8) ? saved.textSize : defaultPoemReading.textSize,
+      textSize:
+        typeof saved.textSize === 'number' &&
+        Number.isFinite(saved.textSize) &&
+        saved.textSize >= 1 &&
+        saved.textSize <= 2 &&
+        Number.isInteger(saved.textSize * 8)
+          ? saved.textSize
+          : defaultPoemReading.textSize,
       width: ['narrow', 'normal', 'wide'].includes(saved.width) ? saved.width : defaultPoemReading.width,
     };
-  } catch { return { ...defaultPoemReading }; }
+  } catch {
+    return { ...defaultPoemReading };
+  }
 }

@@ -2,22 +2,44 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import ts from 'typescript';
 
-const romanian = { Ă: 'a', ă: 'a', Â: 'a', â: 'a', Î: 'i', î: 'i', Ș: 's', ș: 's', Ş: 's', ş: 's', Ț: 't', ț: 't', Ţ: 't', ţ: 't' };
+const romanian = {
+  Ă: 'a',
+  ă: 'a',
+  Â: 'a',
+  â: 'a',
+  Î: 'i',
+  î: 'i',
+  Ș: 's',
+  ș: 's',
+  Ş: 's',
+  ş: 's',
+  Ț: 't',
+  ț: 't',
+  Ţ: 't',
+  ţ: 't',
+};
 const map = {};
 for (let point = 128; point <= 0x10ffff; point++) {
-  const letter = String.fromCodePoint(point), replacement = romanian[letter] ?? letter.toLowerCase();
+  const letter = String.fromCodePoint(point),
+    replacement = romanian[letter] ?? letter.toLowerCase();
   if (replacement !== letter) map[letter] = replacement;
 }
 const generated = `// Generated with Node Unicode ${process.versions.unicode}; regenerate with scripts/generate-search-normalization.mjs.\nexport const searchFoldMap: Record<string, string> = ${JSON.stringify(map, null, 2)};\n`;
 const exports = {};
-const code = ts.transpileModule(readFileSync(new URL('../lib/search-normalization.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+const code = ts.transpileModule(readFileSync(new URL('../lib/search-normalization.ts', import.meta.url), 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS },
+}).outputText;
 new Function('require', 'exports', code)(() => ({ searchFoldMap: map }), exports);
 const fold = exports.sqlFoldSearch;
 const quote = text => "'" + text.replaceAll("'", "''") + "'";
 const columns = ['title', 'author', 'theme', 'content', 'translated_title', 'translated_theme', 'translated_content'];
 const statements = [
   'CREATE TABLE search_fold_characters (letter text PRIMARY KEY NOT NULL, replacement text NOT NULL);',
-  'INSERT INTO search_fold_characters (letter, replacement) VALUES\n' + Object.entries(map).map(([letter, replacement]) => `(${quote(letter)}, ${quote(replacement)})`).join(',\n') + ';',
+  'INSERT INTO search_fold_characters (letter, replacement) VALUES\n' +
+    Object.entries(map)
+      .map(([letter, replacement]) => `(${quote(letter)}, ${quote(replacement)})`)
+      .join(',\n') +
+    ';',
 ];
 for (const event of ['insert', 'update']) {
   statements.push(`DROP TRIGGER poem_search_${event};`);
@@ -32,10 +54,15 @@ for (const event of ['insert', 'update']) {
     ON CONFLICT(file_id, page) DO UPDATE SET content=excluded.content, search_text=excluded.search_text, source='edited', revision=excluded.revision;
   END;`);
 }
-statements.push(`UPDATE poem_search SET ${columns.map(column => `${column}=(SELECT ${fold('poems.' + column)} FROM poems WHERE poems.id=poem_search.poem_id)`).join(', ')};`);
+statements.push(
+  `UPDATE poem_search SET ${columns.map(column => `${column}=(SELECT ${fold('poems.' + column)} FROM poems WHERE poems.id=poem_search.poem_id)`).join(', ')};`,
+);
 statements.push(`UPDATE book_search_pages SET search_text=${fold('content')};`);
 statements.push("INSERT INTO collection_meta (key, value) VALUES ('search_normalization_v2', 'complete');");
-for (const [path, content] of [['../lib/search-fold-map.ts', generated], ['../drizzle/0018_search_normalization.sql', statements.join('\n--> statement-breakpoint\n') + '\n']]) {
+for (const [path, content] of [
+  ['../lib/search-fold-map.ts', generated],
+  ['../drizzle/0018_search_normalization.sql', statements.join('\n--> statement-breakpoint\n') + '\n'],
+]) {
   const target = new URL(path, import.meta.url);
   if (process.argv.includes('--check')) {
     if (readFileSync(target, 'utf8') !== content) throw new Error('Generated normalization differs: ' + path);

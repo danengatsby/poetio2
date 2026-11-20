@@ -15,5 +15,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!file || !isOwnerEmail(file.owner_email)) throw new AppError(404, 'Fișierul PDF nu există.');
     const validation = await bookValidation(file, getBookValidator(), data?.retry === true);
     return Response.json({ validation }, { headers: { 'Cache-Control': 'private, no-store' } });
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    return apiError(error);
+  }
 }

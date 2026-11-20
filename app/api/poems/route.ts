@@ -9,7 +9,9 @@ export async function GET(request: Request) {
   try {
     requireOwner(request);
     return Response.json({ poems: await listPoems(getPoemDb()) }, { headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    return apiError(error);
+  }
 }
 
 export async function POST(request: Request) {
@@ -18,6 +20,11 @@ export async function POST(request: Request) {
     const data = await readJson(request);
     const input = validateInput(data);
     validateId(data.id);
-    return Response.json({ poem: await createPoem(getPoemDb(), data.id, input, getMediaValidator()) }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) { return apiError(error); }
+    return Response.json(
+      { poem: await createPoem(getPoemDb(), data.id, input, getMediaValidator()) },
+      { status: 201, headers: { 'Cache-Control': 'no-store' } },
+    );
+  } catch (error) {
+    return apiError(error);
+  }
 }

@@ -9,13 +9,18 @@ export function verifyVpsAssets(directory) {
   const root = resolve(directory);
   const client = resolve(root, 'client');
   const vite = JSON.parse(readFileSync(resolve(client, '.vite/manifest.json'), 'utf8'));
-  const present = path => path.startsWith('/_next/static/') && !path.includes('..') && existsSync(resolve(client, '.' + path));
+  const present = path =>
+    path.startsWith('/_next/static/') && !path.includes('..') && existsSync(resolve(client, '.' + path));
   for (const entry of Object.values(vite)) {
     for (const file of [entry.file, ...(entry.css ?? []), ...(entry.assets ?? [])]) {
       if (!present('/' + file)) throw new Error(`Missing final Vite asset: ${file}`);
     }
   }
-  const styles = new Set(Object.values(vite).filter(entry => entry.file.endsWith('.css')).map(entry => '/' + entry.file));
+  const styles = new Set(
+    Object.values(vite)
+      .filter(entry => entry.file.endsWith('.css'))
+      .map(entry => '/' + entry.file),
+  );
   const planned = [];
   const removed = new Set();
   for (const file of ['server/__vite_rsc_assets_manifest.js', 'server/ssr/__vite_rsc_assets_manifest.js']) {
@@ -25,16 +30,26 @@ export function verifyVpsAssets(directory) {
     if (!match) throw new Error(`Unexpected RSC assets manifest format: ${file}`);
     const manifest = JSON.parse(match[1]);
     if (!present(manifest.clientEntryUrl)) throw new Error('Missing browser entry');
-    const groups = [manifest.clientEntryDeps, ...Object.values(manifest.clientReferenceDeps), ...Object.values(manifest.serverResources ?? {})];
+    const groups = [
+      manifest.clientEntryDeps,
+      ...Object.values(manifest.clientReferenceDeps),
+      ...Object.values(manifest.serverResources ?? {}),
+    ];
     for (const group of groups) {
       for (const css of group.css ?? []) if (!present(css)) throw new Error(`Missing stylesheet: ${css}`);
       group.js = (group.js ?? []).filter(js => {
         if (present(js)) return true;
         const name = /^(.*)-[\w-]{8}\.js$/.exec(basename(js))?.[1];
-        const cssOnly = name && (group.css ?? []).some(css => {
-          const cssName = basename(css);
-          return styles.has(css) && cssName.startsWith(name + '.') && /^[\w-]{8}\.css$/.test(cssName.slice(name.length + 1));
-        });
+        const cssOnly =
+          name &&
+          (group.css ?? []).some(css => {
+            const cssName = basename(css);
+            return (
+              styles.has(css) &&
+              cssName.startsWith(name + '.') &&
+              /^[\w-]{8}\.css$/.test(cssName.slice(name.length + 1))
+            );
+          });
         if (!cssOnly) throw new Error(`Missing JavaScript asset without a CSS counterpart: ${js}`);
         removed.add(js);
         return false;

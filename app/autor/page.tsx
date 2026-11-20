@@ -8,7 +8,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const language = await requestLanguage();
   return {
     title: language === 'ro' ? 'Dan Enache — Autor | Poetio' : 'Dan Enache — Author | Poetio',
-    description: language === 'ro' ? 'Despre Poetio: fotografia și biografia completă a poetului Dan Enache.' : 'About Poetio: the portrait and complete biography of poet Dan Enache.',
+    description:
+      language === 'ro'
+        ? 'Despre Poetio: fotografia și biografia completă a poetului Dan Enache.'
+        : 'About Poetio: the portrait and complete biography of poet Dan Enache.',
   };
 }
 

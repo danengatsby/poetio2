@@ -5,5 +5,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     const file = await readableBookFile(getPoemDb(), request, (await params).id);
     return Response.json(await getBookRenderer().info(file), { headers: { 'Cache-Control': 'private, no-store' } });
-  } catch (error) { return bookPageError(error); }
+  } catch (error) {
+    return bookPageError(error);
+  }
 }

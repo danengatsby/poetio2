@@ -7,15 +7,24 @@ export function migrateBookDatabase(file) {
   const db = new DatabaseSync(file);
   try {
     db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; BEGIN IMMEDIATE;');
-    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('books', 'book_files')").all();
-    if (tables.length === 2) { db.exec('COMMIT'); return false; }
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('books', 'book_files')")
+      .all();
+    if (tables.length === 2) {
+      db.exec('COMMIT');
+      return false;
+    }
     if (tables.length) throw new Error('Incomplete book schema; review before migrating.');
     db.exec(readFileSync(new URL('../drizzle/0008_book_collection.sql', import.meta.url), 'utf8'));
     if (db.prepare('PRAGMA foreign_key_check').all().length) throw new Error('Foreign key verification failed.');
     db.exec('COMMIT');
     return true;
-  } catch (error) { if (db.isTransaction) db.exec('ROLLBACK'); throw error; }
-  finally { db.close(); }
+  } catch (error) {
+    if (db.isTransaction) db.exec('ROLLBACK');
+    throw error;
+  } finally {
+    db.close();
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

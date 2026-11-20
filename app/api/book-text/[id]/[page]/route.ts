@@ -10,6 +10,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const db = getPoemDb();
     const file = await readableBookFile(db, request, id);
     const result = await readBookText(db, file, textPageNumber(page), getBookTextRenderer());
-    return Response.json(result, { headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
-  } catch (error) { return bookPageError(error); }
+    return Response.json(result, {
+      headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' },
+    });
+  } catch (error) {
+    return bookPageError(error);
+  }
 }

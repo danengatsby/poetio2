@@ -16,7 +16,12 @@ writeFileSync(join(compiled, 'package.json'), '{"type":"commonjs"}');
 for (const folder of ['db', 'lib']) {
   mkdirSync(join(compiled, folder));
   for (const file of readdirSync(new URL('../' + folder, import.meta.url)).filter(file => file.endsWith('.ts'))) {
-    writeFileSync(join(compiled, folder, file.replace(/\.ts$/, '.js')), ts.transpileModule(readFileSync(new URL('../' + folder + '/' + file, import.meta.url), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText);
+    writeFileSync(
+      join(compiled, folder, file.replace(/\.ts$/, '.js')),
+      ts.transpileModule(readFileSync(new URL('../' + folder + '/' + file, import.meta.url), 'utf8'), {
+        compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+      }).outputText,
+    );
   }
 }
 process.on('exit', () => rmSync(compiled, { recursive: true, force: true }));
@@ -28,53 +33,85 @@ const { listAdminPoems } = require(join(compiled, 'db/poem-admin-list.js'));
 const { sitemapEntries } = require(join(compiled, 'db/sitemap.js'));
 const { sqlFoldSearch, foldSearch } = require(join(compiled, 'lib/poem-search.js'));
 const { saveBookText } = require(join(compiled, 'db/book-text.js'));
-const migrations = readdirSync(new URL('../drizzle', import.meta.url)).filter(file => file.endsWith('.sql')).sort();
+const migrations = readdirSync(new URL('../drizzle', import.meta.url))
+  .filter(file => file.endsWith('.sql'))
+  .sort();
 
 function fixture(t, latest = true, before = '9999') {
-  const directory = mkdtempSync(join(tmpdir(), 'poetio-search-db-')), path = join(directory, 'data.sqlite3');
+  const directory = mkdtempSync(join(tmpdir(), 'poetio-search-db-')),
+    path = join(directory, 'data.sqlite3');
   const sqlite = new DatabaseSync(path);
-  for (const name of migrations.filter(name => name < before && (latest || name < '0017'))) sqlite.exec(readFileSync(new URL('../drizzle/' + name, import.meta.url), 'utf8'));
+  for (const name of migrations.filter(name => name < before && (latest || name < '0017')))
+    sqlite.exec(readFileSync(new URL('../drizzle/' + name, import.meta.url), 'utf8'));
   sqlite.exec("INSERT INTO collection_meta VALUES ('initial_poems_v1','complete'),('poem_languages_v1','complete')");
-  t.after(() => { sqlite.close(); rmSync(directory, { recursive: true, force: true }); });
+  t.after(() => {
+    sqlite.close();
+    rmSync(directory, { recursive: true, force: true });
+  });
   return { sqlite, path };
 }
 function poem(sqlite, content, title = 'Poem') {
   const id = crypto.randomUUID();
-  sqlite.prepare('INSERT INTO poems (id,title,author,theme,content,translated_title,translated_theme,translated_content,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)')
+  sqlite
+    .prepare(
+      'INSERT INTO poems (id,title,author,theme,content,translated_title,translated_theme,translated_content,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)',
+    )
     .run(id, title, 'Ștefan', 'Lumină', content, 'English', 'Light', 'Translated words', 1, 1);
   return id;
 }
 function file(sqlite) {
   const id = crypto.randomUUID();
-  sqlite.prepare('INSERT INTO book_files VALUES(?,?,?,?,?,?,?,?)').run(id, 'fixture', 'book.pdf', 'application/pdf', 1, 'hash', 'pensio53@gmail.com', 1);
+  sqlite
+    .prepare('INSERT INTO book_files VALUES(?,?,?,?,?,?,?,?)')
+    .run(id, 'fixture', 'book.pdf', 'application/pdf', 1, 'hash', 'pensio53@gmail.com', 1);
   return { id, owner_email: 'pensio53@gmail.com', content_hash: 'hash' };
 }
 
 test('search migration preserves published records and history, is repeatable, and detects partial schemas', t => {
   const { sqlite, path } = fixture(t, false);
-  const id = poem(sqlite, 'Şir de versuri — țară'), book = file(sqlite);
+  const id = poem(sqlite, 'Şir de versuri — țară'),
+    book = file(sqlite);
   sqlite.prepare('INSERT INTO book_page_texts VALUES(?,?,?,?,?,?)').run(book.id, 1, 'Corectură verificată', 'ro', 3, 1);
-  const poems = sqlite.prepare('SELECT * FROM poems').all(), history = sqlite.prepare('SELECT * FROM content_history').all();
-  assert.equal(migrateSearch(path), true); assert.equal(migrateSearch(path), false);
+  const poems = sqlite.prepare('SELECT * FROM poems').all(),
+    history = sqlite.prepare('SELECT * FROM content_history').all();
+  assert.equal(migrateSearch(path), true);
+  assert.equal(migrateSearch(path), false);
   assert.deepEqual(sqlite.prepare('SELECT * FROM poems').all(), poems);
   assert.deepEqual(sqlite.prepare('SELECT * FROM content_history').all(), history);
-  assert.equal(sqlite.prepare('SELECT content FROM poem_search WHERE poem_id=?').get(id).content, 'sir de versuri — tara');
+  assert.equal(
+    sqlite.prepare('SELECT content FROM poem_search WHERE poem_id=?').get(id).content,
+    'sir de versuri — tara',
+  );
   assert.equal(sqlite.prepare('SELECT content FROM book_search_pages').get().content, 'Corectură verificată');
   sqlite.exec("BEGIN; UPDATE poems SET content='Altă versiune'; ROLLBACK");
   assert.equal(sqlite.prepare('SELECT content FROM poem_search').get().content, 'sir de versuri — tara');
-  assert.equal(sqlite.prepare('SELECT rowid FROM poem_search_fts WHERE poem_search_fts MATCH ?').all('"versiune"').length, 0);
+  assert.equal(
+    sqlite.prepare('SELECT rowid FROM poem_search_fts WHERE poem_search_fts MATCH ?').all('"versiune"').length,
+    0,
+  );
   sqlite.exec('DROP TRIGGER poem_search_update');
   assert.throws(() => migrateSearch(path), /Partial/);
 });
 
 test('indexed poem searches preserve literal substring, diacritic, short-query and theme semantics through edits and deletes', async t => {
-  const { sqlite, path } = fixture(t), db = openDatabase(path); t.after(() => db.close());
+  const { sqlite, path } = fixture(t),
+    db = openDatabase(path);
+  t.after(() => db.close());
   poem(sqlite, 'Șir și Ţară\n100% [dar] "NOT" OR luna\nabc def 😀😀😀');
   const other = poem(sqlite, 'Doar alt text', 'O întoarcere');
-  for (const query of ['sir','țară','și','a','100%','[dar]','"NOT"','OR','bc d','😀😀😀','absent','a\0b']) {
-    const columns = ['title','content','translated_title','translated_content'];
-    const expected = sqlite.prepare(`SELECT id FROM poems WHERE ${columns.map(column => `instr(${sqlFoldSearch(column)}, ?) > 0`).join(' OR ')} ORDER BY created_at,id`).all(...columns.map(() => foldSearch(query))).map(row => row.id);
-    assert.deepEqual((await listPoemCards(db, { q: query })).poems.map(row => row.id), expected, query);
+  for (const query of ['sir', 'țară', 'și', 'a', '100%', '[dar]', '"NOT"', 'OR', 'bc d', '😀😀😀', 'absent', 'a\0b']) {
+    const columns = ['title', 'content', 'translated_title', 'translated_content'];
+    const expected = sqlite
+      .prepare(
+        `SELECT id FROM poems WHERE ${columns.map(column => `instr(${sqlFoldSearch(column)}, ?) > 0`).join(' OR ')} ORDER BY created_at,id`,
+      )
+      .all(...columns.map(() => foldSearch(query)))
+      .map(row => row.id);
+    assert.deepEqual(
+      (await listPoemCards(db, { q: query })).poems.map(row => row.id),
+      expected,
+      query,
+    );
   }
   assert.equal((await listPoemCards(db, { theme: 'lumina' })).total, 2);
   assert.equal((await listAdminPoems(db, { q: 'stefan' })).total, 2);
@@ -86,11 +123,19 @@ test('indexed poem searches preserve literal substring, diacritic, short-query a
 });
 
 test('pasted Romanian search terms match composed terms in poems, themes and the editor', async t => {
-  const { sqlite, path } = fixture(t), db = openDatabase(path); t.after(() => db.close());
+  const { sqlite, path } = fixture(t),
+    db = openDatabase(path);
+  t.after(() => db.close());
   const id = poem(sqlite, 'În labirintul amintirilor');
   for (const q of ['În labirintul', 'În labirintul'.normalize('NFD'), 'In labirintul']) {
-    assert.deepEqual((await listPoemCards(db, { q, theme: 'Lumină'.normalize('NFD') })).poems.map(p => p.id), [id]);
-    assert.deepEqual((await listAdminPoems(db, { q })).poems.map(p => p.id), [id]);
+    assert.deepEqual(
+      (await listPoemCards(db, { q, theme: 'Lumină'.normalize('NFD') })).poems.map(p => p.id),
+      [id],
+    );
+    assert.deepEqual(
+      (await listAdminPoems(db, { q })).poems.map(p => p.id),
+      [id],
+    );
   }
 });
 
@@ -110,17 +155,37 @@ test('book matches address the original text after composition and case expansio
 });
 
 test('book searches paginate reusable text, survive service recreation and expose current corrections immediately', async t => {
-  const { sqlite, path } = fixture(t), db = openDatabase(path); t.after(() => db.close());
-  const book = file(sqlite); let calls = 0;
-  const renderer = { info: async () => ({ pages: 45 }), text: async (_, page) => { calls++; return { text: `Șir de versuri ${page}`, source: 'pdf' }; } };
+  const { sqlite, path } = fixture(t),
+    db = openDatabase(path);
+  t.after(() => db.close());
+  const book = file(sqlite);
+  let calls = 0;
+  const renderer = {
+    info: async () => ({ pages: 45 }),
+    text: async (_, page) => {
+      calls++;
+      return { text: `Șir de versuri ${page}`, source: 'pdf' };
+    },
+  };
   const service = createBookSearch(db, renderer);
-  assert.equal((await service.search(book, 'sir')).status, 'preparing'); await service.idle();
-  const first = await service.search(book, 'sir'), second = await service.search(book, 'sir', 20), third = await service.search(book, 'sir', 40);
-  assert.equal(first.total, 45); assert(first.hasMore); assert.equal(first.results.length, 20);
+  assert.equal((await service.search(book, 'sir')).status, 'preparing');
+  await service.idle();
+  const first = await service.search(book, 'sir'),
+    second = await service.search(book, 'sir', 20),
+    third = await service.search(book, 'sir', 40);
+  assert.equal(first.total, 45);
+  assert(first.hasMore);
+  assert.equal(first.results.length, 20);
   assert.equal(new Set([...first.results, ...second.results, ...third.results].map(row => row.page)).size, 45);
   assert.equal(calls, 45);
-  const restarted = createBookSearch(db, { info: () => { throw new Error('Already prepared'); }, text: renderer.text });
-  assert.equal((await restarted.search(book, 'versuri')).status, 'ready'); assert.equal(calls, 45);
+  const restarted = createBookSearch(db, {
+    info: () => {
+      throw new Error('Already prepared');
+    },
+    text: renderer.text,
+  });
+  assert.equal((await restarted.search(book, 'versuri')).status, 'ready');
+  assert.equal(calls, 45);
   sqlite.prepare('INSERT INTO book_page_texts VALUES(?,?,?,?,?,?)').run(book.id, 2, 'Corectură unică', 'ro', 1, 1);
   assert.equal((await restarted.search(book, 'unica')).results[0].page, 2);
   assert.equal((await restarted.search(book, 'versuri')).total, 44);
@@ -130,26 +195,55 @@ test('book searches paginate reusable text, survive service recreation and expos
 });
 
 test('missing book pages stay explicit, retry only missing work, and corrections win an extraction race', async t => {
-  const { sqlite, path } = fixture(t), db = openDatabase(path); t.after(() => db.close());
-  const book = file(sqlite); let fail = true, calls = 0;
-  const renderer = { info: async () => ({ pages: 3 }), text: async (_, page) => { calls++; if (page === 2 && fail) throw new Error('OCR unavailable'); return { text: 'Original păstrat', source: 'pdf' }; } };
+  const { sqlite, path } = fixture(t),
+    db = openDatabase(path);
+  t.after(() => db.close());
+  const book = file(sqlite);
+  let fail = true,
+    calls = 0;
+  const renderer = {
+    info: async () => ({ pages: 3 }),
+    text: async (_, page) => {
+      calls++;
+      if (page === 2 && fail) throw new Error('OCR unavailable');
+      return { text: 'Original păstrat', source: 'pdf' };
+    },
+  };
   const service = createBookSearch(db, renderer);
-  await service.search(book, 'original'); await service.idle();
+  await service.search(book, 'original');
+  await service.idle();
   assert.equal((await service.search(book, 'original')).unavailable, 1);
-  fail = false; await service.search(book, 'original', 0, true); await service.idle();
-  assert.equal((await service.search(book, 'original')).unavailable, 0); assert.equal(calls, 4);
-  const racing = file(sqlite); let release; const gate = new Promise(resolve => { release = resolve; });
-  const slow = createBookSearch(db, { info: async () => ({ pages: 1 }), text: async () => { await gate; return { text: 'Text vechi', source: 'pdf' }; } });
+  fail = false;
+  await service.search(book, 'original', 0, true);
+  await service.idle();
+  assert.equal((await service.search(book, 'original')).unavailable, 0);
+  assert.equal(calls, 4);
+  const racing = file(sqlite);
+  let release;
+  const gate = new Promise(resolve => {
+    release = resolve;
+  });
+  const slow = createBookSearch(db, {
+    info: async () => ({ pages: 1 }),
+    text: async () => {
+      await gate;
+      return { text: 'Text vechi', source: 'pdf' };
+    },
+  });
   await slow.search(racing, 'corect');
   sqlite.prepare('INSERT INTO book_page_texts VALUES(?,?,?,?,?,?)').run(racing.id, 1, 'Text corect nou', 'ro', 1, 1);
-  release(); await slow.idle();
+  release();
+  await slow.idle();
   assert.equal((await slow.search(racing, 'corect')).total, 1);
   assert.equal((await slow.search(racing, 'vechi')).total, 0);
-  for (const query of ['', 'a', 'x'.repeat(121), 'a\0b']) await assert.rejects(service.search(book, query), { status: 400 });
+  for (const query of ['', 'a', 'x'.repeat(121), 'a\0b'])
+    await assert.rejects(service.search(book, query), { status: 400 });
 });
 
 test('sitemap returns only paths and timestamps even for large poem bodies', async t => {
-  const { sqlite, path } = fixture(t), db = openDatabase(path); t.after(() => db.close());
+  const { sqlite, path } = fixture(t),
+    db = openDatabase(path);
+  t.after(() => db.close());
   const id = poem(sqlite, 'secret-tail'.repeat(3000));
   const entries = await sitemapEntries(db);
   assert.equal(entries.find(row => row.path === '/poeme/' + id).updated, 1);
@@ -158,30 +252,47 @@ test('sitemap returns only paths and timestamps even for large poem bodies', asy
 });
 
 test('normalization migration repairs existing projections without changing editorial records and rejects a damaged mapping', t => {
-  const { sqlite, path } = fixture(t, false), id = poem(sqlite, 'CAFÉ ȘI ȚARĂ'), book = file(sqlite);
+  const { sqlite, path } = fixture(t, false),
+    id = poem(sqlite, 'CAFÉ ȘI ȚARĂ'),
+    book = file(sqlite);
   sqlite.prepare('INSERT INTO book_page_texts VALUES(?,?,?,?,?,?)').run(book.id, 1, 'CAFÉ ȘI ȚARĂ', 'ro', 3, 1);
-  const originals = ['poems', 'book_page_texts', 'content_history'].map(name => sqlite.prepare(`SELECT * FROM ${name}`).all());
+  const originals = ['poems', 'book_page_texts', 'content_history'].map(name =>
+    sqlite.prepare(`SELECT * FROM ${name}`).all(),
+  );
   migrateSearch(path);
   assert.equal(migrateSearchNormalization(path), true);
   assert.equal(migrateSearchNormalization(path), false);
-  assert.deepEqual(['poems', 'book_page_texts', 'content_history'].map(name => sqlite.prepare(`SELECT * FROM ${name}`).all()), originals);
+  assert.deepEqual(
+    ['poems', 'book_page_texts', 'content_history'].map(name => sqlite.prepare(`SELECT * FROM ${name}`).all()),
+    originals,
+  );
   assert.equal(sqlite.prepare('SELECT content FROM poem_search WHERE poem_id=?').get(id).content, 'café si tara');
-  assert.equal(sqlite.prepare('SELECT search_text FROM book_search_pages WHERE file_id=?').get(book.id).search_text, 'café si tara');
+  assert.equal(
+    sqlite.prepare('SELECT search_text FROM book_search_pages WHERE file_id=?').get(book.id).search_text,
+    'café si tara',
+  );
   sqlite.prepare('UPDATE search_fold_characters SET replacement=? WHERE letter=?').run('wrong', 'É');
   assert.throws(() => migrateSearchNormalization(path), /Unexpected normalization mapping/);
 });
 
 test('Unicode matches survive unchanged editorial review, edits and service recreation', async t => {
-  const { sqlite, path } = fixture(t), db = openDatabase(path); t.after(() => db.close());
-  const book = file(sqlite), text = 'CAFÉ ȘI ȚARĂ — NAÏVE, ΜΟΥΣΑ, İ, 𐐀';
+  const { sqlite, path } = fixture(t),
+    db = openDatabase(path);
+  t.after(() => db.close());
+  const book = file(sqlite),
+    text = 'CAFÉ ȘI ȚARĂ — NAÏVE, ΜΟΥΣΑ, İ, 𐐀';
   const renderer = { info: async () => ({ pages: 1 }), text: async () => ({ text, source: 'pdf' }) };
   const service = createBookSearch(db, renderer);
-  await service.search(book, 'café'); await service.idle();
+  await service.search(book, 'café');
+  await service.idle();
   assert.equal((await service.search(book, 'café')).total, 1);
   await saveBookText(db, book, 1, { text, language: 'ro', reviewed: true, revision: 0 }, renderer);
   const restarted = createBookSearch(db, renderer);
-  for (const query of ['café', 'tara', 'naïve', 'μουσα']) assert.equal((await restarted.search(book, query)).total, 1, query);
-  const projection = sqlite.prepare('SELECT search_text FROM book_search_pages WHERE file_id=?').get(book.id).search_text;
+  for (const query of ['café', 'tara', 'naïve', 'μουσα'])
+    assert.equal((await restarted.search(book, query)).total, 1, query);
+  const projection = sqlite
+    .prepare('SELECT search_text FROM book_search_pages WHERE file_id=?')
+    .get(book.id).search_text;
   assert.equal(projection, foldSearch(text));
   const id = poem(sqlite, text);
   assert.equal((await listPoemCards(db, { q: 'café' })).total, 1);
@@ -192,15 +303,18 @@ test('Unicode matches survive unchanged editorial review, edits and service recr
 });
 
 test('long repetitive searches preserve exact results without long positional FTS phrases or event-loop stalls', async t => {
-  const { sqlite, path } = fixture(t), db = openDatabase(path); t.after(() => db.close());
+  const { sqlite, path } = fixture(t),
+    db = openDatabase(path);
+  t.after(() => db.close());
   sqlite.exec('BEGIN');
   for (let index = 0; index < 500; index++) poem(sqlite, 'a'.repeat(30000));
   sqlite.exec('COMMIT');
   for (const query of ['a'.repeat(30), 'a'.repeat(120)]) {
-    const began = performance.now(), timer = new Promise(resolve => setTimeout(() => resolve(performance.now() - began), 0));
+    const began = performance.now(),
+      timer = new Promise(resolve => setTimeout(() => resolve(performance.now() - began), 0));
     assert.equal((await listPoemCards(db, { q: query })).total, 500);
     assert(performance.now() - began < 1000, 'Repetitive search exceeded one second');
-    assert(await timer < 1000, 'Repetitive search blocked the event loop');
+    assert((await timer) < 1000, 'Repetitive search blocked the event loop');
     assert.equal((await listAdminPoems(db, { q: query })).total, 500);
   }
   assert.equal((await listPoemCards(db, { q: 'aaa missing suffix' })).total, 0);
@@ -210,24 +324,36 @@ test('NFC index rebuild preserves existing originals and covers subsequent impor
   const { sqlite, path } = fixture(t, true, '0020');
   const ids = ['NFC', 'NFD'].map(form => {
     const id = poem(sqlite, 'Întâlnirea din crâng'.normalize(form), 'Șoapte'.normalize(form));
-    sqlite.prepare('UPDATE poems SET theme=?, translated_title=? WHERE id=?')
+    sqlite
+      .prepare('UPDATE poems SET theme=?, translated_title=? WHERE id=?')
       .run('Lumină'.normalize(form), 'Café'.normalize(form), id);
     return id;
   });
-  const originals = () => ['poems','content_history'].map(table => sqlite.prepare('SELECT * FROM '+table+' ORDER BY rowid').all());
+  const originals = () =>
+    ['poems', 'content_history'].map(table => sqlite.prepare('SELECT * FROM ' + table + ' ORDER BY rowid').all());
   const before = originals();
   await migratePoemSearchNfc(path);
   await migratePoemSearchNfc(path);
   assert.deepEqual(originals(), before);
-  const db = openDatabase(path); t.after(() => db.close());
-  for (const q of ['Întâlnirea din crâng', 'Întâlnirea din crâng'.normalize('NFD'), 'Intalnirea din crang', 'Soapte', 'Café']) {
+  const db = openDatabase(path);
+  t.after(() => db.close());
+  for (const q of [
+    'Întâlnirea din crâng',
+    'Întâlnirea din crâng'.normalize('NFD'),
+    'Intalnirea din crang',
+    'Soapte',
+    'Café',
+  ]) {
     assert.deepEqual(new Set((await listPoemCards(db, { q, theme: 'Lumina' })).poems.map(row => row.id)), new Set(ids));
     assert.equal((await listAdminPoems(db, { q })).total, 2);
   }
   assert.equal((await listPoemCards(db, { q: 'cafe' })).total, 0);
   const imported = poem(sqlite, 'Șuvoi'.normalize('NFD'));
-  assert.deepEqual((await listPoemCards(db, { q: 'suvoi' })).poems.map(row => row.id), [imported]);
+  assert.deepEqual(
+    (await listPoemCards(db, { q: 'suvoi' })).poems.map(row => row.id),
+    [imported],
+  );
   sqlite.prepare('UPDATE poems SET content=? WHERE id=?').run('Măceș'.normalize('NFD'), imported);
-  assert.equal((await listAdminPoems(db, { q:'suvoi' })).total, 0);
-  assert.equal((await listAdminPoems(db, { q:'maces' })).total, 1);
+  assert.equal((await listAdminPoems(db, { q: 'suvoi' })).total, 0);
+  assert.equal((await listAdminPoems(db, { q: 'maces' })).total, 1);
 });

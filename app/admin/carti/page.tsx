@@ -13,10 +13,28 @@ export default async function BookAdminPage() {
   const user = await getChatGPTUser();
   const basic = (env as unknown as { ADMIN_AUTH_MODE?: string }).ADMIN_AUTH_MODE === 'basic';
   const signInHref = basic ? '/admin/carti' : chatGPTSignInPath('/admin/carti');
-  if (!user || !isOwnerEmail(user.email)) return <main className="unavailable shell" lang="ro"><h1>Administrare cărți</h1><p>Doar proprietarul site-ului poate administra cărțile.</p>{!user && <a className="primary-button" href={signInHref}>Autentificare în administrare</a>}<a className="secondary-button" href="/carti">Vezi cărțile</a></main>;
+  if (!user || !isOwnerEmail(user.email))
+    return (
+      <main className="unavailable shell" lang="ro">
+        <h1>Administrare cărți</h1>
+        <p>Doar proprietarul site-ului poate administra cărțile.</p>
+        {!user && (
+          <a className="primary-button" href={signInHref}>
+            Autentificare în administrare
+          </a>
+        )}
+        <a className="secondary-button" href="/carti">
+          Vezi cărțile
+        </a>
+      </main>
+    );
   let books: Book[] = [];
   let failed = false;
-  try { books = await listBooks(getPoemDb()); }
-  catch (error) { console.error('Book administration unavailable', error); failed = true; }
+  try {
+    books = await listBooks(getPoemDb());
+  } catch (error) {
+    console.error('Book administration unavailable', error);
+    failed = true;
+  }
   return <BookAdmin initialBooks={books} initialError={failed} signInHref={signInHref} />;
 }

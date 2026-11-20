@@ -11,6 +11,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const renderer = (env as unknown as { IMAGE_RENDERER?: ImageRenderer }).IMAGE_RENDERER;
     return await serveImage(getPoemDb(), getImageBucket(), renderer, request, id);
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    return apiError(error);
+  }
 }
 export const HEAD = GET;

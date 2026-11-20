@@ -8,7 +8,9 @@ export async function GET(request: Request) {
   try {
     requireOwner(request);
     response = Response.json(await listAdminPoems(getPoemDb(), Object.fromEntries(new URL(request.url).searchParams)));
-  } catch (error) { response = apiError(error); }
+  } catch (error) {
+    response = apiError(error);
+  }
   response.headers.set('Cache-Control', 'private, no-store');
   return response;
 }

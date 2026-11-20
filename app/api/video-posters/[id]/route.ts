@@ -9,6 +9,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     const renderer = (env as unknown as { VIDEO_POSTER?: VideoPosterRenderer }).VIDEO_POSTER;
     return await serveVideoPoster(getPoemDb(), renderer, request, (await params).id);
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    return apiError(error);
+  }
 }
 export const HEAD = GET;

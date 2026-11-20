@@ -12,6 +12,20 @@ export default async function CommentAdminPage() {
   const user = await getChatGPTUser();
   const basic = (env as unknown as { ADMIN_AUTH_MODE?: string }).ADMIN_AUTH_MODE === 'basic';
   const signInHref = basic ? '/admin/comentarii' : chatGPTSignInPath('/admin/comentarii');
-  if (!user || !isOwnerEmail(user.email)) return <main className="unavailable shell" lang="ro"><h1>Moderare comentarii</h1><p>Doar proprietarul site-ului poate administra comentariile.</p>{!user && <a className="primary-button" href={signInHref}>Autentificare în administrare</a>}<a className="secondary-button" href="/">Vezi colecția</a></main>;
+  if (!user || !isOwnerEmail(user.email))
+    return (
+      <main className="unavailable shell" lang="ro">
+        <h1>Moderare comentarii</h1>
+        <p>Doar proprietarul site-ului poate administra comentariile.</p>
+        {!user && (
+          <a className="primary-button" href={signInHref}>
+            Autentificare în administrare
+          </a>
+        )}
+        <a className="secondary-button" href="/">
+          Vezi colecția
+        </a>
+      </main>
+    );
   return <CommentAdmin signInHref={signInHref} />;
 }
