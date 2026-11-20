@@ -35,51 +35,48 @@ async function readCssTree(directory) {
   return contents.join("\n");
 }
 
-test("emits the catalog's animation and scrolling utilities", async () => {
+test("emits the dialog animations and the reduced-motion override", async () => {
   const css = await readCssTree(path.join(root, "dist"));
 
+  // Video gallery and admin confirmation dialogs animate with tw-animate-css.
   assert.match(css, /--tw-enter-opacity/);
-  assert.match(css, /scrollbar-width:\s*thin/);
-  assert.match(css, /scrollbar-width:\s*none/);
-  assert.match(css, /scrollbar-gutter:\s*stable/);
-  assert.match(css, /scroll-fade-reveal-b/);
-  assert.match(css, /mask-image:/);
-  assert.match(css, /tw-shimmer/);
+  assert.match(css, /--tw-exit-opacity/);
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
 });
 
-test("forwards progress semantics to the primitive", async () => {
-  const { Progress } = await vite.ssrLoadModule("/components/ui/progress.tsx");
-  const html = renderToStaticMarkup(React.createElement(Progress, { value: 37 }));
+test("renders the language selector as a single-choice group", async () => {
+  const { default: LanguageSelector } = await vite.ssrLoadModule(
+    "/app/language-selector.tsx",
+  );
+  const html = renderToStaticMarkup(
+    React.createElement(LanguageSelector, { language: "en-US", onChange() {} }),
+  );
 
-  assert.match(html, /aria-valuenow="37"/);
-  assert.match(html, /aria-valuetext="37%"/);
-  assert.match(html, /data-state="loading"/);
+  assert.match(html, /role="radiogroup"/);
+  assert.match(html, /aria-label="Site language"/);
+  assert.match(
+    html,
+    /<button[^>]*aria-checked="false"[^>]*lang="ro"[^>]*>Română<\/button>/,
+  );
+  assert.match(
+    html,
+    /<button[^>]*aria-checked="true"[^>]*lang="en-US"[^>]*>English \(US\)<\/button>/,
+  );
 });
 
-test("emits chart themes for the starter's media dark mode", async () => {
-  const { ChartStyle } = await vite.ssrLoadModule("/components/ui/chart.tsx");
+test("renders the compact language labels", async () => {
+  const { default: LanguageSelector } = await vite.ssrLoadModule(
+    "/app/language-selector.tsx",
+  );
   const html = renderToStaticMarkup(
-    React.createElement(ChartStyle, {
-      id: "contract",
-      config: {
-        latency: { theme: { light: "#ffffff", dark: "#000000" } },
-      },
+    React.createElement(LanguageSelector, {
+      language: "ro",
+      onChange() {},
+      compact: true,
     }),
   );
 
-  assert.match(html, /\[data-chart=contract\]/);
-  assert.match(html, /@media \(prefers-color-scheme: dark\)/);
-  assert.doesNotMatch(html, /\.dark/);
-});
-
-test("renders sidebar skeletons deterministically", async () => {
-  const { SidebarMenuSkeleton } = await vite.ssrLoadModule(
-    "/components/ui/sidebar.tsx",
-  );
-  const first = renderToStaticMarkup(React.createElement(SidebarMenuSkeleton));
-  const second = renderToStaticMarkup(React.createElement(SidebarMenuSkeleton));
-
-  assert.equal(first, second);
-  assert.match(first, /--skeleton-width:70%/);
+  assert.match(html, /aria-label="Limba site-ului"/);
+  assert.match(html, />RO<\/button>/);
+  assert.match(html, />EN<\/button>/);
 });
