@@ -10,6 +10,7 @@ coverage/
 # Generated files: regenerate them instead of formatting
 drizzle/
 lib/search-fold-map.ts
+lib/generated-images.ts
 package-lock.json
 next-env.d.ts
 
