@@ -545,7 +545,7 @@ def status(arguments):
     last = BACKUPS / 'automatic' / 'last-success.json'
     if ROOT and last.exists():
         backup = json.loads(last.read_text())
-        report['last_backup'] = {key: backup.get(key) for key in ('finished_at', 'archive', 'ok', 'restore_http_checks')}
+        report['last_backup'] = {key: backup.get(key) for key in ('created_utc', 'archive', 'ok', 'restore_http_checks')}
     print(json.dumps(report, indent=2, ensure_ascii=False))
 
 
