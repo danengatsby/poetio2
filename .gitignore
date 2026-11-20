@@ -53,3 +53,7 @@ __pycache__/
 *.key
 *.htpasswd
 admin-credentials.txt
+
+# Browser tests
+/test-results/
+/playwright-report/
