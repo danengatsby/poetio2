@@ -66,31 +66,39 @@ Arhivele de mai sus stau pe același disc ca site-ul. Două timere completează 
 
 Fiecare raportează la un serviciu extern de semnale (Healthchecks.io). Un eșec trimite imediat motivul, iar lipsa semnalului, de exemplu când serverul e căzut, declanșează un email după perioada de grație. Fără `/etc/poetio/external.env`, ambele timere nu fac nimic.
 
+Destinația aleasă este Google Drive. rclone primește doar scope-ul `drive.file`, deci vede numai fișierele create de el, nu restul Drive-ului. Se păstrează ultimele 7 arhive (circa 3,6 GB), iar cele mai vechi se șterg definitiv, fără coș. Verificarea raportează eșec dacă spațiul liber din Drive scade sub cel necesar pentru încă două arhive. Pentru o destinație compatibilă S3, vezi varianta comentată din `deploy/poetio-external.env.example`.
+
 Configurare, o singură dată:
 
 1. **Cheia arhivelor:** păstrează conținutul `/etc/poetio/backup.key` în afara serverului, de exemplu într-un manager de parole. Fără ea, nicio copie nu poate fi decriptată după pierderea serverului.
-2. **Destinația:** creează un bucket privat la un furnizor compatibil S3 (Backblaze B2 în exemplu). Cheia de acces trebuie să permită listarea, citirea și scrierea, dar nu ștergerea. Pentru ștergerea copiilor vechi setează o regulă de ciclu de viață pe bucket (de exemplu 30 de zile).
+2. **Google Drive:** în terminalul VS Code conectat la server, rulează:
+
+   ```sh
+   sudo install -d -m 0700 /var/lib/poetio-offsite
+   sudo rclone config create poetio-offsite drive scope=drive.file --config /var/lib/poetio-offsite/rclone.conf
+   ```
+
+   Deschide linkul `http://127.0.0.1:53682/auth?...` afișat; VS Code redirecționează portul către browserul tău. Autentifică-te cu contul Google dorit și acceptă accesul. Comanda se încheie singură când primește autorizarea. Dacă linkul nu se deschide, rulează `rclone authorize "drive" "eyJzY29wZSI6ImRyaXZlLmZpbGUifQ"` pe un calculator cu browser și rclone instalat, apoi adaugă pe server `token '<rezultatul JSON>'` la comanda de mai sus.
 3. **Alertele:** în Healthchecks.io creează două verificări: „Poetio backup” (perioadă 1 zi, grație 3 ore) și „Poetio site” (perioadă 5 minute, grație 10 minute). Adaugă adresa de email pentru alerte.
-4. **Configurația:** copiază `deploy/poetio-external.env.example` în `/etc/poetio/external.env` (root:root, 0600) și completează valorile.
-5. **Instalarea**, ca root:
+4. **Configurația:** copiază `deploy/poetio-external.env.example` în `/etc/poetio/external.env` (root:root, 0600) și completează cele două adrese de ping.
+5. **Instalarea**, ca root (făcută pe 20 noiembrie 2026; se repetă doar după modificarea scriptului sau a unităților):
 
    ```sh
    install -m 0755 scripts/external-checks.py /usr/local/sbin/poetio-external
    install -m 0644 deploy/poetio-offsite.{service,timer} deploy/poetio-heartbeat.{service,timer} /etc/systemd/system/
    systemctl daemon-reload
    systemctl enable --now poetio-offsite.timer poetio-heartbeat.timer
-   systemctl start poetio-offsite.service poetio-heartbeat.service
    ```
 
-6. **Verificarea:** `journalctl -u poetio-offsite -n 20`, `poetio-external status` și cele două verificări, care trebuie să apară „up” în Healthchecks.io.
+6. **Prima rulare și verificarea:** `systemctl start poetio-offsite.service poetio-heartbeat.service`, apoi `journalctl -u poetio-offsite -n 20` și `poetio-external status`. Cele două verificări trebuie să apară „up” în Healthchecks.io.
 
-Restaurare din copia externă, pe orice mașină cu rclone și aceeași configurație:
+Restaurare din copia externă: descarcă arhiva și fișierul ei `.sha256` din dosarul `poetio-backups` de pe drive.google.com, sau cu rclone, autorizat pentru același cont Google (aplicația rclone vede fișierele create de ea):
 
 ```sh
-rclone copy poetio-offsite:poetio-backups/poetio/ ./copii --include 'poetio-YYYYMMDDTHHMMSSZ.tar.gz.gpg*'
+rclone copy poetio-offsite:poetio-backups/ ./copii --include 'poetio-YYYYMMDDTHHMMSSZ.tar.gz.gpg*'
 cd copii && sha256sum -c poetio-YYYYMMDDTHHMMSSZ.tar.gz.gpg.sha256
 ```
 
 Apoi urmează procedura de restaurare de mai sus, cu cheia păstrată separat în `/etc/poetio/backup.key`.
 
-Testele `npm run test:external` acoperă copierea într-un director și prin protocolul S3 (cu `rclone serve s3` și încărcare în mai multe părți), backupul vechi, arhiva modificată, destinația inaccesibilă, păstrarea ultimelor N copii și verificarea site-ului.
+Testele `npm run test:external` acoperă copierea într-un director și prin protocolul S3 (cu `rclone serve s3` și încărcare în mai multe părți), backupul vechi, arhiva modificată, destinația inaccesibilă, păstrarea ultimelor N copii, spațiul insuficient la destinație și verificarea site-ului.

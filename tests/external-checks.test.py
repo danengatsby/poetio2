@@ -84,7 +84,7 @@ class ExternalTestCase(unittest.TestCase):
         self.addCleanup(self.heartbeat.shutdown)
         self.environment = {'POETIO_OFFSITE_REMOTE': str(WORK / 'remote'), 'POETIO_HEARTBEAT_BACKUP': self.heartbeat.url + '/backup-check',
                             'POETIO_HEARTBEAT_SITE': self.heartbeat.url + '/site-check'}
-        for key in ('POETIO_OFFSITE_KEEP', 'POETIO_SITE_URL', 'POETIO_BACKUP_MAX_AGE_HOURS'):
+        for key in ('POETIO_OFFSITE_KEEP', 'POETIO_OFFSITE_MIN_FREE_GB', 'POETIO_SITE_URL', 'POETIO_BACKUP_MAX_AGE_HOURS'):
             os.environ.pop(key, None)
         os.environ.update(self.environment)
 
@@ -138,6 +138,14 @@ class OffsiteTest(ExternalTestCase):
         self.assertEqual(sorted(path.name for path in (WORK / 'remote').iterdir()), [
             'poetio-20261119T031500Z.tar.gz.gpg', 'poetio-20261119T031500Z.tar.gz.gpg.sha256', 'poetio-20261119T031500Z.tar.gz.gpg.verified.json',
             'poetio-20261120T031500Z.tar.gz.gpg', 'poetio-20261120T031500Z.tar.gz.gpg.sha256', 'poetio-20261120T031500Z.tar.gz.gpg.verified.json'])
+
+    def test_reports_a_destination_running_out_of_space(self):
+        make_backup('poetio-20261120T031500Z.tar.gz.gpg')
+        os.environ['POETIO_OFFSITE_MIN_FREE_GB'] = '100000000'
+        self.assertEqual(external.main(['x', 'offsite']), 1)
+        path, body = self.heartbeat.calls[-1]
+        self.assertEqual(path, '/backup-check/fail')
+        self.assertIn('GiB left at', body)
 
     def test_never_deletes_without_a_limit(self):
         old = make_backup('poetio-20261101T031500Z.tar.gz.gpg', publish=False)

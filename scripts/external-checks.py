@@ -12,6 +12,8 @@ Settings come from the environment; systemd reads them from /etc/poetio/external
   POETIO_OFFSITE_KEEP          optional: keep only this many archives at the destination.
                                Unset, nothing is deleted there (use a lifecycle rule instead,
                                so a key on this server cannot erase the copies).
+  POETIO_OFFSITE_MIN_FREE_GB   free space the destination must keep after the copy, when it
+                               reports its quota (Google Drive does); default two archives.
   POETIO_HEARTBEAT_BACKUP      ping URL for the daily backup and off-site copy
   POETIO_HEARTBEAT_SITE        ping URL for the site check
   POETIO_SITE_URL              default https://poetio.cloud
@@ -128,15 +130,29 @@ def offsite():
             for name in (old, old + '.sha256', old + '.verified.json'):
                 subprocess.run(['rclone', 'deletefile', f'{remote.rstrip("/")}/{name}'], capture_output=True)
             removed.append(old)
+    free = destination_free_bytes(remote)
+    needed = float(setting('POETIO_OFFSITE_MIN_FREE_GB', '0')) * 1024**3 or 2 * last['bytes']
+    if free is not None and free < needed:
+        raise Problem(f'Only {free / 1024**3:.1f} GiB left at {remote}; the next copies need {needed / 1024**3:.1f} GiB. '
+                      'Free space there or lower POETIO_OFFSITE_KEEP.')
     result = {
-        'ok': True, 'archive': archive.name, 'bytes': last['bytes'], 'sha256': last['sha256'], 'remote': remote,
+        'ok': True, 'archive': archive.name, 'free_bytes': free, 'bytes': last['bytes'], 'sha256': last['sha256'], 'remote': remote,
         'seconds': seconds, 'remote_archives': len(remote_archives) - len(removed), 'removed': removed,
         'at': dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds'),
     }
     STATE.mkdir(parents=True, exist_ok=True)
     (STATE / 'last-offsite.json').write_text(json.dumps(result, indent=2) + '\n')
+    room = f'; {free / 1024**3:.1f} GiB free' if free is not None else ''
     return (f'{archive.name} ({last["bytes"] / 1024**2:.0f} MiB) is at {remote} and matches the local copy; '
-            f'{result["remote_archives"]} archives there.')
+            f'{result["remote_archives"]} archives there{room}.')
+
+
+def destination_free_bytes(remote):
+    """Free space the destination reports, or None when it does not report a quota."""
+    result = subprocess.run(['rclone', 'about', remote, '--json'], text=True, capture_output=True)
+    if result.returncode:
+        return None
+    return json.loads(result.stdout).get('free')
 
 
 def certificate_days(host, port=443):
