@@ -8,6 +8,7 @@ import { DatabaseSync } from 'node:sqlite';
 import ts from 'typescript';
 import { openDatabase } from '../server/vps-storage.mjs';
 import { migrateSearch } from '../scripts/migrate-search-vps.mjs';
+import { migratePoemSearchNfc } from '../scripts/migrate-poem-search-nfc-vps.mjs';
 import { migrateSearchNormalization } from '../scripts/migrate-search-normalization-vps.mjs';
 
 const compiled = mkdtempSync(join(tmpdir(), 'poetio-search-code-'));
@@ -29,10 +30,10 @@ const { sqlFoldSearch, foldSearch } = require(join(compiled, 'lib/poem-search.js
 const { saveBookText } = require(join(compiled, 'db/book-text.js'));
 const migrations = readdirSync(new URL('../drizzle', import.meta.url)).filter(file => file.endsWith('.sql')).sort();
 
-function fixture(t, latest = true) {
+function fixture(t, latest = true, before = '9999') {
   const directory = mkdtempSync(join(tmpdir(), 'poetio-search-db-')), path = join(directory, 'data.sqlite3');
   const sqlite = new DatabaseSync(path);
-  for (const name of migrations.filter(name => latest || name < '0017')) sqlite.exec(readFileSync(new URL('../drizzle/' + name, import.meta.url), 'utf8'));
+  for (const name of migrations.filter(name => name < before && (latest || name < '0017'))) sqlite.exec(readFileSync(new URL('../drizzle/' + name, import.meta.url), 'utf8'));
   sqlite.exec("INSERT INTO collection_meta VALUES ('initial_poems_v1','complete'),('poem_languages_v1','complete')");
   t.after(() => { sqlite.close(); rmSync(directory, { recursive: true, force: true }); });
   return { sqlite, path };
@@ -203,4 +204,30 @@ test('long repetitive searches preserve exact results without long positional FT
     assert.equal((await listAdminPoems(db, { q: query })).total, 500);
   }
   assert.equal((await listPoemCards(db, { q: 'aaa missing suffix' })).total, 0);
+});
+
+test('NFC index rebuild preserves existing originals and covers subsequent imports and edits', async t => {
+  const { sqlite, path } = fixture(t, true, '0020');
+  const ids = ['NFC', 'NFD'].map(form => {
+    const id = poem(sqlite, 'Întâlnirea din crâng'.normalize(form), 'Șoapte'.normalize(form));
+    sqlite.prepare('UPDATE poems SET theme=?, translated_title=? WHERE id=?')
+      .run('Lumină'.normalize(form), 'Café'.normalize(form), id);
+    return id;
+  });
+  const originals = () => ['poems','content_history'].map(table => sqlite.prepare('SELECT * FROM '+table+' ORDER BY rowid').all());
+  const before = originals();
+  await migratePoemSearchNfc(path);
+  await migratePoemSearchNfc(path);
+  assert.deepEqual(originals(), before);
+  const db = openDatabase(path); t.after(() => db.close());
+  for (const q of ['Întâlnirea din crâng', 'Întâlnirea din crâng'.normalize('NFD'), 'Intalnirea din crang', 'Soapte', 'Café']) {
+    assert.deepEqual(new Set((await listPoemCards(db, { q, theme: 'Lumina' })).poems.map(row => row.id)), new Set(ids));
+    assert.equal((await listAdminPoems(db, { q })).total, 2);
+  }
+  assert.equal((await listPoemCards(db, { q: 'cafe' })).total, 0);
+  const imported = poem(sqlite, 'Șuvoi'.normalize('NFD'));
+  assert.deepEqual((await listPoemCards(db, { q: 'suvoi' })).poems.map(row => row.id), [imported]);
+  sqlite.prepare('UPDATE poems SET content=? WHERE id=?').run('Măceș'.normalize('NFD'), imported);
+  assert.equal((await listAdminPoems(db, { q:'suvoi' })).total, 0);
+  assert.equal((await listAdminPoems(db, { q:'maces' })).total, 1);
 });

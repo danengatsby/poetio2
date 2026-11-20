@@ -1,3 +1,4 @@
+import { rebuildPendingPoemSearch } from './poem-search-index';
 import { ensureInitialPoems, ensureLanguageVariants, type Database } from './poems';
 import { ADMIN_POEM_PAGE_SIZE, adminPoemQuery, type AdminPoemCollection, type AdminPoemSummary } from '../lib/poem-admin-list';
 import type { CollectionParams } from '../lib/poem-collection';
@@ -7,6 +8,7 @@ export async function listAdminPoems(db: Database, params: CollectionParams = {}
   await ensureInitialPoems(db);
   await ensureLanguageVariants(db);
   const { q, page: requestedPage } = adminPoemQuery(params);
+  if (q) await rebuildPendingPoemSearch(db);
   const columns = ['title', 'author', 'theme', 'content', 'translated_title', 'translated_theme', 'translated_content'];
   const search = q ? searchPredicate('poem_search', columns, q) : null;
   const where = search ? `WHERE id IN (SELECT poem_id FROM poem_search WHERE ${search.sql})` : '';

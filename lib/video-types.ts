@@ -3,6 +3,11 @@ export const VIDEO_ACCEPT = '.mp4,.webm,video/mp4,video/webm';
 export type Video = { id: string; title: string; author: string; description: string; file_id: string; revision: number; created_at: number; updated_at: number };
 export type VideoWithCommentCount = Video & { comment_count: number };
 export type VideoInput = Pick<Video, 'title' | 'author' | 'description' | 'file_id'>;
+export const pilotSubtitles = {
+  fileId: '0c08a990-fc6c-473a-a127-f553d2e06906',
+  path: '/subtitrari/o-zi-incarcata-de-mister.ro.vtt',
+} as const;
+
 // A still frame generated on the server; see db/video-posters.ts.
 export const videoPosterPath = (fileId: string) => `/api/video-posters/${fileId}`;
 export function videoFileType(file: Pick<File, 'name'>): string | null {

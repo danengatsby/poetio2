@@ -38,3 +38,5 @@
 
 .video-reader .poem-comments{margin-inline:2rem}
 @media(max-width:760px){.video-reader .poem-comments{margin-inline:1.25rem}}
+.video-subtitles{margin-block-start:.5rem}
+.video-subtitles[aria-pressed="true"]{background:var(--blue);color:var(--primary-foreground)}

@@ -1,3 +1,4 @@
+import { rebuildPendingPoemSearch } from './poem-search-index';
 import { ensureInitialPoems, ensureLanguageVariants, type Database } from './poems';
 import { POEM_PAGE_SIZE, POEM_EXCERPT_LENGTH, collectionQuery, poemExcerpt, type CollectionParams, type PoemCard, type PoemCollection } from '../lib/poem-collection';
 import type { PoemLanguage } from '../lib/poem-types';
@@ -9,6 +10,7 @@ export async function listPoemCards(db: Database, params: CollectionParams = {},
   await ensureInitialPoems(db);
   await ensureLanguageVariants(db);
   const { filters, page: requestedPage } = collectionQuery(params, fallback);
+  if (filters.q || filters.theme) await rebuildPendingPoemSearch(db);
   const conditions: string[] = [], bindings: string[] = [];
   if (filters.q) {
     const search = searchPredicate('poem_search', ['title', 'content', 'translated_title', 'translated_content'], filters.q);

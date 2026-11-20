@@ -174,6 +174,11 @@ export const searchFoldCharacters = sqliteTable('search_fold_characters', {
   replacement: text('replacement').notNull(),
 });
 
+export const poemSearchPending = sqliteTable('poem_search_pending', {
+  poemId: text('poem_id').primaryKey().notNull().references(() => poems.id, { onDelete: 'cascade' }),
+  token: text('token').notNull(),
+});
+
 export const poemSearch = sqliteTable('poem_search', {
   poemId: text('poem_id').primaryKey().references(() => poems.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),

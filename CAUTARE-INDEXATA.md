@@ -28,6 +28,14 @@ node scripts/migrate-search-normalization-vps.mjs /var/lib/poetio/poetio.sqlite3
 
 Migrarea înlocuiește triggerele de normalizare și reconstruiește numai proiecțiile și indexurile derivate, inclusiv paginile deja extrase sau corectate. Datele editoriale și istoricul rămân identice. Repetarea verifică atât schema, cât și toate mapările. Nu modifica migrarea istorică `0017` pentru a aplica remedierea unei baze existente.
 
+Pentru poemele salvate cu litere și accente separate, aplică migrarea NFC după `0019` și înainte de activarea noii aplicații. Pe VPS rulează comanda de mai jos.
+
+```sh
+node scripts/migrate-poem-search-nfc-vps.mjs /var/lib/poetio/poetio.sqlite3
+```
+
+Comanda reconstruiește proiecțiile din original, verifică integritatea FTS și poate relua o migrare întreruptă. Pe D1 se aplică `0020_poem_search_nfc.sql` prin fluxul obișnuit de migrări. Prima căutare cu termen sau temă prelucrează înregistrările existente. Editorul actualizează indexul în aceeași tranzacție cu poemul. Pentru importuri SQL directe, căutarea preia ulterior doar înregistrările modificate. O editare concurentă invalidează versiunea de indexare anterioară.
+
 Verificări:
 
 ```sh

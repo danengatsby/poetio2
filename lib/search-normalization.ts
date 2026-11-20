@@ -2,7 +2,7 @@ import { searchFoldMap } from './search-fold-map';
 
 // The versioned map is shared with SQLite. Per-character Unicode lowercase
 // preserves accents outside Romanian; Romanian accents keep the existing fold.
-export const foldSearch = (text: string) => text.replace(/[^\x00-\x7f]/gu, letter => searchFoldMap[letter] ?? letter).replace(/[A-Z]/g, letter => String.fromCharCode(letter.charCodeAt(0) + 32));
+export const foldSearch = (text: string) => text.normalize('NFC').replace(/[^\x00-\x7f]/gu, letter => searchFoldMap[letter] ?? letter).replace(/[A-Z]/g, letter => String.fromCharCode(letter.charCodeAt(0) + 32));
 
 // Only mappings present in this value are applied. ASCII values bypass the
 // mapping table entirely; work happens at writes, not at every search.

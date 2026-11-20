@@ -1,3 +1,4 @@
+import { mediaFields } from '../lib/poem-recovery';
 import { AppError } from '../lib/access';
 import { validImageId } from './images';
 import { validateId, validateRevision, type Database } from './poems';
@@ -29,6 +30,14 @@ export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot
     result.translation_provenance = provenance;
   }
   result.pendingFiles = data.pendingFiles === true;
+  if (kind === 'poem' && data.pendingPoemFiles !== undefined) {
+    const fields = data.pendingPoemFiles;
+    if (!Array.isArray(fields) || fields.some(field => !mediaFields.includes(field))) throw new AppError(400, 'Lista fișierelor în așteptare este nevalidă.');
+    if (fields.length) {
+      result.pendingPoemFiles = mediaFields.filter(field => fields.includes(field));
+      result.pendingFiles = true;
+    }
+  }
   if (kind === 'book') {
     for (const field of ['purchase_url_1', 'purchase_url_2']) {
       if (data[field] != null && (typeof data[field] !== 'string' || data[field].length > MAX_PURCHASE_URL)) throw new AppError(400, 'Linkul de achiziție al schiței este nevalid sau prea lung.');
@@ -63,5 +72,13 @@ export async function recoveryItem(db: Database, kind: ContentKind, source: stri
   const row = await db.prepare(`SELECT snapshot, entity_id FROM ${table} WHERE id=? AND kind=?`).bind(id,kind).first<{ snapshot: string; entity_id: string }>();
   if (!row) throw new AppError(404, 'Versiunea nu mai există.');
   const current = await db.prepare(`SELECT revision FROM ${kind === 'poem' ? 'poems' : kind === 'book' ? 'books' : 'videos'} WHERE id=?`).bind(row.entity_id).first<{revision:number}>();
-  return { snapshot: { ...JSON.parse(row.snapshot), id: !current && row.entity_id.startsWith('original-') ? crypto.randomUUID() : row.entity_id, revision: current?.revision ?? 1, isNew: !current } as EditorSnapshot };
+  const saved = JSON.parse(row.snapshot);
+  return { snapshot: { ...saved, ...(kind === 'poem' ? { baseRevision: saved.revision, wasNew: saved.isNew === true } : {}), id: !current && row.entity_id.startsWith('original-') ? crypto.randomUUID() : row.entity_id, revision: current?.revision ?? 1, isNew: !current } as EditorSnapshot };
+}
+
+export async function poemRevision(db: Database, id: string, revision: number) {
+  validateId(id); validateRevision(revision);
+  const row = await db.prepare("SELECT snapshot FROM content_history WHERE kind='poem' AND entity_id=? AND revision=? AND event <> 'deleted' ORDER BY id DESC LIMIT 1")
+    .bind(id, revision).first<{ snapshot: string }>();
+  return { base: row ? JSON.parse(row.snapshot) : null };
 }

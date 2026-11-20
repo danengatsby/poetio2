@@ -19,7 +19,7 @@ import { migrateBookCovers } from '../scripts/migrate-book-covers-vps.mjs';
 
 const output = mkdtempSync(join(tmpdir(), 'stillword-tests-'));
 writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
-for (const file of ['db/poem-admin-list', 'lib/poem-admin-list', 'lib/poem-search', 'lib/search-normalization', 'lib/search-fold-map', 'db/book-text-recovery', 'lib/book-text-recovery', 'db/media-validation', 'lib/translation-provenance', 'lib/site-language', 'db/poem-collection', 'lib/poem-collection', 'db/book-text', 'lib/book-text', 'db/book-validation', 'db/image-validation', 'db/editorial', 'lib/editorial', 'db/image-serving', 'db/comment-moderation', 'lib/comment-moderation', 'db/book-comments', 'db/books', 'db/book-files', 'lib/book-types', 'db/video-comments', 'db/videos', 'db/video-files', 'lib/video-types', 'db/about-comments', 'db/comments', 'lib/poem-comments', 'db/poems', 'db/audio', 'lib/poem-audio', 'db/seed-poems', 'db/images', 'db/language-backfill', 'lib/access', 'lib/poem-images', 'lib/poem-languages', 'lib/translate-poem']) {
+for (const file of ['db/poem-search-index', 'lib/poem-recovery', 'db/poem-admin-list', 'lib/poem-admin-list', 'lib/poem-search', 'lib/search-normalization', 'lib/search-fold-map', 'db/book-text-recovery', 'lib/book-text-recovery', 'db/media-validation', 'lib/translation-provenance', 'lib/site-language', 'db/poem-collection', 'lib/poem-collection', 'db/book-text', 'lib/book-text', 'db/book-validation', 'db/image-validation', 'db/editorial', 'lib/editorial', 'db/image-serving', 'db/comment-moderation', 'lib/comment-moderation', 'db/book-comments', 'db/books', 'db/book-files', 'lib/book-types', 'db/video-comments', 'db/videos', 'db/video-files', 'lib/video-types', 'db/about-comments', 'db/comments', 'lib/poem-comments', 'db/poems', 'db/audio', 'lib/poem-audio', 'db/seed-poems', 'db/images', 'db/language-backfill', 'lib/access', 'lib/poem-images', 'lib/poem-languages', 'lib/translate-poem']) {
   mkdirSync(join(output, file.split('/')[0]), { recursive: true });
   const source = readFileSync(new URL(`../${file}.ts`, import.meta.url), 'utf8');
   writeFileSync(join(output, file + '.js'), ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText);
@@ -1352,5 +1352,26 @@ test('admin poem summaries paginate stably, search both languages, and never ret
     await db.prepare('DELETE FROM poems').run();
     const empty = await listAdminPoems(db);
     assert.equal(empty.total, 0); assert.equal(empty.page, 1); assert.equal(empty.pages, 1); assert.deepEqual(empty.poems, []);
+  } finally { db.close(); }
+});
+
+test('poem recovery retains pending fields and distinguishes the saved revision from the current one', async () => {
+  const db = database();
+  try {
+    const poem = await service.createPoem(db, id, {title:'Titlu', author:'Primul', theme:'', content:'Întâlnire'.normalize('NFD')});
+    const draftId = crypto.randomUUID();
+    await editorial.saveDraft(db, 'poem', draftId, {...poem, isNew:false, pendingPoemFiles:['audio_en_id']});
+    const edited = await service.updatePoem(db, id, 1, {...poem, author:'Corectat'});
+    const {snapshot} = await editorial.recoveryItem(db, 'poem', 'drafts', draftId);
+    assert.equal(snapshot.baseRevision, 1);
+    assert.equal(snapshot.revision, edited.revision);
+    const {base} = await editorial.poemRevision(db, id, 1);
+    const {pendingPoemMedia, conflictingPoemFields} = require(join(output, 'lib/poem-recovery.js'));
+    assert.deepEqual(pendingPoemMedia(snapshot), ['audio_en_id']);
+    assert.deepEqual(pendingPoemMedia({pendingFiles:true}), ['image_id','audio_ro_id','audio_en_id']);
+    assert.deepEqual(conflictingPoemFields({...snapshot, title:'Schiță'}, edited, base, []), ['author']);
+    assert.equal((await db.prepare('SELECT content FROM poem_search WHERE poem_id=?').bind(id).first()).content, 'intalnire');
+    await assert.rejects(service.updatePoem(db, id, 1, {...poem, content:'Înlocuit'.normalize('NFD')}), {status:409});
+    assert.equal((await db.prepare('SELECT content FROM poem_search WHERE poem_id=?').bind(id).first()).content, 'intalnire');
   } finally { db.close(); }
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import type { Poem, PoemInput } from '@/lib/poem-types';
@@ -11,6 +11,8 @@ import PoemCover from '../poem-cover';
 import AudioUploadField, { type SelectedAudio } from './audio-upload-field';
 import { AUDIO_FIELDS, audioFileType, type AudioField } from '@/lib/poem-audio';
 import PoemPreview from './poem-preview';
+import PoemRecoveryComparison from './poem-recovery-comparison';
+import { conflictingPoemFields, mediaFields, pendingPoemMedia, poemFieldLabels, type PoemField, type PoemMediaField } from '@/lib/poem-recovery';
 import RecoveryTools from './recovery-tools';
 import type { EditorSnapshot } from '@/lib/editorial';
 import ThemeToggle from '../theme-toggle';
@@ -58,12 +60,20 @@ export default function Admin({ initialCollection, initialPoem, initialError, tr
   const [selectedImage, setSelectedImage] = useState<{ file: File; id: string; url: string } | null>(null);
   const [imageError, setImageError] = useState('');
   const [selectedAudio, setSelectedAudio] = useState<Record<AudioField, SelectedAudio | null>>({ audio_ro_id: null, audio_en_id: null });
+  const [missingMedia, setMissingMedia] = useState<PoemMediaField[]>([]);
+  const [comparison, setComparison] = useState<{
+    recovered: Draft; current: Draft; fields: PoemField[]; pending: PoemMediaField[]; baseRevision: number;
+  } | null>(null);
   const [audioEditorVersion, setAudioEditorVersion] = useState(0);
   const imageInput = useRef<HTMLInputElement>(null);
   const pendingAction = useRef<(() => void) | null>(null);
   const titleInput = useRef<HTMLInputElement>(null);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(baseline) || selectedImage !== null || AUDIO_FIELDS.some(field => selectedAudio[field] !== null);
-  const locked = busy || imageBusy || loadingPoem;
+  const pendingMedia = useMemo(() => mediaFields.filter(field => missingMedia.includes(field) ||
+    (field === 'image_id' ? selectedImage !== null : selectedAudio[field] !== null)), [missingMedia, selectedImage, selectedAudio]);
+  const recoveryDraft = useMemo(() => draft && pendingMedia.length
+    ? { ...draft, pendingPoemFiles: pendingMedia } : draft, [draft, pendingMedia]);
+  const dirty = missingMedia.length > 0 || JSON.stringify(draft) !== JSON.stringify(baseline) || selectedImage !== null || AUDIO_FIELDS.some(field => selectedAudio[field] !== null);
+  const locked = busy || imageBusy || loadingPoem || comparison !== null;
   const sourceLanguage = draft?.source_language || 'ro';
   const translatedLanguage = otherLanguage(sourceLanguage);
   const sourceLabel = sourceLanguage === 'ro' ? 'Română' : 'English (US)';
@@ -98,7 +108,11 @@ export default function Admin({ initialCollection, initialPoem, initialError, tr
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty, locked]);
 
+  function resolveMedia(field: PoemMediaField) {
+    setMissingMedia(current => current.filter(key => key !== field));
+  }
   function replaceDraft(value: Draft | null) {
+    setMissingMedia([]); setComparison(null);
     setDraft(value); setBaseline(value); setError(''); setAuthRequired(false); setSuccess('');
     setTranslationFailed(false);
     setSelectedImage(null); setImageError('');
@@ -127,12 +141,14 @@ export default function Admin({ initialCollection, initialPoem, initialError, tr
       const tooLarge = bitmap.width * bitmap.height > 40_000_000;
       bitmap.close();
       if (tooLarge) throw new Error('Imaginea este prea mare. Alege o fotografie de maximum 40 de megapixeli.');
+      resolveMedia('image_id');
       setSelectedImage({ file, id: crypto.randomUUID(), url: URL.createObjectURL(file) });
     } catch (error) { setImageError(error instanceof Error && error.message.includes('megapixeli') ? error.message : 'Imaginea nu poate fi deschisă. Alege un alt fișier JPG, PNG sau WebP.'); }
     finally { setImageBusy(false); if (imageInput.current) imageInput.current.value = ''; }
   }
   function resetImage() {
     if (locked) return;
+    resolveMedia('image_id');
     setSelectedImage(null); setImageError(''); setSuccess('');
     setDraft(current => current ? { ...current, image_id: null } : null);
     if (imageInput.current) imageInput.current.value = '';
@@ -168,8 +184,19 @@ export default function Admin({ initialCollection, initialPoem, initialError, tr
       let current: Poem | null = null;
       try { current = (await request(`/api/poems/${encodeURIComponent(snapshot.id)}`, { signal: AbortSignal.timeout(30000) })).poem; }
       catch (error) { if (!(error instanceof AdminRequestError && error.status === 404)) throw error; }
-      replaceDraft({ ...blank(), ...snapshot, revision: current?.revision ?? 1, isNew: !current } as Draft);
-      setBaseline(current ? fromPoem(current) : null);
+      const baseRevision = Number(snapshot.baseRevision ?? snapshot.revision);
+      const recovered = { ...fromPoem({ ...blank(), ...snapshot } as unknown as Poem), revision: current?.revision ?? 1, isNew: !current };
+      const published = current ? fromPoem(current) : null;
+      const pending = pendingPoemMedia(snapshot);
+      if (published && (baseRevision !== published.revision || snapshot.wasNew === true)) {
+        const { base } = snapshot.wasNew ? { base: null } : await request(`/api/admin/recovery/poem/base/${encodeURIComponent(snapshot.id)}?revision=${baseRevision}`);
+        const fields = conflictingPoemFields(recovered, published, base, pending);
+        if (fields.length) {
+          setComparison({ recovered, current: published, fields, pending, baseRevision });
+          return;
+        }
+      }
+      replaceDraft(recovered); setBaseline(published); setMissingMedia(pending);
     } catch (error) { reportError(error, 'Versiunea nu poate fi recuperată. Textul din editor este păstrat.'); }
     finally { setLoadingPoem(false); }
   }
@@ -197,6 +224,7 @@ export default function Admin({ initialCollection, initialPoem, initialError, tr
   async function save(event: React.FormEvent, originalOnly = false) {
     event.preventDefault();
     if (!draft || locked) return;
+    if (missingMedia.length) { setError('Alege ce fișiere păstrezi înainte de publicare.'); return; }
     originalOnly = originalOnly || saveOriginalOnly;
     if (!originalOnly && translationBlocked) { setError(translationMessage); return; }
     setBusy(true); setError(''); setSuccess('');
@@ -216,12 +244,13 @@ export default function Admin({ initialCollection, initialPoem, initialError, tr
         saveDraft = { ...saveDraft, translated_title: '', translated_theme: '', translated_content: '', translation_provenance: null };
         setDraft(saveDraft);
       }
-      let imageId = draft.image_id ?? null;
       if (selectedImage) {
         const uploaded = await fetch('/api/images', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': selectedImage.file.type, 'X-Upload-Id': selectedImage.id, 'X-File-Name': encodeURIComponent(selectedImage.file.name) }, body: selectedImage.file });
         const uploadData = await uploaded.json().catch(() => null);
         if (!uploaded.ok || !uploadData?.image?.id) throw new AdminRequestError(uploaded.status, uploadData?.error || 'Imaginea nu a putut fi încărcată. Textul și imaginea aleasă rămân în formular; încearcă din nou.');
-        imageId = uploadData.image.id;
+        saveDraft = { ...saveDraft, image_id: uploadData.image.id };
+        setDraft(saveDraft);
+        setSelectedImage(null);
       }
       for (const field of AUDIO_FIELDS) {
         const selected = selectedAudio[field];
@@ -230,10 +259,12 @@ export default function Admin({ initialCollection, initialPoem, initialError, tr
         const uploaded = await fetch('/api/audio', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': audioFileType(selected.file) || 'application/octet-stream', 'X-Upload-Id': selected.id, 'X-File-Name': encodeURIComponent(selected.file.name) }, body: selected.file });
         const uploadData = await uploaded.json().catch(() => null);
         if (!uploaded.ok || !uploadData?.audio?.id) throw new AdminRequestError(uploaded.status, uploadData?.error || 'Înregistrarea nu a putut fi încărcată. Textul și fișierul ales rămân în formular; încearcă din nou.');
-        saveDraft[field] = uploadData.audio.id;
+        saveDraft = { ...saveDraft, [field]: uploadData.audio.id };
+        setDraft(saveDraft);
+        setSelectedAudio(current => ({ ...current, [field]: null }));
       }
       setCheckingAudio(false);
-      const data = await request(draft.isNew ? '/api/poems' : `/api/poems/${draft.id}`, { method: draft.isNew ? 'POST' : 'PUT', body: JSON.stringify({ ...saveDraft, image_id: imageId }) });
+      const data = await request(draft.isNew ? '/api/poems' : `/api/poems/${draft.id}`, { method: draft.isNew ? 'POST' : 'PUT', body: JSON.stringify(saveDraft) });
       const saved: Poem = data.poem;
       replaceDraft(fromPoem(saved));
       setSuccess(originalOnly ? 'Originalul a fost salvat fără traducere. Traducerea poate fi adăugată ulterior.' : saved.source_language === 'ro' && saved.translated_content ? 'Poemul a fost salvat în română și engleză americană.' : draft.isNew ? 'Poemul a fost adăugat în colecție.' : 'Modificările au fost salvate în colecție.');
@@ -282,7 +313,15 @@ export default function Admin({ initialCollection, initialPoem, initialError, tr
           {authRequired && <a className="text-button" href={signInHref} target="_blank" rel="noopener noreferrer">Autentificare într-o filă nouă</a>}
         </div>}
       </div>
-      <RecoveryTools kind="poem" draft={draft as EditorSnapshot | null} dirty={dirty} pendingFiles={selectedImage !== null || AUDIO_FIELDS.some(field => selectedAudio[field] !== null)} disabled={locked} onRecover={snapshot => guard(() => void recoverPoem(snapshot))} />
+      <RecoveryTools kind="poem" draft={recoveryDraft as EditorSnapshot | null} dirty={dirty} pendingFiles={pendingMedia.length > 0} disabled={locked} onRecover={snapshot => guard(() => void recoverPoem(snapshot))} />
+      {comparison && <PoemRecoveryComparison draft={comparison.recovered} current={comparison.current} fields={comparison.fields}
+        baseRevision={comparison.baseRevision} currentRevision={comparison.current.revision} onCancel={() => setComparison(null)}
+        onApply={keepPublished => {
+          const selected = Object.fromEntries(keepPublished.map(field => [field, comparison.current[field]]));
+          replaceDraft({ ...comparison.recovered, ...selected });
+          setBaseline(comparison.current);
+          setMissingMedia(comparison.pending.filter(field => !keepPublished.includes(field)));
+        }} />}
       <div className="admin-workspace">
         <aside className="poem-list" aria-label="Poemele din colecție" aria-busy={listBusy}>
           <div className="poem-list-heading"><h2>Colecția</h2><button className="text-button" disabled={locked || listBusy} onClick={() => void refresh()} aria-label="Reîncarcă lista de poeme">Reîncarcă</button></div>
@@ -299,8 +338,15 @@ export default function Admin({ initialCollection, initialPoem, initialError, tr
         </aside>
         <section id="poem-editor" className="editor-panel" aria-labelledby="editor-title">
           {draft ? <form onSubmit={save}><div className="editor-heading"><h2 id="editor-title">{draft.isNew ? 'Un poem nou' : 'Modifică poemul'}</h2><span className={dirty ? 'unsaved-label' : 'saved-label'}>{loadingPoem ? 'Se încarcă poemul…' : imageBusy ? 'Se verifică imaginea…' : translating ? 'Se traduce în engleză americană…' : checkingAudio ? 'Se încarcă și se verifică înregistrarea…' : busy ? 'Se salvează…' : dirty ? 'Modificări nesalvate' : draft.isNew ? 'Necompletat' : 'Salvat'}</span></div>
-            <fieldset disabled={locked} className="editor-fields"><p id="translation-state" className={translationBlocked ? 'error-message' : 'automatic-translation-note'} role="status">{translationMessage}</p><div className="original-language-field"><label id="original-language-label">Limba textului original</label><Select value={sourceLanguage} onValueChange={value => update('source_language', value)} disabled={locked}><SelectTrigger aria-labelledby="original-language-label" className="original-language-select"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ro">Română</SelectItem><SelectItem value="en-US">English (US) — engleză americană</SelectItem></SelectContent></Select></div><div className="field-pair"><label>Titlu — {sourceLabel} <input ref={titleInput} value={draft.title} onChange={e => update('title', e.target.value)} required maxLength={180} placeholder="Titlul poemului" autoComplete="off" /></label><label>Autor <input value={draft.author} onChange={e => update('author', e.target.value)} required maxLength={120} placeholder="Numele autorului" autoComplete="off" /></label></div><label>Temă <span className="optional-label">(opțional)</span><input value={draft.theme} onChange={e => update('theme', e.target.value)} maxLength={80} placeholder="De exemplu: iubire, natură, amintiri" /></label><div className="image-field"><label htmlFor="poem-image">Imaginea poemului <span className="optional-label">(opțional)</span></label><div className="image-picker">{imagePreview}<div className="image-picker-controls"><input id="poem-image" ref={imageInput} type="file" accept="image/jpeg,image/png,image/webp" onChange={event => void chooseImage(event.target.files?.[0])} aria-describedby="poem-image-help poem-image-state" /><p id="poem-image-help" className="field-help">JPG, PNG sau WebP, maximum 5 MB. Imaginea va apărea pe caseta poemului.</p><p id="poem-image-state" className="image-state">{loadingPoem ? 'Se încarcă poemul…' : imageBusy ? 'Se verifică imaginea…' : selectedImage ? `${selectedImage.file.name} · se încarcă la salvarea poemului` : draft.image_id ? 'Imagine personalizată salvată.' : 'Se folosește coperta implicită.'}</p>{(selectedImage || draft.image_id) && <button type="button" className="text-button" disabled={locked} onClick={resetImage}>Folosește coperta implicită</button>}{imageError && <p className="image-error" role="alert">{imageError}</p>}</div></div></div><section className="audio-editor" aria-labelledby="audio-editor-title"><h3 id="audio-editor-title">Înregistrările poemului</h3><p className="field-help">Încarcă de pe calculator recitarea poemului. Vizitatorii o pot asculta în fereastra poemului, în limba aleasă.</p>{AUDIO_FIELDS.map(field => <AudioUploadField key={`${audioEditorVersion}:${field}`} field={field} label={field === 'audio_ro_id' ? 'Română' : 'English (US)'} selected={selectedAudio[field]} storedId={draft[field] ?? null} disabled={locked} onSelect={value => { setSelectedAudio(current => ({ ...current, [field]: value })); setSuccess(''); }} onRemove={() => { setSelectedAudio(current => ({ ...current, [field]: null })); setDraft(current => current ? { ...current, [field]: null } : null); setSuccess(''); }} />)}<p className="field-help">Poți salva poemul fără înregistrări. Pentru redarea în engleză, salvează și textul variantei în engleză.</p></section><label>Textul original — {sourceLabel}<textarea lang={sourceLanguage} value={draft.content} onChange={e => update('content', e.target.value)} required maxLength={30000} rows={15} placeholder={'Scrie sau lipește poemul aici.\n\nLasă un rând gol între strofe.'} aria-describedby="poem-text-help" /></label><p id="poem-text-help" className="field-help">Versurile și strofele se păstrează la salvare. Textul poate avea până la 30.000 de caractere.</p><section className="translation-editor" aria-labelledby="translation-editor-title"><h3 id="translation-editor-title">Varianta în {translatedLabel}</h3><p className="field-help">Compară originalul și traducerea în previzualizare. După editarea manuală, confirmă că traducerea corespunde originalului actual. „Salvează fără traducere” elimină varianta tradusă din publicare.{sourceLanguage === 'ro' && translationReady && ' Poți genera varianta EN cu „Pregătește traducerea în schiță”.'}</p><label>Titlul traducerii<input lang={translatedLanguage} value={draft.translated_title || ''} onChange={event => update('translated_title', event.target.value)} maxLength={180} placeholder={translatedLanguage === 'ro' ? 'Titlul în română' : 'Title in American English'} /></label><label>Tema traducerii <span className="optional-label">(opțional)</span><input lang={translatedLanguage} value={draft.translated_theme || ''} onChange={event => update('translated_theme', event.target.value)} maxLength={80} placeholder={translatedLanguage === 'ro' ? 'Tema în română' : 'Theme in American English'} /></label><label>Textul traducerii<textarea lang={translatedLanguage} value={draft.translated_content || ''} onChange={event => update('translated_content', event.target.value)} maxLength={30000} rows={12} placeholder={translatedLanguage === 'ro' ? 'Varianta română a poemului, cu versuri și strofe.' : 'The American English version, preserving lines and stanzas.'} /></label>{translationState !== 'ready' && <button type="button" className="secondary-button" disabled={locked || !draft.title.trim() || !draft.content.trim() || !draft.translated_title?.trim() || !draft.translated_content?.trim()} onClick={() => void confirmTranslation()}>Confirm: traducerea corespunde originalului actual</button>}</section></fieldset>
-            <div className="editor-actions"><button className="primary-button" type="submit" aria-describedby="translation-state" disabled={locked || !available || translationBlocked || (!dirty && !draft.isNew && !(translateOnSave && translationReady))}>{translating ? 'Se traduce…' : busy ? 'Se salvează…' : saveOriginalOnly ? 'Salvează fără traducere' : translateOnSave ? !dirty && !draft.isNew ? 'Adaugă traducerea automată' : 'Salvează și traduce' : draft.isNew ? 'Adaugă în colecție' : 'Salvează modificările'}</button>{!saveOriginalOnly && <button type="button" className="secondary-button" disabled={locked || !available || (!dirty && !draft.isNew && translationState === 'missing')} onClick={event => { if (event.currentTarget.form?.reportValidity()) void save(event, true); }}>Salvează fără traducere</button>}<button type="button" className="secondary-button" disabled={locked || !dirty} onClick={() => guard(() => replaceDraft(baseline))}>Renunță la modificări</button></div><p className="save-note">După salvare, poemul apare în colecție. Poți verifica rezultatul folosind „Vezi colecția”.</p>{!draft.isNew && <div className="delete-area"><button type="button" className="delete-button" disabled={locked} onClick={() => setDeleteOpen(true)}>Șterge poemul</button></div>}
+            <fieldset disabled={locked} className="editor-fields"><p id="translation-state" className={translationBlocked ? 'error-message' : 'automatic-translation-note'} role="status">{translationMessage}</p><div className="original-language-field"><label id="original-language-label">Limba textului original</label><Select value={sourceLanguage} onValueChange={value => update('source_language', value)} disabled={locked}><SelectTrigger aria-labelledby="original-language-label" className="original-language-select"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ro">Română</SelectItem><SelectItem value="en-US">English (US) — engleză americană</SelectItem></SelectContent></Select></div><div className="field-pair"><label>Titlu — {sourceLabel} <input ref={titleInput} value={draft.title} onChange={e => update('title', e.target.value)} required maxLength={180} placeholder="Titlul poemului" autoComplete="off" /></label><label>Autor <input value={draft.author} onChange={e => update('author', e.target.value)} required maxLength={120} placeholder="Numele autorului" autoComplete="off" /></label></div><label>Temă <span className="optional-label">(opțional)</span><input value={draft.theme} onChange={e => update('theme', e.target.value)} maxLength={80} placeholder="De exemplu: iubire, natură, amintiri" /></label><div className="image-field"><label htmlFor="poem-image">Imaginea poemului <span className="optional-label">(opțional)</span></label><div className="image-picker">{imagePreview}<div className="image-picker-controls"><input id="poem-image" ref={imageInput} type="file" accept="image/jpeg,image/png,image/webp" onChange={event => void chooseImage(event.target.files?.[0])} aria-describedby="poem-image-help poem-image-state" /><p id="poem-image-help" className="field-help">JPG, PNG sau WebP, maximum 5 MB. Imaginea va apărea pe caseta poemului.</p><p id="poem-image-state" className="image-state">{loadingPoem ? 'Se încarcă poemul…' : imageBusy ? 'Se verifică imaginea…' : selectedImage ? `${selectedImage.file.name} · se încarcă la salvarea poemului` : draft.image_id ? 'Imagine personalizată salvată.' : 'Se folosește coperta implicită.'}</p>{(selectedImage || draft.image_id) && <button type="button" className="text-button" disabled={locked} onClick={resetImage}>Folosește coperta implicită</button>}{imageError && <p className="image-error" role="alert">{imageError}</p>}</div></div></div><section className="audio-editor" aria-labelledby="audio-editor-title"><h3 id="audio-editor-title">Înregistrările poemului</h3><p className="field-help">Încarcă de pe calculator recitarea poemului. Vizitatorii o pot asculta în fereastra poemului, în limba aleasă.</p>{AUDIO_FIELDS.map(field => <AudioUploadField key={`${audioEditorVersion}:${field}`} field={field} label={field === 'audio_ro_id' ? 'Română' : 'English (US)'} selected={selectedAudio[field]} storedId={draft[field] ?? null} disabled={locked} onSelect={value => { resolveMedia(field); setSelectedAudio(current => ({ ...current, [field]: value })); setSuccess(''); }} onRemove={() => { resolveMedia(field); setSelectedAudio(current => ({ ...current, [field]: null })); setDraft(current => current ? { ...current, [field]: null } : null); setSuccess(''); }} />)}<p className="field-help">Poți salva poemul fără înregistrări. Pentru redarea în engleză, salvează și textul variantei în engleză.</p></section><label>Textul original — {sourceLabel}<textarea lang={sourceLanguage} value={draft.content} onChange={e => update('content', e.target.value)} required maxLength={30000} rows={15} placeholder={'Scrie sau lipește poemul aici.\n\nLasă un rând gol între strofe.'} aria-describedby="poem-text-help" /></label><p id="poem-text-help" className="field-help">Versurile și strofele se păstrează la salvare. Textul poate avea până la 30.000 de caractere.</p><section className="translation-editor" aria-labelledby="translation-editor-title"><h3 id="translation-editor-title">Varianta în {translatedLabel}</h3><p className="field-help">Compară originalul și traducerea în previzualizare. După editarea manuală, confirmă că traducerea corespunde originalului actual. „Salvează fără traducere” elimină varianta tradusă din publicare.{sourceLanguage === 'ro' && translationReady && ' Poți genera varianta EN cu „Pregătește traducerea în schiță”.'}</p><label>Titlul traducerii<input lang={translatedLanguage} value={draft.translated_title || ''} onChange={event => update('translated_title', event.target.value)} maxLength={180} placeholder={translatedLanguage === 'ro' ? 'Titlul în română' : 'Title in American English'} /></label><label>Tema traducerii <span className="optional-label">(opțional)</span><input lang={translatedLanguage} value={draft.translated_theme || ''} onChange={event => update('translated_theme', event.target.value)} maxLength={80} placeholder={translatedLanguage === 'ro' ? 'Tema în română' : 'Theme in American English'} /></label><label>Textul traducerii<textarea lang={translatedLanguage} value={draft.translated_content || ''} onChange={event => update('translated_content', event.target.value)} maxLength={30000} rows={12} placeholder={translatedLanguage === 'ro' ? 'Varianta română a poemului, cu versuri și strofe.' : 'The American English version, preserving lines and stanzas.'} /></label>{translationState !== 'ready' && <button type="button" className="secondary-button" disabled={locked || !draft.title.trim() || !draft.content.trim() || !draft.translated_title?.trim() || !draft.translated_content?.trim()} onClick={() => void confirmTranslation()}>Confirm: traducerea corespunde originalului actual</button>}</section></fieldset>
+             {missingMedia.length > 0 && <section className="book-missing-files" aria-label="Fișiere de recuperat">
+              <p>Alege din nou fiecare fișier lipsă sau confirmă ce păstrezi pentru câmpul respectiv.</p>
+              {missingMedia.map(field => <div key={field}><strong>{poemFieldLabels[field]}</strong>{' '}
+                <button type="button" className="text-button" disabled={locked} onClick={() => document.getElementById(field === 'image_id' ? 'poem-image' : field)?.click()}>Realege fișierul</button>
+                <button type="button" className="text-button" disabled={locked} onClick={() => resolveMedia(field)}>{draft[field] ? 'Păstrează fișierul din schiță' : 'Continuă fără fișier'}</button>
+              </div>)}
+            </section>}
+            <div className="editor-actions"><button className="primary-button" type="submit" aria-describedby="translation-state" disabled={locked || missingMedia.length > 0 || !available || translationBlocked || (!dirty && !draft.isNew && !(translateOnSave && translationReady))}>{translating ? 'Se traduce…' : busy ? 'Se salvează…' : saveOriginalOnly ? 'Salvează fără traducere' : translateOnSave ? !dirty && !draft.isNew ? 'Adaugă traducerea automată' : 'Salvează și traduce' : draft.isNew ? 'Adaugă în colecție' : 'Salvează modificările'}</button>{!saveOriginalOnly && <button type="button" className="secondary-button" disabled={locked || missingMedia.length > 0 || !available || (!dirty && !draft.isNew && translationState === 'missing')} onClick={event => { if (event.currentTarget.form?.reportValidity()) void save(event, true); }}>Salvează fără traducere</button>}<button type="button" className="secondary-button" disabled={locked || !dirty} onClick={() => guard(() => replaceDraft(baseline))}>Renunță la modificări</button></div><p className="save-note">După salvare, poemul apare în colecție. Poți verifica rezultatul folosind „Vezi colecția”.</p>{!draft.isNew && <div className="delete-area"><button type="button" className="delete-button" disabled={locked} onClick={() => setDeleteOpen(true)}>Șterge poemul</button></div>}
           </form> : <div className="editor-empty"><span aria-hidden="true">✳</span><h2 id="editor-title">Loc pentru un poem nou</h2><p>Completează titlul, autorul și textul. Primul vers îți aparține.</p><button className="primary-button" disabled={!available || busy} onClick={() => replaceDraft(blank())}>Adaugă poem</button></div>}
           {draft && sourceLanguage === 'ro' && translationState !== 'ready' && translationReady && <button type="button" className="secondary-button" disabled={locked || !draft.title.trim() || !draft.content.trim()} onClick={() => void prepareTranslation()}>Pregătește traducerea în schiță</button>}
           {draft && <PoemPreview draft={draft} audio={selectedAudio} disabled={locked} translationPending={translationState !== 'ready'} />}

@@ -188,7 +188,7 @@ test('built Worker protects administration and persists API changes into the ren
     assert.equal(ownerImage.status, 200);
     assert.equal(ownerImage.headers.get('content-type'), 'image/webp');
     assert.deepEqual(Buffer.from(await ownerImage.arrayBuffer()), imageBytes);
-    const input = { id: '13941a33-ff28-4359-8951-3958514a2bd7', title: 'Poem de verificare', author: 'Autor de test', theme: 'Verificare', content: 'Versul întâi\nVersul al doilea\n\nStrofa a doua.', image_id: imageId, audio_ro_id: null, source_language: 'ro', translated_title: 'Verification Poem', translated_theme: 'Testing', translated_content: 'First line\nSecond line\n\nThe second stanza.' };
+    const input = { id: '13941a33-ff28-4359-8951-3958514a2bd7', title: 'Poem de verificare', author: 'Ștefan de test'.normalize('NFD'), theme: 'Verificare', content: 'Versul întâi\nVersul al doilea\n\nStrofa a doua.', image_id: imageId, audio_ro_id: null, source_language: 'ro', translated_title: 'Verification Poem', translated_theme: 'Testing', translated_content: 'First line\nSecond line\n\nThe second stanza.' };
     const forbiddenTranslation = await mf.dispatchFetch(base + '/api/poems/translate', { method: 'POST', headers: { ...mutation, 'oai-authenticated-user-email': 'visitor@example.com' }, body: JSON.stringify(input) });
     assert.equal(forbiddenTranslation.status, 403);
     const crossSiteTranslation = await mf.dispatchFetch(base + '/api/poems/translate', { method: 'POST', headers: { ...mutation, Origin: 'https://other.example' }, body: JSON.stringify(input) });
@@ -212,6 +212,8 @@ test('built Worker protects administration and persists API changes into the ren
     const createdBody = await created.json();
     assert.equal(created.status, 201, JSON.stringify(createdBody));
     assert.equal(createdBody.poem.content, input.content);
+    assert.equal(createdBody.poem.author, input.author);
+    assert.equal((await db.prepare('SELECT author FROM poem_search WHERE poem_id=?').bind(input.id).first()).author, 'stefan de test');
     assert.equal(createdBody.poem.image_id, imageId);
     assert.equal(createdBody.poem.source_language, 'ro');
     assert.equal(createdBody.poem.translated_content, input.translated_content);
@@ -301,5 +303,18 @@ test('built Worker protects administration and persists API changes into the ren
     assert.match(matched, /Colecție 24/);
     const translatedMatch = await (await mf.dispatchFetch(base + '/?q=worker%20English%20needle%2024&lang=en-US')).text();
     assert.match(translatedMatch, /Collection 24/);
+    const captionPath = base + '/subtitrari/o-zi-incarcata-de-mister.ro.vtt';
+    const pilotFile = '0c08a990-fc6c-473a-a127-f553d2e06906';
+    assert.equal((await mf.dispatchFetch(captionPath)).status, 404);
+    await db.prepare('INSERT INTO video_files VALUES(?,?,?,?,?,?,?,?)')
+      .bind(pilotFile, 'pilot', 'pilot.mp4', 'video/mp4', 1, 'hash', owner['oai-authenticated-user-email'], 1).run();
+    await db.prepare('INSERT INTO videos(id,title,author,description,file_id,revision,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)')
+      .bind(crypto.randomUUID(), 'Pilot', '', '', pilotFile, 1, 1, 1).run();
+    const subtitles = await mf.dispatchFetch(captionPath);
+    assert.equal(subtitles.status, 200);
+    assert.match(subtitles.headers.get('content-type'), /^text\/vtt/);
+    assert.match(await subtitles.text(), /^WEBVTT\n/);
+    await db.prepare('DELETE FROM videos WHERE file_id=?').bind(pilotFile).run();
+    assert.equal((await mf.dispatchFetch(captionPath)).status, 404);
   } finally { await mf.dispose(); }
 });

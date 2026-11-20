@@ -2,3 +2,6 @@
 .recovery-tools .field-help{margin:.75rem 0}
 .book-missing-files{margin:1rem 0;padding:1rem;border:1px solid var(--line);overflow-wrap:anywhere}
 .book-missing-files button{max-width:100%;white-space:normal;text-align:start}
+
+.poem-recovery-choice{display:flex;align-items:baseline;gap:.5rem;margin:.6rem 0}
+.poem-recovery-value{display:block;white-space:pre-wrap;overflow-wrap:anywhere;max-height:12rem;overflow:auto}

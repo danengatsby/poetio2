@@ -82,7 +82,7 @@ export default function RecoveryTools({ kind, draft, dirty, pendingFiles, disabl
           const plural = kind === 'book' ? 'books' : 'videos';
           const data = await request('/api/' + plural); current = data[plural].find((item: EditorSnapshot) => item.id === snapshot.id);
         }
-        snapshot={...snapshot,id:!current&&snapshot.id.startsWith('original-')?crypto.randomUUID():snapshot.id,revision:current?.revision??1,isNew:!current};
+        snapshot={...snapshot,...(kind === 'poem' ? { baseRevision: snapshot.revision, wasNew: snapshot.isNew } : {}),id:!current&&snapshot.id.startsWith('original-')?crypto.randomUUID():snapshot.id,revision:current?.revision??1,isNew:!current};
       } else snapshot=(await request(`/api/admin/recovery/${kind}/${preview.source}/${preview.id}`)).snapshot;
       onRecover(snapshot);setNotice('Versiunea este pregătită pentru editor. Verifică datele și salvează pentru a publica.' + (snapshot.pendingFiles ? ' Selectează din nou fișierele care nu fuseseră încărcate.' : ''));
     } catch(error){setError((error as Error).message);}

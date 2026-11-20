@@ -1,5 +1,6 @@
 import type { Poem, PoemInput, PoemWithCommentCount } from '../lib/poem-types';
 import { AppError } from '../lib/access';
+import { writeIndexedPoem } from './poem-search-index';
 import { seedPoems } from './seed-poems';
 import { requireAvailableImage, validImageId } from './images';
 import { languageBackfill } from './language-backfill';
@@ -130,8 +131,9 @@ export async function createPoem(db: Database, id: string, input: PoemInput, val
   await requireAvailableImage(db, input.image_id);
   for (const field of AUDIO_FIELDS) await requireAvailableAudio(db, input[field], validator);
   const now = Date.now();
-  await db.prepare('INSERT INTO poems (id, title, author, theme, content, source_language, translated_title, translated_theme, translated_content, translation_provenance, image_id, audio_ro_id, audio_en_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT(id) DO NOTHING')
-    .bind(id, input.title, input.author, input.theme, input.content, input.source_language ?? 'ro', input.translated_title ?? null, input.translated_theme ?? null, input.translated_content ?? null, storedProvenance(input), input.image_id ?? null, input.audio_ro_id ?? null, input.audio_en_id ?? null, now, now).run();
+  const insert = db.prepare('INSERT INTO poems (id, title, author, theme, content, source_language, translated_title, translated_theme, translated_content, translation_provenance, image_id, audio_ro_id, audio_en_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT(id) DO NOTHING')
+    .bind(id, input.title, input.author, input.theme, input.content, input.source_language ?? 'ro', input.translated_title ?? null, input.translated_theme ?? null, input.translated_content ?? null, storedProvenance(input), input.image_id ?? null, input.audio_ro_id ?? null, input.audio_en_id ?? null, now, now);
+  await writeIndexedPoem(db, insert, id, input);
   const poem = await getPoem(db, id);
   if (!poem) throw new Error('Inserted poem unavailable');
   if (storedProvenance(poem) !== storedProvenance(input)) throw new AppError(409, 'Acest poem a fost deja salvat cu altă asociere a traducerii. Reîncarcă lista.');
@@ -157,8 +159,9 @@ export async function updatePoem(db: Database, id: string, revision: number, inp
   const paired = await requireCurrentTranslation({ ...input, source_language: language, translated_title: translatedTitle, translated_theme: translatedTheme, translated_content: translatedContent,
     translation_provenance: input.translation_provenance === undefined ? current.translation_provenance : input.translation_provenance }, current);
   const provenance = storedProvenance(paired);
-  const result = await db.prepare('UPDATE poems SET title = ?, author = ?, theme = ?, content = ?, source_language = ?, translated_title = ?, translated_theme = ?, translated_content = ?, translation_provenance = ?, image_id = CASE WHEN ? = 1 THEN ? ELSE image_id END, audio_ro_id = CASE WHEN ? = 1 THEN ? ELSE audio_ro_id END, audio_en_id = CASE WHEN ? = 1 THEN ? ELSE audio_en_id END, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?')
-    .bind(input.title, input.author, input.theme, input.content, language, translatedTitle, translatedTheme, translatedContent, provenance, input.image_id === undefined ? 0 : 1, input.image_id ?? null, input.audio_ro_id === undefined ? 0 : 1, input.audio_ro_id ?? null, input.audio_en_id === undefined ? 0 : 1, input.audio_en_id ?? null, Date.now(), id, revision).run();
+  const update = db.prepare('UPDATE poems SET title = ?, author = ?, theme = ?, content = ?, source_language = ?, translated_title = ?, translated_theme = ?, translated_content = ?, translation_provenance = ?, image_id = CASE WHEN ? = 1 THEN ? ELSE image_id END, audio_ro_id = CASE WHEN ? = 1 THEN ? ELSE audio_ro_id END, audio_en_id = CASE WHEN ? = 1 THEN ? ELSE audio_en_id END, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?')
+    .bind(input.title, input.author, input.theme, input.content, language, translatedTitle, translatedTheme, translatedContent, provenance, input.image_id === undefined ? 0 : 1, input.image_id ?? null, input.audio_ro_id === undefined ? 0 : 1, input.audio_ro_id ?? null, input.audio_en_id === undefined ? 0 : 1, input.audio_en_id ?? null, Date.now(), id, revision);
+  const result = await writeIndexedPoem(db, update, id, { ...input, translated_title: translatedTitle, translated_theme: translatedTheme, translated_content: translatedContent });
   const poem = await getPoem(db, id);
   if (!poem) throw new AppError(404, 'Poemul a fost șters. Poți copia textul și crea un poem nou.');
   if (!result.meta.changes) {
