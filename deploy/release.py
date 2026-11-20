@@ -128,9 +128,9 @@ def download(url, destination, timeout=60):
 DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
-def fetch(url, timeout=10):
+def fetch(url, timeout=10, headers=None):
     """GET without any proxy from the environment: health checks target this machine."""
-    request = urllib.request.Request(url, headers={'User-Agent': 'poetio-release'})
+    request = urllib.request.Request(url, headers={'User-Agent': 'poetio-release', **(headers or {})})
     with DIRECT.open(request, timeout=timeout) as response:
         return response.status, response.headers, response.read()
 
@@ -500,6 +500,12 @@ def activate(arguments):
             time.sleep(0.25)
         if public != 200:
             raise SystemExit(f'The public site did not answer as expected: {public}')
+        if want['video']:
+            # Films go through nginx (X-Accel-Redirect): a range must come back with its length.
+            status, headers, body = fetch(f'{PUBLIC_ORIGIN}/api/video-files/{want["video"]["file"]}', timeout=20,
+                                          headers={'Range': 'bytes=0-99'})
+            if (status, headers.get('Content-Length'), len(body)) != (206, '100', 100):
+                raise SystemExit(f'A film range came back as {status} with Content-Length {headers.get("Content-Length")}.')
     except BaseException:
         switch(previous)
         subprocess.run(['systemctl', 'restart', SERVICE], check=True)

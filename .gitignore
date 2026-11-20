@@ -57,3 +57,6 @@ admin-credentials.txt
 # Browser tests
 /test-results/
 /playwright-report/
+
+# vinext build cache
+/.vinext/
