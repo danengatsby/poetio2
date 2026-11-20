@@ -1,0 +1,29 @@
+[Unit]
+Description=Copy the latest verified Poetio backup off the server
+After=network-online.target poetio-backup.service
+Wants=network-online.target
+# Inactive until the destination and heartbeat URLs are configured.
+ConditionPathExists=/etc/poetio/external.env
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+EnvironmentFile=/etc/poetio/external.env
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+# rclone keeps its configuration (and any refreshed token) in the private state directory.
+Environment=RCLONE_CONFIG=/var/lib/poetio-offsite/rclone.conf
+Environment=RCLONE_CACHE_DIR=/var/lib/poetio-offsite/cache
+ExecStart=/usr/bin/python3 /usr/local/sbin/poetio-external offsite
+StateDirectory=poetio-offsite
+StateDirectoryMode=0700
+UMask=0077
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=2h
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6

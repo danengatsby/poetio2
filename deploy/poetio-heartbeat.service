@@ -1,0 +1,17 @@
+[Unit]
+Description=Report the public Poetio site to the external heartbeat service
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/poetio/external.env
+
+[Service]
+Type=oneshot
+DynamicUser=true
+EnvironmentFile=/etc/poetio/external.env
+ExecStart=/usr/bin/python3 /usr/local/sbin/poetio-external site
+TimeoutStartSec=2min
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6

@@ -27,12 +27,12 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - name: System packages for PDF, OCR, media and backup tests
+      - name: System packages for PDF, OCR, media, backup and off-site tests
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             poppler-utils ffmpeg tesseract-ocr tesseract-ocr-ron tesseract-ocr-eng \
-            fonts-dejavu-core fontconfig gnupg
+            fonts-dejavu-core fontconfig gnupg rclone
       - run: npm ci --no-audit --no-fund
       - run: npm run format:check
       - run: npm run lint -- --max-warnings=0
@@ -42,10 +42,11 @@ jobs:
         run: git diff --exit-code -- lib/generated-images.ts public/optimized
       - run: npm run test:vps
       - run: node --test tests/ui-components.test.mjs
-      - name: Python tests for backup, release, monitoring and notifications
+      - name: Python tests for backup, release, off-site copy, monitoring and notifications
         run: |
           npm run test:backup
           npm run test:release
+          npm run test:external
           PYTHONDONTWRITEBYTECODE=1 python3 tests/operations-status.test.py
           PYTHONDONTWRITEBYTECODE=1 python3 tests/notify-comments.test.py
       - run: npx playwright install --with-deps --only-shell chromium

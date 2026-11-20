@@ -1,0 +1,11 @@
+[Unit]
+Description=Check the public Poetio site every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+RandomizedDelaySec=20
+Unit=poetio-heartbeat.service
+
+[Install]
+WantedBy=timers.target

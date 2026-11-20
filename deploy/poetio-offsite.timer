@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily off-site copy of the verified Poetio backup
+
+[Timer]
+# The backup runs from 03:15 UTC and takes a few minutes.
+OnCalendar=*-*-* 04:30:00 UTC
+RandomizedDelaySec=5min
+Persistent=true
+Unit=poetio-offsite.service
+
+[Install]
+WantedBy=timers.target
