@@ -196,11 +196,13 @@
   margin-top: 1rem;
 }
 
-.video-reader .poem-comments {
+.video-reader .poem-comments,
+.video-reader > .content-page-link {
   margin-inline: 2rem;
 }
 @media (max-width: 760px) {
-  .video-reader .poem-comments {
+  .video-reader .poem-comments,
+  .video-reader > .content-page-link {
     margin-inline: 1.25rem;
   }
 }
