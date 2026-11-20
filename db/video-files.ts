@@ -2,7 +2,7 @@ import { AppError, isOwnerEmail } from '../lib/access';
 import { MAX_VIDEO_BYTES } from '../lib/video-types';
 import { validImageId } from './images';
 import type { Database } from './poems';
-import { audioRange, etagMatches, type AudioBucket, type AudioRange } from './audio';
+import { acceleratedResponse, audioRange, etagMatches, type AudioBucket, type AudioRange } from './audio';
 import { requireReadyMedia, validateMediaUpload, type MediaValidator } from './media-validation';
 
 export const validVideoFileId = validImageId;
@@ -115,6 +115,12 @@ export async function serveVideoFile(db: Database, bucket: AudioBucket, request:
   const owner = isOwnerEmail(request.headers.get('oai-authenticated-user-email'));
   if (!owner && !(await db.prepare('SELECT id FROM videos WHERE file_id = ? LIMIT 1').bind(id).first()))
     return missing();
+  if (bucket.accelUri)
+    return acceleratedResponse(
+      bucket.accelUri(video.object_key),
+      video.content_type,
+      owner ? 'private, no-store' : 'private, no-cache',
+    );
   const etag = `"${video.content_hash}"`;
   const headers = new Headers({
     'Content-Type': video.content_type,

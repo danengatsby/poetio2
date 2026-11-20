@@ -19,7 +19,24 @@ export type AudioRange = { offset: number; length: number };
 export type AudioBucket = {
   put(key: string, value: Uint8Array, options?: { httpMetadata?: { contentType: string } }): Promise<unknown>;
   get(key: string, options?: { range: AudioRange }): Promise<{ body: ReadableStream; size: number } | null>;
+  /** On the VPS with POETIO_MEDIA_ACCEL=1: the internal nginx URI that serves this object. */
+  accelUri?(key: string): string;
 };
+
+/**
+ * Hands an authorized download to nginx (X-Accel-Redirect), which then serves the file with
+ * Content-Length, ranges, HEAD and conditional requests. The app only decides who may read it.
+ */
+export function acceleratedResponse(uri: string, contentType: string, cacheControl: string) {
+  return new Response(null, {
+    headers: {
+      'Content-Type': contentType,
+      'Cache-Control': cacheControl,
+      'X-Content-Type-Options': 'nosniff',
+      'X-Accel-Redirect': uri,
+    },
+  });
+}
 
 // Cheap envelope check; full server decoding is required before persistence.
 export function audioType(bytes: Uint8Array): string {
@@ -185,6 +202,12 @@ export async function serveAudio(db: Database, bucket: AudioBucket, request: Req
     !(await db.prepare('SELECT id FROM poems WHERE audio_ro_id = ? OR audio_en_id = ? LIMIT 1').bind(id, id).first())
   )
     return missing();
+  if (bucket.accelUri)
+    return acceleratedResponse(
+      bucket.accelUri(audio.object_key),
+      audio.content_type,
+      owner ? 'private, no-store' : 'private, no-cache',
+    );
   const etag = `"${audio.content_hash}"`;
   const headers = new Headers({
     'Content-Type': audio.content_type,

@@ -63,19 +63,21 @@ export function openImageBucket(directory) {
   return openMediaBucket(directory, 'poem-images', 'image');
 }
 
-export function openAudioBucket(directory) {
-  return openMediaBucket(directory, 'poem-audio', 'audio');
+// With `accel` (the nginx internal URI for `directory`), objects are readable by the
+// service group so nginx can serve them; see deploy/poetio-app.conf.
+export function openAudioBucket(directory, { accel } = {}) {
+  return openMediaBucket(directory, 'poem-audio', 'audio', accel);
 }
 
-export function openVideoBucket(directory) {
-  return openMediaBucket(directory, 'videos', 'video');
+export function openVideoBucket(directory, { accel } = {}) {
+  return openMediaBucket(directory, 'videos', 'video', accel);
 }
 
 export function openBookBucket(directory) {
   return openMediaBucket(directory, 'books', 'book');
 }
 
-function openMediaBucket(directory, prefix, label) {
+function openMediaBucket(directory, prefix, label, accel) {
   function objectPath(key) {
     if (
       !new RegExp(
@@ -87,13 +89,13 @@ function openMediaBucket(directory, prefix, label) {
     }
     return join(directory, key);
   }
-  return {
+  const bucket = {
     async put(key, bytes) {
       const target = objectPath(key);
-      await mkdir(dirname(target), { recursive: true, mode: 0o700 });
+      await mkdir(dirname(target), { recursive: true, mode: accel ? 0o750 : 0o700 });
       const temporary = `${target}.${randomUUID()}.tmp`;
       try {
-        await writeFile(temporary, bytes, { flag: 'wx', mode: 0o600 });
+        await writeFile(temporary, bytes, { flag: 'wx', mode: accel ? 0o640 : 0o600 });
         await rename(temporary, target);
       } finally {
         await unlink(temporary).catch(error => {
@@ -119,4 +121,6 @@ function openMediaBucket(directory, prefix, label) {
       }
     },
   };
+  if (accel) bucket.accelUri = key => objectPath(key) && accel + key;
+  return bucket;
 }

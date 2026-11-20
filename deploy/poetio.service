@@ -12,13 +12,16 @@ Environment=POETIO_DATA_DIR=/var/lib/poetio
 Environment=POETIO_BUILD_DIR=/var/www/Poetio/current/dist
 Environment=POETIO_PORT=4106
 Environment=VINEXT_TRUSTED_HOSTS=poetio.cloud
+# nginx serves authorized recordings and films (deploy/nginx-media-accel.conf).
+Environment=POETIO_MEDIA_ACCEL=1
 EnvironmentFile=-/etc/poetio/runtime.env
 ExecStart=/usr/local/bin/node /var/www/Poetio/current/scripts/start-vps.mjs
 Restart=on-failure
 RestartSec=3
 TimeoutStopSec=15
 StateDirectory=poetio
-StateDirectoryMode=0700
+# 0750: nginx (group poetio) may traverse to audio/ and videos/; everything else stays private.
+StateDirectoryMode=0750
 UMask=0077
 NoNewPrivileges=true
 PrivateTmp=true

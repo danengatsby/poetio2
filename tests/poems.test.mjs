@@ -2690,3 +2690,106 @@ test('poem recovery retains pending fields and distinguishes the saved revision 
     db.close();
   }
 });
+
+test('behind nginx, recordings and films are handed over only after the same access checks', async () => {
+  const db = database();
+  const objects = new Map();
+  const acceleratedBucket = prefix => ({
+    async put(key, bytes) {
+      objects.set(key, bytes);
+    },
+    async get() {
+      throw new Error('An accelerated download must not stream through the app.');
+    },
+    accelUri: key => prefix + key,
+  });
+  const audioBucket = acceleratedBucket('/_poetio/media/audio/');
+  const videoBucket = acceleratedBucket('/_poetio/media/videos/');
+  const owner = { 'oai-authenticated-user-email': 'pensio53@gmail.com' };
+  const recordingId = crypto.randomUUID();
+  const fileId = crypto.randomUUID();
+  const movie = new Uint8Array(256);
+  movie.set([0, 0, 0, 32]);
+  movie.set(new TextEncoder().encode('ftypisom'), 4);
+  const readAudio = (headers = {}, method = 'GET') =>
+    audio.serveAudio(
+      db,
+      audioBucket,
+      new Request('https://poetio.test/api/audio/' + recordingId, { headers, method }),
+      recordingId,
+    );
+  const readVideo = (headers = {}, method = 'GET') =>
+    videoFiles.serveVideoFile(
+      db,
+      videoBucket,
+      new Request('https://poetio.test/api/video-files/' + fileId, { headers, method }),
+      fileId,
+    );
+  try {
+    await audio.saveAudio(
+      db,
+      audioBucket,
+      new Request('https://poetio.test/api/audio', {
+        method: 'POST',
+        headers: { ...owner, 'Content-Type': 'audio/wav', 'X-Upload-Id': recordingId, 'X-File-Name': 'voce.wav' },
+        body: wavFixture(),
+      }),
+      readyMediaValidator,
+    );
+    await videoFiles.saveVideoFile(
+      db,
+      videoBucket,
+      new Request('https://poetio.test/api/video-files', {
+        method: 'POST',
+        headers: {
+          ...owner,
+          Origin: 'https://poetio.test',
+          'Content-Type': 'video/mp4',
+          'X-Upload-Id': fileId,
+          'X-File-Name': 'film.mp4',
+        },
+        body: movie,
+      }),
+      readyMediaValidator,
+    );
+    const audioKey = (await db.prepare('SELECT object_key FROM poem_audio WHERE id = ?').bind(recordingId).first())
+      .object_key;
+    const videoKey = (await db.prepare('SELECT object_key FROM video_files WHERE id = ?').bind(fileId).first())
+      .object_key;
+
+    // Unattached files: readers get 404 and nothing reaches nginx.
+    for (const response of [await readAudio(), await readVideo(), await readVideo({}, 'HEAD')]) {
+      assert.equal(response.status, 404);
+      assert.equal(response.headers.get('X-Accel-Redirect'), null);
+    }
+    // The owner previews them through nginx, uncached.
+    for (const [response, uri, type] of [
+      [await readAudio(owner, 'HEAD'), '/_poetio/media/audio/' + audioKey, 'audio/wav'],
+      [await readVideo({ ...owner, Range: 'bytes=0-99' }), '/_poetio/media/videos/' + videoKey, 'video/mp4'],
+    ]) {
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get('X-Accel-Redirect'), uri);
+      assert.equal(response.headers.get('Content-Type'), type);
+      assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
+      assert.equal(response.body, null);
+    }
+    // Once published, readers are handed over too, with a revalidating cache policy.
+    await service.createPoem(db, id, { ...input, audio_ro_id: recordingId }, readyMediaValidator);
+    await videos.createVideo(
+      db,
+      crypto.randomUUID(),
+      { title: 'Film', author: 'Autor', description: '', file_id: fileId },
+      readyMediaValidator,
+    );
+    for (const [response, uri] of [
+      [await readAudio({ Range: 'bytes=44-99' }), '/_poetio/media/audio/' + audioKey],
+      [await readVideo(), '/_poetio/media/videos/' + videoKey],
+    ]) {
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get('X-Accel-Redirect'), uri);
+      assert.equal(response.headers.get('Cache-Control'), 'private, no-cache');
+    }
+  } finally {
+    db.close();
+  }
+});

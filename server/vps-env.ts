@@ -23,6 +23,9 @@ let mediaValidator: ReturnType<typeof openMediaValidator> | undefined;
 let videoPoster: ReturnType<typeof openVideoPoster> | undefined;
 let bookSearch: ReturnType<typeof createBookSearch> | undefined;
 const dataDirectory = () => process.env.POETIO_DATA_DIR || '/var/lib/poetio';
+// Behind nginx in production, audio and video downloads go through X-Accel-Redirect.
+const mediaAccel = (folder: string) =>
+  process.env.POETIO_MEDIA_ACCEL === '1' ? `/_poetio/media/${folder}/` : undefined;
 
 // This module replaces cloudflare:workers only in the explicit Node build.
 // Bindings are lazy so compiling never creates or modifies the live database.
@@ -48,10 +51,10 @@ export const env = {
     return (bucket ??= openImageBucket(join(dataDirectory(), 'images')));
   },
   get AUDIO_BUCKET() {
-    return (audioBucket ??= openAudioBucket(join(dataDirectory(), 'audio')));
+    return (audioBucket ??= openAudioBucket(join(dataDirectory(), 'audio'), { accel: mediaAccel('audio') }));
   },
   get VIDEO_BUCKET() {
-    return (videoBucket ??= openVideoBucket(join(dataDirectory(), 'videos')));
+    return (videoBucket ??= openVideoBucket(join(dataDirectory(), 'videos'), { accel: mediaAccel('videos') }));
   },
   get BOOK_RENDERER() {
     return (bookRenderer ??= getOperations().observe('book', openBookRenderer(dataDirectory())));

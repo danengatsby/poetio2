@@ -13,7 +13,8 @@ import test from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdtemp, rm, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { statSync } from 'node:fs';
 import { openDatabase, openImageBucket, openAudioBucket, openVideoBucket } from '../server/vps-storage.mjs';
 import { wavFixture } from './audio-fixture.mjs';
 
@@ -237,6 +238,29 @@ test('moderation migration preserves legacy visibility and never reapproves pend
     assert.equal(db.prepare('PRAGMA integrity_check').get().integrity_check, 'ok');
   } finally {
     if (db.isOpen) db.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('accelerated audio and video buckets share files with the service group and name them for nginx', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'poetio-accel-test-'));
+  try {
+    const key = 'videos/9834e3cf-ef2e-44bc-aa6c-05498159001c/' + 'b'.repeat(64);
+    const plain = openVideoBucket(join(directory, 'plain'));
+    const shared = openVideoBucket(join(directory, 'shared'), { accel: '/_poetio/media/videos/' });
+    for (const bucket of [plain, shared]) await bucket.put(key, new TextEncoder().encode('film'));
+    const mode = path => statSync(path).mode & 0o777;
+    assert.equal(mode(join(directory, 'plain', key)), 0o600);
+    assert.equal(mode(join(directory, 'plain', dirname(key))), 0o700);
+    assert.equal(mode(join(directory, 'shared', key)), 0o640);
+    assert.equal(mode(join(directory, 'shared', dirname(key))), 0o750);
+    assert.equal(plain.accelUri, undefined);
+    assert.equal(shared.accelUri(key), '/_poetio/media/videos/' + key);
+    assert.throws(() => shared.accelUri('videos/../../poetio.sqlite3'), /Invalid video storage key/);
+    const audioKey = 'poem-audio/3c6ed1d5-b9da-40f5-b2ff-702286b2e2cb/' + 'c'.repeat(64);
+    const audioBucket = openAudioBucket(join(directory, 'audio'), { accel: '/_poetio/media/audio/' });
+    assert.equal(audioBucket.accelUri(audioKey), '/_poetio/media/audio/' + audioKey);
+  } finally {
     await rm(directory, { recursive: true, force: true });
   }
 });
