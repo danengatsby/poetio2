@@ -4,9 +4,11 @@ After=local-fs.target
 
 [Service]
 Type=oneshot
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
 User=root
 Group=root
-ExecStart=/usr/bin/python3 /usr/local/sbin/poetio-backup create
+# Seven verified archives stay here; older copies are kept off-site (poetio-offsite.timer).
+ExecStart=/usr/bin/python3 /usr/local/sbin/poetio-backup create --keep 7
 UMask=0077
 Nice=15
 IOSchedulingClass=best-effort

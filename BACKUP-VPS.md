@@ -1,6 +1,6 @@
 **Backup local automat și restaurare**
 
-Serviciul `poetio-backup.timer` programează zilnic backupul între 03:15 și 03:25 UTC. `Persistent=true` recuperează o rulare omisă cât timp serverul a fost oprit. Sunt păstrate ultimele 14 copii finalizate și verificate, exclusiv în `/var/backups/poetio/automatic`, accesibil root. Backupurile manuale existente nu sunt șterse de această retenție.
+Serviciul `poetio-backup.timer` programează zilnic backupul între 03:15 și 03:25 UTC. `Persistent=true` recuperează o rulare omisă cât timp serverul a fost oprit. Sunt păstrate ultimele 7 copii finalizate și verificate (`--keep 7` în unitate; până pe 20 noiembrie 2026 erau 14), exclusiv în `/var/backups/poetio/automatic`, accesibil root. Copiile mai vechi rămân în copia externă. Backupurile manuale existente nu sunt șterse de această retenție.
 
 Arhivele sunt criptate AES-256 cu GnuPG. Cheia este `/etc/poetio/backup.key`, cu permisiuni 0600; nu este inclusă în arhive. Păstrarea unei copii a cheii separat de VPS este necesară pentru recuperare după pierderea serverului. Destinația externă a fost amânată de proprietar; configurația actuală oferă backup local.
 
