@@ -1,0 +1,24 @@
+# Build output, caches and local runtime state
+dist/
+.next/
+.sites-runtime/
+.wrangler/
+work/
+outputs/
+coverage/
+
+# Generated files: regenerate them instead of formatting
+drizzle/
+lib/search-fold-map.ts
+package-lock.json
+next-env.d.ts
+
+# Vendored verbatim from shadcn; keep the registry source intact
+components/ui/
+vendor/
+
+# Static assets, fixtures, site identity and prose documentation
+public/
+tests/fixtures/
+.openai/
+*.md
