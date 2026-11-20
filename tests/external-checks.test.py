@@ -156,7 +156,12 @@ class OffsiteTest(ExternalTestCase):
 
 
 def rclone_serves_s3():
-    return HAVE_RCLONE and subprocess.run(['rclone', 'serve', 's3', '--help'], capture_output=True).returncode == 0
+    # `rclone serve s3 --help` exits 0 even where `serve s3` does not exist (rclone
+    # before 1.65, as packaged in Ubuntu 24.04), so read the list of subcommands.
+    if not HAVE_RCLONE:
+        return False
+    listing = subprocess.run(['rclone', 'serve', '--help'], text=True, capture_output=True).stdout
+    return any(line.split()[:1] == ['s3'] for line in listing.splitlines())
 
 
 @unittest.skipUnless(rclone_serves_s3(), 'rclone without `serve s3`')
@@ -173,11 +178,15 @@ class S3Test(ExternalTestCase):
         self.addCleanup(server.wait)
         self.addCleanup(server.terminate)
         for _ in range(100):
+            if server.poll() is not None:
+                self.fail(f'rclone serve s3 exited with {server.returncode}')
             try:
                 socket.create_connection(('127.0.0.1', port), timeout=0.2).close()
                 break
             except OSError:
                 time.sleep(0.1)
+        else:
+            self.fail('rclone serve s3 did not start listening within 10 seconds')
         os.environ.update({
             'RCLONE_CONFIG_TESTS3_TYPE': 's3', 'RCLONE_CONFIG_TESTS3_PROVIDER': 'Rclone',
             'RCLONE_CONFIG_TESTS3_ENDPOINT': f'http://127.0.0.1:{port}',
