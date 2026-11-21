@@ -2,16 +2,31 @@
 /* eslint-disable @next/next/no-img-element -- Uploaded covers are served as responsive derivatives. */
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, FileText, Link2, Store } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronUp, FileText, Link2, Store } from 'lucide-react';
 import type { Book } from '@/lib/book-types';
 import type { PoemLanguage } from '@/lib/poem-types';
 import { bookCovers, bookSalePath, purchaseOptions, type CoverNumber } from '@/lib/book-sale';
+import { bookPriceDisplay } from '@/lib/book-price';
 import { responsiveImage } from '@/lib/responsive-images';
-import { formatBookPrice } from '@/lib/book-price';
 import { rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
 import SiteHeader from '../site-header';
 import './books.css';
 import './book-sale.css';
+
+function Price({ value, language }: { value: string | null; language: PoemLanguage }) {
+  const price = bookPriceDisplay(value, language);
+  if (!price) return null;
+  return (
+    <span className="book-sale-amount" aria-label={price.label}>
+      <span aria-hidden="true">
+        {price.before && <sup>{price.before}</sup>}
+        {price.whole}
+        {price.fraction && <sup>{price.fraction}</sup>}
+        {price.after && <span className="book-sale-currency"> {price.after}</span>}
+      </span>
+    </span>
+  );
+}
 
 export default function BookSale({
   book,
@@ -36,10 +51,11 @@ export default function BookSale({
   const covers = bookCovers(book);
   const options = purchaseOptions(book);
   const selected = covers.find(item => item.cover === cover) ?? covers[0];
+  const option = options.find(item => item.cover === cover) ?? options[0];
   const readHref = withSiteLanguage(`/carti/${book.id}`, language);
 
   useEffect(() => {
-    // Offer "Read more" only when the clamped description actually hides text.
+    // Offer "Read more" only when the folded description actually hides text.
     const element = description.current;
     if (element && !expanded) setLong(element.scrollHeight > element.clientHeight + 1);
   }, [book.description, expanded]);
@@ -56,13 +72,15 @@ export default function BookSale({
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(
-        new URL(withSiteLanguage(bookSalePath(book.id, selected?.cover), language), window.location.origin).href,
+        new URL(withSiteLanguage(bookSalePath(book.id, cover ?? undefined), language), window.location.origin).href,
       );
       setCopied(true);
     } catch {
       setCopied(false);
     }
   }
+  const optionLabel = (item: (typeof options)[number]) =>
+    options.length > 1 ? `${ro ? 'Coperta' : 'Cover'} ${item.cover}` : ro ? 'Carte' : 'Book';
 
   return (
     <>
@@ -75,13 +93,25 @@ export default function BookSale({
           ← {ro ? 'Înapoi la carte' : 'Back to the book'}
         </a>
         <div className="book-sale-layout">
+          <header className="book-sale-heading">
+            <h1 className="book-sale-title">{book.title || (ro ? 'Fără titlu' : 'Untitled')}</h1>
+            <p className="book-sale-byline">
+              {book.author && (
+                <>
+                  {ro ? 'de' : 'by'} <strong>{book.author}</strong> ({ro ? 'Autor' : 'Author'})
+                  <span className="book-sale-divider" aria-hidden="true" />
+                </>
+              )}
+              Format: <span className="book-sale-format-name">{ro ? 'Carte' : 'Book'}</span>
+            </p>
+          </header>
           <section className="book-sale-gallery" aria-label={ro ? 'Coperți' : 'Covers'}>
             {selected ? (
               <img
                 key={selected.id}
                 className="book-sale-cover"
                 {...responsiveImage(`/api/images/${selected.id}`)}
-                sizes="(max-width: 760px) 72vw, 320px"
+                sizes="(max-width: 760px) 72vw, 300px"
                 width={300}
                 height={400}
                 alt={`${ro ? 'Coperta' : 'Cover'} ${selected.cover}: ${book.title}`}
@@ -108,18 +138,12 @@ export default function BookSale({
                 ))}
               </div>
             )}
-            <a className="secondary-button book-sale-sample" href={readHref}>
-              {ro ? 'Citește un fragment' : 'Read a sample'}
+            <a className="book-sale-pill book-sale-sample" href={readHref}>
+              {ro ? 'Citește un fragment' : 'Read sample'}
             </a>
           </section>
 
           <section className="book-sale-details">
-            <h1>{book.title || (ro ? 'Fără titlu' : 'Untitled')}</h1>
-            {book.author && (
-              <p className="book-sale-byline">
-                {ro ? 'de' : 'by'} <strong>{book.author}</strong> ({ro ? 'Autor' : 'Author'})
-              </p>
-            )}
             {book.description && (
               <>
                 <div
@@ -132,11 +156,16 @@ export default function BookSale({
                 {(long || expanded) && (
                   <button
                     type="button"
-                    className="text-button book-sale-more"
+                    className="book-sale-more"
                     aria-expanded={expanded}
                     aria-controls="book-sale-description"
                     onClick={() => setExpanded(value => !value)}
                   >
+                    {expanded ? (
+                      <ChevronUp size={16} aria-hidden="true" />
+                    ) : (
+                      <ChevronDown size={16} aria-hidden="true" />
+                    )}
                     {expanded ? (ro ? 'Citește mai puțin' : 'Read less') : ro ? 'Citește mai mult' : 'Read more'}
                   </button>
                 )}
@@ -145,80 +174,108 @@ export default function BookSale({
             <dl className="book-sale-facts">
               {pages && (
                 <div>
-                  <dt>
-                    <FileText size={20} aria-hidden="true" />
-                    {ro ? 'Lungime' : 'Length'}
-                  </dt>
+                  <dt>{ro ? 'Lungime' : 'Print length'}</dt>
                   <dd>
-                    {pages} {ro ? (pages === 1 ? 'pagină' : 'pagini') : pages === 1 ? 'page' : 'pages'}
+                    <FileText size={22} aria-hidden="true" />
+                    <strong>
+                      {pages} {ro ? (pages === 1 ? 'pagină' : 'pagini') : pages === 1 ? 'page' : 'pages'}
+                    </strong>
                   </dd>
                 </div>
               )}
               <div>
-                <dt>
-                  <BookOpen size={20} aria-hidden="true" />
-                  {ro ? 'Lectură' : 'Reading'}
-                </dt>
-                <dd>{ro ? 'Gratuit pe Poetio' : 'Free on Poetio'}</dd>
+                <dt>{ro ? 'Lectură' : 'Reading'}</dt>
+                <dd>
+                  <BookOpen size={22} aria-hidden="true" />
+                  <strong>{ro ? 'Gratuit pe Poetio' : 'Free on Poetio'}</strong>
+                </dd>
               </div>
               {options.length > 0 && (
                 <div>
-                  <dt>
-                    <Store size={20} aria-hidden="true" />
-                    {ro ? 'Disponibilă la' : 'Available at'}
-                  </dt>
-                  <dd>{[...new Set(options.map(option => option.host))].join(', ')}</dd>
+                  <dt>{ro ? 'Disponibilă la' : 'Available at'}</dt>
+                  <dd>
+                    <Store size={22} aria-hidden="true" />
+                    <strong>{[...new Set(options.map(item => item.host))].join(', ')}</strong>
+                  </dd>
                 </div>
               )}
             </dl>
           </section>
 
           <aside className="book-sale-buy" aria-label={ro ? 'Cumpărare' : 'Purchase'}>
-            <h2>{ro ? 'Cumpără cartea' : 'Buy the book'}</h2>
-            {options.length ? (
+            {option ? (
               <>
-                {options.map(option => (
-                  <div
-                    key={option.cover}
-                    className={`book-sale-option${options.length > 1 && option.cover === selected?.cover ? ' is-selected' : ''}`}
-                  >
-                    {options.length > 1 && (
-                      <p className="book-sale-option-label">
-                        {ro ? 'Varianta cu coperta' : 'Edition with cover'} {option.cover}
-                      </p>
-                    )}
-                    {option.price && <p className="book-sale-price">{formatBookPrice(option.price, language)}</p>}
-                    <a
-                      className="primary-button book-sale-buy-link"
-                      href={option.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                <div className="book-sale-formats" role="group" aria-label={ro ? 'Variante' : 'Formats'}>
+                  {options.map(item => (
+                    <button
+                      key={item.cover}
+                      type="button"
+                      className="book-sale-format"
+                      aria-pressed={item === option}
+                      onClick={() => choose(item.cover)}
                     >
-                      {ro ? 'Cumpără pe' : 'Buy on'} {option.host} <span aria-hidden="true">↗</span>
-                    </a>
-                  </div>
-                ))}
+                      <span>{optionLabel(item)}</span>
+                      <strong>{item.price ? (bookPriceDisplay(item.price, language)?.label ?? '') : item.host}</strong>
+                    </button>
+                  ))}
+                </div>
+                <div className="book-sale-price-line">
+                  {option.price ? (
+                    <Price value={option.price} language={language} />
+                  ) : (
+                    <span className="book-sale-no-price">
+                      {ro ? `Prețul este afișat pe ${option.host}` : `The price is shown on ${option.host}`}
+                    </span>
+                  )}
+                </div>
                 <p className="book-sale-note">
-                  {options.some(option => option.price)
-                    ? ro
-                      ? 'Magazinul se deschide într-o filă nouă. Prețul final, livrarea și plata sunt cele afișate acolo.'
-                      : 'The store opens in a new tab. The final price, delivery and payment are those shown there.'
-                    : ro
-                      ? 'Magazinul se deschide într-o filă nouă. Prețul, livrarea și plata sunt afișate acolo.'
-                      : 'The store opens in a new tab. Price, delivery and payment are shown there.'}
+                  {ro
+                    ? `Livrarea, taxele și disponibilitatea sunt afișate pe ${option.host}, la comandă.`
+                    : `Delivery, taxes and availability are shown on ${option.host} when you order.`}
                 </p>
+                <a
+                  className="book-sale-pill book-sale-buy-now"
+                  href={option.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {ro ? 'Cumpără acum' : 'Buy now'}
+                  <span className="sr-only">
+                    {ro ? ` pe ${option.host} (filă nouă)` : ` on ${option.host} (new tab)`}
+                  </span>
+                </a>
+                <a className="book-sale-pill book-sale-read" href={readHref}>
+                  {ro ? 'Citește gratuit pe Poetio' : 'Read free on Poetio'}
+                </a>
+                <dl className="book-sale-terms">
+                  <div>
+                    <dt>{ro ? 'Vânzător' : 'Seller'}</dt>
+                    <dd>{option.host}</dd>
+                  </div>
+                  <div>
+                    <dt>{ro ? 'Plată' : 'Payment'}</dt>
+                    <dd>{ro ? 'Securizată, în magazin' : 'Secure, at the store'}</dd>
+                  </div>
+                  <div>
+                    <dt>{ro ? 'Lectură' : 'Reading'}</dt>
+                    <dd>{ro ? 'Gratuit pe Poetio' : 'Free on Poetio'}</dd>
+                  </div>
+                </dl>
               </>
             ) : (
-              <p className="book-sale-note">
-                {ro
-                  ? 'Cartea nu are încă un link de cumpărare. O poți citi pe Poetio.'
-                  : 'This book has no purchase link yet. You can read it on Poetio.'}
-              </p>
+              <>
+                <p className="book-sale-no-price">
+                  {ro ? 'Cartea nu se vinde încă online.' : 'This book is not sold online yet.'}
+                </p>
+                <p className="book-sale-note">
+                  {ro ? 'O poți citi gratuit pe Poetio.' : 'You can read it free on Poetio.'}
+                </p>
+                <a className="book-sale-pill book-sale-buy-now" href={readHref}>
+                  {ro ? 'Citește gratuit pe Poetio' : 'Read free on Poetio'}
+                </a>
+              </>
             )}
-            <a className="secondary-button" href={readHref}>
-              {ro ? 'Citește pe Poetio' : 'Read on Poetio'}
-            </a>
-            <button type="button" className="text-button book-sale-share" onClick={() => void copyLink()}>
+            <button type="button" className="book-sale-share" onClick={() => void copyLink()}>
               <Link2 size={18} aria-hidden="true" />
               {ro ? 'Copiază linkul' : 'Copy link'}
             </button>

@@ -15,30 +15,53 @@ export default function BookCovers({
   previewSources = [],
   compact = false,
   saleLinks = true,
+  newTab = false,
 }: {
   book: CoverBook;
   language: PoemLanguage;
   previewSources?: (string | undefined)[];
   compact?: boolean;
-  /** With a purchase link, covers open the book's sale page (not in the editor's preview). */
+  /** Covers open the book's sale page; off only for a book that is not saved yet. */
   saleLinks?: boolean;
+  /** The editor's preview opens the sale page in a new tab, keeping unsaved changes. */
+  newTab?: boolean;
 }) {
   const ro = language === 'ro';
-  const sale = saleLinks && Boolean(book.id) && purchaseOptions(book).length > 0;
+  const sale = saleLinks && Boolean(book.id);
+  const buyable = purchaseOptions(book).length > 0;
+  const saleHref = (cover?: CoverNumber) => withSiteLanguage(bookSalePath(book.id, cover), language);
+  const target = newTab ? ({ target: '_blank', rel: 'noopener' } as const) : {};
+  const saleLabel = (cover: string) =>
+    ro ? `Detalii și cumpărare: ${book.title} — ${cover}` : `Details and purchase: ${book.title} — ${cover}`;
   const covers = [
     { number: 1, id: book.image_id, url: book.purchase_url_1, src: previewSources[0] },
     { number: 2, id: book.image_2_id, url: book.purchase_url_2, src: previewSources[1] },
   ].filter(cover => cover.id || cover.src);
-  if (!covers.length)
+  if (!covers.length) {
+    const placeholder = (
+      <span className="book-cover book-cover-placeholder">
+        <span>Poetio✳</span>
+        <span>{book.title}</span>
+        <small>{book.author}</small>
+      </span>
+    );
     return (
       <div className="book-covers" data-count="1">
-        <span className="book-cover book-cover-placeholder">
-          <span>Poetio✳</span>
-          <span>{book.title}</span>
-          <small>{book.author}</small>
-        </span>
+        {sale ? (
+          <a
+            className="book-cover-option book-cover-link"
+            href={saleHref()}
+            aria-label={saleLabel(ro ? 'copertă' : 'cover')}
+            {...target}
+          >
+            {placeholder}
+          </a>
+        ) : (
+          placeholder
+        )}
       </div>
     );
+  }
   return (
     <div
       className={`book-covers${compact ? ' book-covers-compact' : ''}`}
@@ -64,7 +87,9 @@ export default function BookCovers({
             <span className="book-cover-caption">
               <span>{label}</span>
               {sale ? (
-                <span className="book-cover-buy">{ro ? 'Cumpără' : 'Buy'}</span>
+                <span className="book-cover-buy">
+                  {buyable ? (ro ? 'Cumpără' : 'Buy') : ro ? 'Detalii' : 'Details'}
+                </span>
               ) : (
                 url && (
                   <span className="book-cover-buy">
@@ -81,12 +106,9 @@ export default function BookCovers({
               key={cover.number}
               className="book-cover-option book-cover-link"
               data-cover={cover.number}
-              href={withSiteLanguage(bookSalePath(book.id, cover.number as CoverNumber), language)}
-              aria-label={
-                ro
-                  ? `Detalii și cumpărare: ${book.title} — ${label.toLowerCase()}`
-                  : `Details and purchase: ${book.title} — ${label.toLowerCase()}`
-              }
+              href={saleHref(cover.number as CoverNumber)}
+              aria-label={saleLabel(label.toLowerCase())}
+              {...target}
             >
               {content}
             </a>

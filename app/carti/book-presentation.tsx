@@ -12,6 +12,7 @@ export default function BookPresentation({
   cover2Src,
   fileId = book.file_id,
   preview = false,
+  savedBook = false,
   previewText,
 }: {
   book: CoverBook & Pick<Book, 'description' | 'file_id'>;
@@ -20,13 +21,21 @@ export default function BookPresentation({
   cover2Src?: string;
   fileId?: string;
   preview?: boolean;
+  /** In the editor's preview: the book exists, so its sale page can open in a new tab. */
+  savedBook?: boolean;
   previewText?: BookPageText;
 }) {
   const ro = language === 'ro';
   return (
     <>
       <article className="book-detail">
-        <BookCovers book={book} language={language} previewSources={[coverSrc, cover2Src]} saleLinks={!preview} />
+        <BookCovers
+          book={book}
+          language={language}
+          previewSources={[coverSrc, cover2Src]}
+          saleLinks={!preview || savedBook}
+          newTab={preview}
+        />
         <div>
           <p className="eyebrow">{ro ? 'Biblioteca Poetio' : 'Poetio library'}</p>
           <h1>{book.title || (ro ? 'Fără titlu' : 'Untitled')}</h1>

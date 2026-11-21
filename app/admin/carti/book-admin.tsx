@@ -972,6 +972,7 @@ export default function BookAdmin({
                     cover2Src={cover2?.url}
                     fileId={previewFileId}
                     preview
+                    savedBook={!draft.isNew}
                     previewText={previewText?.fileId === previewFileId ? previewText.data : undefined}
                   />
                 )}

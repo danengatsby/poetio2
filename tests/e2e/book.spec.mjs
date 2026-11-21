@@ -74,12 +74,13 @@ test('a cover opens the sale page with that cover, details and the store link', 
   await expect(thumbs.getByRole('button', { name: 'Coperta 2' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('img', { name: `Coperta 2: ${fixtureBook.record.title}` })).toBeVisible();
 
-  const buy = page.getByRole('link', { name: 'Cumpără pe example.com', exact: true });
+  const buy = page.getByRole('link', { name: 'Cumpără acum pe example.com (filă nouă)' });
   await expect(buy).toHaveAttribute('href', fixtureBook.record.purchase_url_1);
   await expect(buy).toHaveAttribute('target', '_blank');
   await expect(buy).toHaveAttribute('rel', /noopener/);
   await expect(page.locator('.book-sale-facts')).toContainText(`${fixtureBook.pages} pagini`);
-  await expect(page.locator('.book-sale-price')).toHaveText('10,00\u00a0USD');
+  await expect(page.locator('.book-sale-amount')).toHaveAttribute('aria-label', '10,00\u00a0USD');
+  await expect(page.getByRole('button', { name: /Carte\s+10,00/ })).toHaveAttribute('aria-pressed', 'true');
   const offer = await page
     .locator('script[type="application/ld+json"]')
     .evaluate(script => JSON.parse(script.textContent).offers[0]);
@@ -110,12 +111,14 @@ test('a cover opens the sale page with that cover, details and the store link', 
   );
 });
 
-test('phone: the sale page shows the purchase box right after the covers, without sideways scrolling', async ({
+test('phone: the sale page shows the title, then the covers and the purchase box, without sideways scrolling', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 360, height: 760 });
   await page.goto(`/carti/${fixtureBook.record.id}/cumpara?coperta=1`);
+  const heading = await page.locator('.book-sale-heading').boundingBox();
   const gallery = await page.locator('.book-sale-gallery').boundingBox();
+  expect(gallery.y).toBeGreaterThan(heading.y + heading.height - 1);
   const buy = await page.locator('.book-sale-buy').boundingBox();
   const details = await page.locator('.book-sale-details').boundingBox();
   expect(buy.y).toBeGreaterThan(gallery.y + gallery.height - 1);
@@ -129,6 +132,13 @@ test.describe('editor', () => {
   test("a price set in the editor appears on the sale page, in the reader's format", async ({ page }) => {
     await page.goto('/admin/carti');
     await expect(page.locator('#book-price-1')).toHaveValue('10.00');
+    // The preview's covers open the saved book's sale page in a new tab.
+    await page.getByRole('button', { name: 'Previzualizare ca cititor' }).click();
+    const previewCover = page.getByRole('dialog').locator('.book-cover-link').first();
+    await expect(previewCover).toHaveAttribute('href', new RegExp(`/carti/${fixtureBook.record.id}/cumpara`));
+    await expect(previewCover).toHaveAttribute('target', '_blank');
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toBeHidden();
     await page.locator('#book-price-2').fill('12,50');
     await page.getByRole('button', { name: 'Salvează carte' }).click();
     await expect(page.getByRole('alert')).toContainText('Adaugă linkul de achiziție pentru coperta 2');
@@ -141,8 +151,8 @@ test.describe('editor', () => {
     expect((await (await saved).json()).book.price_1).toBe('12.50 EUR');
 
     await page.goto(`/carti/${fixtureBook.record.id}/cumpara`);
-    await expect(page.locator('.book-sale-price')).toHaveText('12,50 EUR');
+    await expect(page.locator('.book-sale-amount')).toHaveAttribute('aria-label', '12,50 EUR');
     await page.goto(`/carti/${fixtureBook.record.id}/cumpara?lang=en-US`);
-    await expect(page.locator('.book-sale-price')).toHaveText('€12.50');
+    await expect(page.locator('.book-sale-amount')).toHaveAttribute('aria-label', '€12.50');
   });
 });

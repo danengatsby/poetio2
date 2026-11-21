@@ -38,3 +38,29 @@ export function formatBookPrice(value: string | null | undefined, language: 'ro'
     Number(amount),
   );
 }
+
+/** The formatted price split for display with raised cents: "$", "10", "00", "". */
+export function bookPriceDisplay(value: string | null | undefined, language: 'ro' | 'en-US') {
+  const stored = normalizeBookPrice(value);
+  if (!stored) return null;
+  const [amount, currency] = stored.split(' ');
+  const parts = new Intl.NumberFormat(language === 'ro' ? 'ro-RO' : 'en-US', {
+    style: 'currency',
+    currency,
+  }).formatToParts(Number(amount));
+  const whole = parts.findIndex(part => part.type === 'integer');
+  const last = parts.findLastIndex(part => part.type === 'integer' || part.type === 'group');
+  const fraction = parts.find(part => part.type === 'fraction')?.value ?? '';
+  const text = (list: Intl.NumberFormatPart[]) =>
+    list
+      .map(part => part.value)
+      .join('')
+      .trim();
+  return {
+    before: text(parts.slice(0, whole)),
+    whole: text(parts.slice(whole, last + 1)),
+    fraction,
+    after: text(parts.slice(last + 1).filter(part => part.type !== 'decimal' && part.type !== 'fraction')),
+    label: parts.map(part => part.value).join(''),
+  };
+}
