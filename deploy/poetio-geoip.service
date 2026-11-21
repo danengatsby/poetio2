@@ -1,0 +1,22 @@
+[Unit]
+Description=Update the IP location database for Poetio visit statistics
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=poetio
+Group=poetio
+ExecStart=/usr/bin/python3 -I /usr/local/sbin/poetio-update-geoip --directory /var/lib/poetio/geoip
+TimeoutStartSec=15min
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/poetio/geoip
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SyslogIdentifier=poetio-geoip

@@ -2,6 +2,7 @@
 import type { PoemLanguage } from '@/lib/poem-types';
 import { amountCents, formatMoney, paymentLabel, type PublicShop } from '@/lib/shop';
 import ShopFrame, { useShopLanguage } from '../shop-frame';
+import { VISIT_IP_RETENTION_DAYS } from '@/lib/visits';
 
 export default function TermsView({ initialLanguage, shop }: { initialLanguage: PoemLanguage; shop: PublicShop }) {
   const [language, changeLanguage] = useShopLanguage(initialLanguage);
@@ -69,6 +70,12 @@ export default function TermsView({ initialLanguage, shop }: { initialLanguage: 
               comunicarea despre comandă, și sunt păstrate cât cere legea. Nu sunt vândute și nu sunt folosite pentru
               publicitate. Poți cere oricând să le vezi, să le corectezi sau să fie șterse, scriind vânzătorului.
             </p>
+            <p id="vizite">
+              Pentru statistica vizitelor și pentru protecția site-ului, la fiecare pagină deschisă păstrăm adresa IP,
+              pagina, ora, browserul și localitatea aproximativă deduse din IP. Nu folosim cookie-uri pentru asta și nu
+              trimitem aceste date altor firme. Adresa IP și datele browserului se șterg după {VISIT_IP_RETENTION_DAYS}{' '}
+              de zile; rămân doar numărul vizitelor, paginile și localitatea.
+            </p>
             <h2 id="reclamatii">Reclamații</h2>
             <p>
               Pentru orice problemă scrie-ne mai întâi; răspundem cât mai repede. Te poți adresa și Autorității
@@ -129,6 +136,12 @@ export default function TermsView({ initialLanguage, shop }: { initialLanguage: 
               Your name, address, phone and email are used only to deliver the books, invoice and talk about your order,
               and are kept as long as the law requires. They are never sold or used for advertising. Ask the seller at
               any time to see, correct or delete them.
+            </p>
+            <p id="vizite">
+              To count visits and protect the site, for each page you open we keep your IP address, the page, the time,
+              your browser and the approximate town derived from the IP. No cookies are used for this and the data is
+              not shared with other companies. The IP address and browser details are deleted after{' '}
+              {VISIT_IP_RETENTION_DAYS} days; only visit counts, pages and towns remain.
             </p>
             <h2 id="reclamatii">Complaints</h2>
             <p>

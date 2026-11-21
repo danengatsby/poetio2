@@ -159,6 +159,9 @@ export default function CommentAdmin({ signInHref }: { signInHref: string }) {
           <a className="nav-link" href="/admin/magazin">
             Magazin
           </a>
+          <a className="nav-link" href="/admin/vizite">
+            Vizite
+          </a>
           <a className="nav-link" href="/">
             Vezi colecția ↗
           </a>

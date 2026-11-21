@@ -365,3 +365,37 @@ export const orderItems = sqliteTable(
   },
   table => [primaryKey({ columns: [table.orderId, table.bookId, table.cover] })],
 );
+
+// Page views of the public site, for /admin/vizite. The IP address and browser
+// string are cleared after VISIT_IP_RETENTION_DAYS (lib/visits.ts); the page,
+// time and approximate place stay for long-term statistics.
+export const visits = sqliteTable(
+  'visits',
+  {
+    id: integer('id').primaryKey(),
+    createdAt: integer('created_at').notNull(),
+    sessionId: text('session_id').notNull(),
+    // SHA-256 of IP and browser string; the session id after the IP is cleared.
+    visitor: text('visitor').notNull(),
+    ip: text('ip'),
+    userAgent: text('user_agent'),
+    path: text('path').notNull(),
+    referrer: text('referrer').notNull().default(''),
+    language: text('language').notNull().default(''),
+    country: text('country').notNull().default(''),
+    region: text('region').notNull().default(''),
+    city: text('city').notNull().default(''),
+    device: text('device').notNull().default(''),
+    browser: text('browser').notNull().default(''),
+    os: text('os').notNull().default(''),
+  },
+  table => [
+    index('idx_visits_created_at').on(table.createdAt),
+    index('idx_visits_visitor').on(table.visitor, table.createdAt),
+    index('idx_visits_ip').on(table.ip, table.createdAt),
+    index('idx_visits_session').on(table.sessionId, table.createdAt),
+    index('idx_visits_identified')
+      .on(table.createdAt)
+      .where(sql`${table.ip} IS NOT NULL`),
+  ],
+);

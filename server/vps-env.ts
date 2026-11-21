@@ -7,6 +7,7 @@ import { imageDecoder } from './image-decoder.mjs';
 import { openBookRenderer } from './book-renderer.mjs';
 import { openMediaValidator } from './media-validator.mjs';
 import { openVideoPoster } from './video-poster.mjs';
+import { openGeoIp } from './geoip.mjs';
 import { join } from 'node:path';
 import { openDatabase, openImageBucket, openAudioBucket, openVideoBucket, openBookBucket } from './vps-storage.mjs';
 
@@ -22,6 +23,7 @@ let bookRenderer: ReturnType<typeof openBookRenderer> | undefined;
 let mediaValidator: ReturnType<typeof openMediaValidator> | undefined;
 let videoPoster: ReturnType<typeof openVideoPoster> | undefined;
 let bookSearch: ReturnType<typeof createBookSearch> | undefined;
+let geoIp: ReturnType<typeof openGeoIp> | undefined;
 const dataDirectory = () => process.env.POETIO_DATA_DIR || '/var/lib/poetio';
 // Behind nginx in production, audio and video downloads go through X-Accel-Redirect.
 const mediaAccel = (folder: string) =>
@@ -64,6 +66,10 @@ export const env = {
   },
   get BOOK_BUCKET() {
     return (bookBucket ??= openBookBucket(join(dataDirectory(), 'books')));
+  },
+  // Approximate visitor location for /admin/vizite, from the monthly DB-IP file.
+  get GEOIP() {
+    return (geoIp ??= openGeoIp(process.env.POETIO_GEOIP_DB || join(dataDirectory(), 'geoip', 'city.mmdb')));
   },
   get OPENAI_API_KEY() {
     return process.env.OPENAI_API_KEY;

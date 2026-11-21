@@ -12,6 +12,7 @@ const LINKS = [
   ['/admin/comentarii', 'Comentarii'],
   ['/admin/comenzi', 'Comenzi'],
   ['/admin/magazin', 'Magazin'],
+  ['/admin/vizite', 'Vizite'],
   ['/admin/functionare', 'Funcționare'],
 ] as const;
 
@@ -20,7 +21,7 @@ export default function ShopAdminFrame({
   skip,
   children,
 }: {
-  current: '/admin/comenzi' | '/admin/magazin';
+  current: '/admin/comenzi' | '/admin/magazin' | '/admin/vizite';
   skip: string;
   children: ReactNode;
 }) {

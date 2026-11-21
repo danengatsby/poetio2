@@ -1,0 +1,11 @@
+[Unit]
+Description=Monthly update of the Poetio IP location database
+
+[Timer]
+# DB-IP publishes the new month during the 1st; a missed run happens at the next boot.
+OnCalendar=*-*-03 05:10:00 UTC
+RandomizedDelaySec=45min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

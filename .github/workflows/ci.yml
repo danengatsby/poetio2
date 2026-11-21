@@ -51,6 +51,7 @@ jobs:
           npm run test:external
           PYTHONDONTWRITEBYTECODE=1 python3 tests/operations-status.test.py
           PYTHONDONTWRITEBYTECODE=1 python3 tests/notify-comments.test.py
+          PYTHONDONTWRITEBYTECODE=1 python3 tests/update-geoip.test.py
       - run: npx playwright install --with-deps --only-shell chromium
       - run: npm run test:e2e
         timeout-minutes: 10

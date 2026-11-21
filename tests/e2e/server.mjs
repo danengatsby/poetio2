@@ -5,7 +5,7 @@
 // search index. Playwright waits for http://127.0.0.1:<port + 1>/ready, which
 // answers once the poems are in. Requires `npm run build:vps` first.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -26,6 +26,9 @@ const data = mkdtempSync(join(tmpdir(), 'poetio-e2e-'));
 const cleanup = () => rmSync(data, { recursive: true, force: true });
 process.on('exit', cleanup);
 for (const folder of ['images', 'audio', 'videos', 'books']) mkdirSync(join(data, folder));
+// MaxMind's test database stands in for DB-IP: 81.2.69.142 is London in it.
+mkdirSync(join(data, 'geoip'));
+copyFileSync(join(root, 'tests/fixtures/geoip/GeoIP2-City-Test.mmdb'), join(data, 'geoip', 'city.mmdb'));
 await migrate(join(data, 'poetio.sqlite3'), { create: true });
 
 const server = spawn(process.execPath, [join(root, 'scripts/start-vps.mjs')], {

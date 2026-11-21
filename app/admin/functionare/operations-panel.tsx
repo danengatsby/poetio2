@@ -93,6 +93,9 @@ export default function OperationsPanel() {
           <a className="nav-link" href="/admin/magazin">
             Magazin
           </a>
+          <a className="nav-link" href="/admin/vizite">
+            Vizite
+          </a>
           <a className="nav-link" href="/admin/functionare" aria-current="page">
             Funcționare
           </a>

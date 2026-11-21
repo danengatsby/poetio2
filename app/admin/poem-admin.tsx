@@ -590,6 +590,9 @@ export default function Admin({
           <a className="nav-link" href="/admin/magazin">
             Magazin
           </a>
+          <a className="nav-link" href="/admin/vizite">
+            Vizite
+          </a>
           <a className="nav-link" href="/">
             Vezi colecția <span aria-hidden="true">↗</span>
           </a>

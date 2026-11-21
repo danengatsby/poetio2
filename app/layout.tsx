@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { requestLanguage } from '@/lib/request-language';
 import ThemeProvider from './theme-provider';
+import VisitTracker from './visit-tracker';
 import './globals.css';
 import './showcase.css';
 import './admin.css';
@@ -22,6 +23,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang={language} suppressHydrationWarning>
       <body>
         <ThemeProvider>{children}</ThemeProvider>
+        <VisitTracker />
       </body>
     </html>
   );

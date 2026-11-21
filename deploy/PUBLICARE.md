@@ -72,3 +72,20 @@ sudo systemctl enable --now poetio-order-mail.timer
 ```
 
 Serviciul citește expeditorul și datele SMTP din `/etc/poetio/notify.env` la fiecare rulare. Folosește modelul [poetio-notify.env.example](poetio-notify.env.example) și salvează configurația cu proprietarul root și permisiuni 0600. Pentru un cont Gmail, `sudo python3 -I deploy/configure-order-gmail.py` cere adresa contului și parola de aplicație, verifică autentificarea și scrie datele SMTP în acest fișier. Mesajele așteaptă până la configurarea SMTP. După un refuz SMTP, serviciul reîncearcă livrarea pentru destinatarul respectiv după cinci minute. Poți verifica numărul de comenzi în așteptare cu `sudo -u poetio /usr/local/sbin/poetio-notify-comments --check`.
+
+## Statistica vizitelor
+
+Paginile publice raportează fiecare vizită la `/api/visits`, iar statistica se vede în `/admin/vizite`. Tabelul `visits` vine din migrarea 0023. Adresa IP și datele browserului se șterg după 90 de zile (`VISIT_IP_RETENTION_DAYS` din `lib/visits.ts`). Paragraful despre vizite din `/termeni` trebuie păstrat în acord cu această durată.
+
+Localitatea se deduce pe server din baza gratuită DB-IP City Lite (CC BY 4.0, atribuirea apare în `/admin/vizite`). IP-urile vizitatorilor nu sunt trimise nicăieri. Instalează o dată baza și actualizarea lunară:
+
+```sh
+sudo install -d -o poetio -g poetio -m 0750 /var/lib/poetio/geoip
+sudo install -m 0755 scripts/update-geoip.py /usr/local/sbin/poetio-update-geoip
+sudo install -m 0644 deploy/poetio-geoip.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now poetio-geoip.timer
+sudo systemctl start poetio-geoip.service
+```
+
+Prima descărcare are aproximativ 60 MB (127 MB după dezarhivare). Site-ul preia noul fișier în cel mult 10 minute, fără repornire. Fără bază, vizitele se înregistrează fără localitate. Backupul nu include baza de localizare, care se poate descărca din nou oricând.

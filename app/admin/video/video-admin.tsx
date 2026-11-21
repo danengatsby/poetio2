@@ -304,6 +304,9 @@ export default function VideoAdmin({
           <a className="nav-link" href="/admin/magazin">
             Magazin
           </a>
+          <a className="nav-link" href="/admin/vizite">
+            Vizite
+          </a>
           <a className="nav-link" href="/video">
             Vezi videourile ↗
           </a>
