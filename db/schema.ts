@@ -171,6 +171,8 @@ export const books = sqliteTable(
     image2Id: text('image_2_id').references(() => poemImages.id),
     purchaseUrl1: text('purchase_url_1'),
     purchaseUrl2: text('purchase_url_2'),
+    price1: text('price_1'),
+    price2: text('price_2'),
     revision: integer('revision').notNull().default(1),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),

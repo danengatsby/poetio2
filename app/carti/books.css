@@ -185,6 +185,30 @@
   max-width: 100%;
   min-width: 0;
 }
+.book-price-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7rem;
+  gap: 0.75rem;
+  align-items: end;
+}
+/* Same box as the editor's text inputs (admin.css styles input and textarea only). */
+.book-price-fields select {
+  display: block;
+  width: 100%;
+  min-height: 3.2rem;
+  margin-top: 0.45rem;
+  padding: 0.8rem 0.6rem;
+  border: 1px solid var(--input);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1rem/1.5 var(--sans);
+}
+.book-price-fields select:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+  border-color: var(--blue);
+}
 @media (max-width: 760px) {
   .book-admin-covers {
     grid-template-columns: minmax(0, 1fr);

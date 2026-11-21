@@ -77,6 +77,16 @@ export default async function BookSalePage(props: Props) {
             image: siteOrigin + coverImage(book, cover),
             ...(pages ? { numberOfPages: pages } : {}),
             url: siteOrigin + bookSalePath(book.id),
+            ...(options.some(option => option.price)
+              ? {
+                  offers: options
+                    .filter(option => option.price)
+                    .map(option => {
+                      const [price, priceCurrency] = option.price!.split(' ');
+                      return { '@type': 'Offer', price, priceCurrency, url: option.url };
+                    }),
+                }
+              : {}),
             ...(options.length
               ? { potentialAction: options.map(option => ({ '@type': 'BuyAction', target: option.url })) }
               : {}),

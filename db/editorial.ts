@@ -68,6 +68,12 @@ export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot
         throw new AppError(400, 'Linkul de achiziție al schiței este nevalid sau prea lung.');
       result[field] = data[field] ?? '';
     }
+    // Drafts keep the price as typed; it is checked when the book is saved.
+    for (const field of ['price_1', 'price_2']) {
+      if (data[field] != null && (typeof data[field] !== 'string' || data[field].length > 32))
+        throw new AppError(400, 'Prețul din schiță este nevalid sau prea lung.');
+      result[field] = data[field] ?? '';
+    }
     result.pendingBookFile = data.pendingBookFile === true;
     result.pendingCover = data.pendingCover === true;
     result.pendingCover2 = data.pendingCover2 === true;

@@ -4,6 +4,7 @@ import { validateRevision, type Database } from './poems';
 import { getBookFile } from './book-files';
 import { bookPurchaseUrl, type Book, type BookInput, type BookWithCommentCount } from '../lib/book-types';
 import { requireReadyBook, type BookValidator } from './book-validation';
+import { normalizeBookPrice } from '../lib/book-price';
 
 export function validateBookId(id: unknown): asserts id is string {
   if (!validImageId(id)) throw new AppError(400, 'Identificatorul cărții este nevalid.');
@@ -35,6 +36,19 @@ export function validateBook(value: unknown, current?: Book | null): BookInput {
       );
     return url;
   };
+  const purchase_url_1 = purchase('purchase_url_1', 1),
+    purchase_url_2 = purchase('purchase_url_2', 2);
+  const price = (key: 'price_1' | 'price_2', number: number, link: string | null) => {
+    const value = normalizeBookPrice(data[key] === undefined ? (current?.[key] ?? null) : data[key]);
+    if (value === undefined)
+      throw new AppError(
+        400,
+        `Prețul pentru coperta ${number} trebuie să fie o sumă, de exemplu 10,00, urmată de RON, EUR, USD sau GBP.`,
+      );
+    if (value && !link)
+      throw new AppError(400, `Adaugă linkul de achiziție pentru coperta ${number} sau șterge prețul ei.`);
+    return value;
+  };
   return {
     title: read('title', 180, 'Titlu', true),
     author: read('author', 120, 'Autor'),
@@ -42,8 +56,10 @@ export function validateBook(value: unknown, current?: Book | null): BookInput {
     file_id: data.file_id,
     image_id: (data.image_id as string | null) ?? null,
     image_2_id: second as string | null,
-    purchase_url_1: purchase('purchase_url_1', 1),
-    purchase_url_2: purchase('purchase_url_2', 2),
+    purchase_url_1,
+    purchase_url_2,
+    price_1: price('price_1', 1, purchase_url_1),
+    price_2: price('price_2', 2, purchase_url_2),
   };
 }
 async function requireFile(db: Database, id: string, validator?: BookValidator) {
@@ -66,8 +82,19 @@ export function getBook(db: Database, id: string) {
 }
 const matches = (book: Book, input: BookInput) =>
   (
-    ['title', 'author', 'description', 'file_id', 'image_id', 'image_2_id', 'purchase_url_1', 'purchase_url_2'] as const
-  ).every(key => book[key] === input[key]);
+    [
+      'title',
+      'author',
+      'description',
+      'file_id',
+      'image_id',
+      'image_2_id',
+      'purchase_url_1',
+      'purchase_url_2',
+      'price_1',
+      'price_2',
+    ] as const
+  ).every(key => (book[key] ?? null) === (input[key] ?? null));
 
 export async function createBook(db: Database, id: string, value: unknown, validator?: BookValidator) {
   validateBookId(id);
@@ -78,7 +105,7 @@ export async function createBook(db: Database, id: string, value: unknown, valid
   const now = Date.now();
   await db
     .prepare(
-      'INSERT INTO books (id, title, author, description, file_id, image_id, image_2_id, purchase_url_1, purchase_url_2, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT(id) DO NOTHING',
+      'INSERT INTO books (id, title, author, description, file_id, image_id, image_2_id, purchase_url_1, purchase_url_2, price_1, price_2, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT(id) DO NOTHING',
     )
     .bind(
       id,
@@ -90,6 +117,8 @@ export async function createBook(db: Database, id: string, value: unknown, valid
       input.image_2_id,
       input.purchase_url_1,
       input.purchase_url_2,
+      input.price_1,
+      input.price_2,
       now,
       now,
     )
@@ -114,7 +143,7 @@ export async function updateBook(
   await requireAvailableImage(db, input.image_2_id);
   const result = await db
     .prepare(
-      'UPDATE books SET title = ?, author = ?, description = ?, file_id = ?, image_id = ?, image_2_id = ?, purchase_url_1 = ?, purchase_url_2 = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?',
+      'UPDATE books SET title = ?, author = ?, description = ?, file_id = ?, image_id = ?, image_2_id = ?, purchase_url_1 = ?, purchase_url_2 = ?, price_1 = ?, price_2 = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?',
     )
     .bind(
       input.title,
@@ -125,6 +154,8 @@ export async function updateBook(
       input.image_2_id,
       input.purchase_url_1,
       input.purchase_url_2,
+      input.price_1,
+      input.price_2,
       Date.now(),
       id,
       revision,

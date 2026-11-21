@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fixtureBook } from './fixture.mjs';
+import { OWNER_EMAIL, fixtureBook } from './fixture.mjs';
 
 const visible = page => page.locator('.book-visible-pages');
 
@@ -79,6 +79,11 @@ test('a cover opens the sale page with that cover, details and the store link', 
   await expect(buy).toHaveAttribute('target', '_blank');
   await expect(buy).toHaveAttribute('rel', /noopener/);
   await expect(page.locator('.book-sale-facts')).toContainText(`${fixtureBook.pages} pagini`);
+  await expect(page.locator('.book-sale-price')).toHaveText('10,00\u00a0USD');
+  const offer = await page
+    .locator('script[type="application/ld+json"]')
+    .evaluate(script => JSON.parse(script.textContent).offers[0]);
+  expect(offer).toMatchObject({ price: '10.00', priceCurrency: 'USD', url: fixtureBook.record.purchase_url_1 });
   await expect(page.locator('.book-sale-facts')).toContainText('example.com');
   await expect(page.getByRole('link', { name: 'Citește un fragment' })).toHaveAttribute(
     'href',
@@ -116,4 +121,28 @@ test('phone: the sale page shows the purchase box right after the covers, withou
   expect(buy.y).toBeGreaterThan(gallery.y + gallery.height - 1);
   expect(details.y).toBeGreaterThan(buy.y + buy.height - 1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+});
+
+test.describe('editor', () => {
+  test.use({ extraHTTPHeaders: { 'oai-authenticated-user-email': OWNER_EMAIL } });
+
+  test("a price set in the editor appears on the sale page, in the reader's format", async ({ page }) => {
+    await page.goto('/admin/carti');
+    await expect(page.locator('#book-price-1')).toHaveValue('10.00');
+    await page.locator('#book-price-2').fill('12,50');
+    await page.getByRole('button', { name: 'Salvează carte' }).click();
+    await expect(page.getByRole('alert')).toContainText('Adaugă linkul de achiziție pentru coperta 2');
+
+    await page.locator('#book-price-2').fill('');
+    await page.locator('#book-price-1').fill('12,50');
+    await page.locator('#book-currency-1').selectOption('EUR');
+    const saved = page.waitForResponse(response => response.request().method() === 'PUT' && response.ok());
+    await page.getByRole('button', { name: 'Salvează carte' }).click();
+    expect((await (await saved).json()).book.price_1).toBe('12.50 EUR');
+
+    await page.goto(`/carti/${fixtureBook.record.id}/cumpara`);
+    await expect(page.locator('.book-sale-price')).toHaveText('12,50 EUR');
+    await page.goto(`/carti/${fixtureBook.record.id}/cumpara?lang=en-US`);
+    await expect(page.locator('.book-sale-price')).toHaveText('€12.50');
+  });
 });

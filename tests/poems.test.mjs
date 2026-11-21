@@ -47,6 +47,7 @@ for (const file of [
   'db/books',
   'db/book-files',
   'lib/book-types',
+  'lib/book-price',
   'db/video-comments',
   'db/videos',
   'db/video-files',
@@ -2792,4 +2793,36 @@ test('behind nginx, recordings and films are handed over only after the same acc
   } finally {
     db.close();
   }
+});
+
+test('book prices are normalized, need their purchase link and survive updates that omit them', () => {
+  const base = {
+    title: 'Carte',
+    author: 'Autor',
+    description: '',
+    file_id: crypto.randomUUID(),
+    image_id: null,
+    purchase_url_1: 'https://www.amazon.com/dp/B0HQJS27M2',
+  };
+  const input = books.validateBook({ ...base, price_1: '10,5 usd' });
+  assert.equal(input.price_1, '10.50 USD');
+  assert.equal(input.price_2, null);
+  assert.throws(() => books.validateBook({ ...base, price_1: '10 JPY' }), {
+    status: 400,
+    message: /Prețul pentru coperta 1/,
+  });
+  assert.throws(() => books.validateBook({ ...base, price_2: '12 EUR' }), {
+    status: 400,
+    message: /linkul de achiziție pentru coperta 2/,
+  });
+  assert.equal(books.validateBook({ ...base, price_1: '' }).price_1, null);
+  const current = {
+    ...base,
+    id: crypto.randomUUID(),
+    image_2_id: null,
+    purchase_url_2: null,
+    price_1: '9.99 EUR',
+    price_2: null,
+  };
+  assert.equal(books.validateBook(base, current).price_1, '9.99 EUR');
 });

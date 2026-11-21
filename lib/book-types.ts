@@ -16,6 +16,9 @@ export type Book = {
   image_2_id: string | null;
   purchase_url_1: string | null;
   purchase_url_2: string | null;
+  /** "10.00 USD"; see lib/book-price.ts. Only shown with the matching purchase link. */
+  price_1: string | null;
+  price_2: string | null;
   revision: number;
   created_at: number;
   updated_at: number;
@@ -23,7 +26,16 @@ export type Book = {
 export type BookWithCommentCount = Book & { comment_count: number };
 export type BookInput = Pick<
   Book,
-  'title' | 'author' | 'description' | 'file_id' | 'image_id' | 'image_2_id' | 'purchase_url_1' | 'purchase_url_2'
+  | 'title'
+  | 'author'
+  | 'description'
+  | 'file_id'
+  | 'image_id'
+  | 'image_2_id'
+  | 'purchase_url_1'
+  | 'purchase_url_2'
+  | 'price_1'
+  | 'price_2'
 >;
 export const MAX_PURCHASE_URL = 2048;
 export function bookPurchaseUrl(value: unknown): string | null {

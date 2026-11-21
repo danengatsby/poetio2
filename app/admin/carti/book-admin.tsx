@@ -14,6 +14,7 @@ import {
 } from '@/lib/book-types';
 import ThemeToggle from '../../theme-toggle';
 import BookPresentation from '../../carti/book-presentation';
+import { BOOK_PRICE_CURRENCIES, bookPriceParts, normalizeBookPrice } from '@/lib/book-price';
 import ReaderPreview from '../reader-preview';
 import type { BookPageText } from '@/lib/book-text';
 import BookTextEditor from './book-text-editor';
@@ -33,6 +34,8 @@ type Draft = Pick<
   | 'image_2_id'
   | 'purchase_url_1'
   | 'purchase_url_2'
+  | 'price_1'
+  | 'price_2'
   | 'revision'
 > & { isNew: boolean };
 const fromBook = (book: Book): Draft => ({
@@ -45,6 +48,8 @@ const fromBook = (book: Book): Draft => ({
   image_2_id: book.image_2_id ?? null,
   purchase_url_1: book.purchase_url_1 ?? '',
   purchase_url_2: book.purchase_url_2 ?? '',
+  price_1: book.price_1 ?? '',
+  price_2: book.price_2 ?? '',
   revision: book.revision,
   isNew: false,
 });
@@ -58,6 +63,8 @@ const blank = (): Draft => ({
   image_2_id: null,
   purchase_url_1: '',
   purchase_url_2: '',
+  price_1: '',
+  price_2: '',
   revision: 1,
   isNew: true,
 });
@@ -423,6 +430,17 @@ export default function BookAdmin({
       setError('Completează linkurile de achiziție cu adrese HTTP sau HTTPS valide.');
       return;
     }
+    for (const number of [1, 2] as const) {
+      const price = normalizeBookPrice(draft[number === 1 ? 'price_1' : 'price_2']);
+      if (price === undefined) {
+        setError(`Prețul pentru coperta ${number} trebuie să fie o sumă, de exemplu 10,00, cu o monedă din listă.`);
+        return;
+      }
+      if (price && !draft[number === 1 ? 'purchase_url_1' : 'purchase_url_2']?.trim()) {
+        setError(`Adaugă linkul de achiziție pentru coperta ${number} sau șterge prețul ei.`);
+        return;
+      }
+    }
     if (!selected && !draft.file_id) {
       setError('Alege un fișier PDF.');
       return;
@@ -670,7 +688,11 @@ export default function BookAdmin({
                   <div className="book-admin-covers">
                     {([1, 2] as const).map(number => {
                       const imageField = number === 1 ? 'image_id' : 'image_2_id',
-                        urlField = number === 1 ? 'purchase_url_1' : 'purchase_url_2';
+                        urlField = number === 1 ? 'purchase_url_1' : 'purchase_url_2',
+                        priceField = number === 1 ? 'price_1' : 'price_2';
+                      const price = bookPriceParts(draft[priceField]);
+                      const setPrice = (amount: string, currency: string) =>
+                        setDraft({ ...draft, [priceField]: amount.trim() ? `${amount.trim()} ${currency}` : '' });
                       const chosen = number === 1 ? cover : cover2;
                       return (
                         <section
@@ -712,7 +734,7 @@ export default function BookAdmin({
                                     setCover2(null);
                                     setUploadedCover2Id(null);
                                   }
-                                  setDraft({ ...draft, [imageField]: null, [urlField]: '' });
+                                  setDraft({ ...draft, [imageField]: null, [urlField]: '', [priceField]: '' });
                                   setMissingFiles({ ...missingFiles, [number === 1 ? 'cover' : 'cover2']: false });
                                   setSuccess('');
                                 }}
@@ -736,7 +758,41 @@ export default function BookAdmin({
                               }}
                             />
                           </label>
-                          <p className="field-help">Apăsarea copertei deschide acest link într-o filă nouă.</p>
+                          <div className="book-price-fields">
+                            <label htmlFor={`book-price-${number}`}>
+                              Preț pentru coperta {number} <span className="optional-label">(opțional)</span>
+                              <input
+                                id={`book-price-${number}`}
+                                inputMode="decimal"
+                                maxLength={10}
+                                placeholder="10,00"
+                                value={price.amount}
+                                onChange={event => {
+                                  setPrice(event.target.value, price.currency);
+                                  setSuccess('');
+                                }}
+                              />
+                            </label>
+                            <label htmlFor={`book-currency-${number}`}>
+                              Moneda
+                              <select
+                                id={`book-currency-${number}`}
+                                value={price.currency}
+                                onChange={event => {
+                                  setPrice(price.amount, event.target.value);
+                                  setSuccess('');
+                                }}
+                              >
+                                {BOOK_PRICE_CURRENCIES.map(currency => (
+                                  <option key={currency}>{currency}</option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                          <p className="field-help">
+                            Apăsarea copertei deschide pagina de vânzare a cărții, cu butonul spre acest link. Prețul
+                            apare acolo, lângă buton; prețul final rămâne cel din magazin.
+                          </p>
                         </section>
                       );
                     })}

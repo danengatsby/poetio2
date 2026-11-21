@@ -56,6 +56,7 @@ export const fixtureBook = {
       'Mulțumiri',
     ].join('\n'),
     purchase_url_1: 'https://www.example.com/carte-de-proba',
+    price_1: '10.00 USD',
   },
   covers: ['public/assets/poem-rain.webp', 'public/assets/poem-spring.webp'],
 };

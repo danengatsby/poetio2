@@ -7,6 +7,7 @@ import type { Book } from '@/lib/book-types';
 import type { PoemLanguage } from '@/lib/poem-types';
 import { bookCovers, bookSalePath, purchaseOptions, type CoverNumber } from '@/lib/book-sale';
 import { responsiveImage } from '@/lib/responsive-images';
+import { formatBookPrice } from '@/lib/book-price';
 import { rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
 import SiteHeader from '../site-header';
 import './books.css';
@@ -186,6 +187,7 @@ export default function BookSale({
                         {ro ? 'Varianta cu coperta' : 'Edition with cover'} {option.cover}
                       </p>
                     )}
+                    {option.price && <p className="book-sale-price">{formatBookPrice(option.price, language)}</p>}
                     <a
                       className="primary-button book-sale-buy-link"
                       href={option.url}
@@ -197,9 +199,13 @@ export default function BookSale({
                   </div>
                 ))}
                 <p className="book-sale-note">
-                  {ro
-                    ? 'Magazinul se deschide într-o filă nouă. Prețul, livrarea și plata sunt afișate acolo.'
-                    : 'The store opens in a new tab. Price, delivery and payment are shown there.'}
+                  {options.some(option => option.price)
+                    ? ro
+                      ? 'Magazinul se deschide într-o filă nouă. Prețul final, livrarea și plata sunt cele afișate acolo.'
+                      : 'The store opens in a new tab. The final price, delivery and payment are those shown there.'
+                    : ro
+                      ? 'Magazinul se deschide într-o filă nouă. Prețul, livrarea și plata sunt afișate acolo.'
+                      : 'The store opens in a new tab. Price, delivery and payment are shown there.'}
                 </p>
               </>
             ) : (

@@ -9,6 +9,9 @@ import { expectedSchemas, listMigrations, migrate, schemaOf, status } from '../s
 
 const migrations = listMigrations();
 const latest = migrations.at(-1).name;
+// The migration with a data step (see defaultHooks in scripts/migrate.mjs).
+const HOOKED = '0020_poem_search_nfc';
+const from = prefix => migrations.filter(migration => migration.name >= prefix).map(migration => migration.name);
 
 function workspace(t) {
   const directory = mkdtempSync(join(tmpdir(), 'poetio-migrate-'));
@@ -35,7 +38,7 @@ const read = (file, sql) => {
 };
 const countingHooks = () => {
   const calls = [];
-  return { calls, hooks: { [latest]: async file => calls.push(file) } };
+  return { calls, hooks: { [HOOKED]: async file => calls.push(file) } };
 };
 
 test('creates a database, applies every migration with its data step, then does nothing', async t => {
@@ -82,7 +85,7 @@ test('records an older schema and applies the remaining migrations', async t => 
   const { calls, hooks } = countingHooks();
   const result = await migrate(file, { hooks });
   assert.equal(result.baseline, '0018_search_normalization');
-  assert.deepEqual(result.applied, ['0019_book_purchase_covers', latest]);
+  assert.deepEqual(result.applied, from('0019'));
   assert.deepEqual(result.completed, result.applied);
   assert.deepEqual(calls, [file]);
 });
@@ -98,7 +101,7 @@ test('refuses a schema that matches no migration state, before writing', async t
 
 test('accepts an explicit baseline only when the schema matches it', async t => {
   const file = legacyDatabase(t, '0019');
-  await assert.rejects(migrate(file, { baseline: latest }), /does not match 0020_poem_search_nfc/);
+  await assert.rejects(migrate(file, { baseline: latest }), new RegExp(`does not match ${latest}`));
   const result = await migrate(file, { baseline: '0018_search_normalization', hooks: countingHooks().hooks });
   assert.equal(result.baseline, '0018_search_normalization');
 });
@@ -111,7 +114,7 @@ test('refuses a migration file that changed after it was applied', async t => {
   appendFileSync(join(directory, latest + '.sql'), '\n-- edited later\n');
   await assert.rejects(
     migrate(file, { directory, hooks: {} }),
-    /0020_poem_search_nfc\.sql changed after it was applied/,
+    new RegExp(`${latest}\\.sql changed after it was applied`),
   );
   assert.throws(() => status(file, { directory }), /changed after it was applied/);
 });
@@ -134,16 +137,18 @@ test('repeats only the data step after it failed', async t => {
   await assert.rejects(
     migrate(file, {
       hooks: {
-        [latest]: async () => {
+        [HOOKED]: async () => {
           throw new Error('index rebuild interrupted');
         },
       },
     }),
     /index rebuild interrupted/,
   );
-  assert.deepEqual(status(file).incomplete, [latest]);
+  assert.deepEqual(status(file).incomplete, [HOOKED]);
   const { calls, hooks } = countingHooks();
-  assert.deepEqual(await migrate(file, { hooks }), { baseline: null, applied: [], completed: [latest] });
+  const rerun = await migrate(file, { hooks });
+  assert.deepEqual(rerun.applied, from(HOOKED).slice(1));
+  assert.equal(rerun.completed[0], HOOKED);
   assert.equal(calls.length, 1);
   assert.deepEqual(status(file).incomplete, []);
 });
@@ -174,5 +179,5 @@ test('refuses to continue when the schema was changed by hand after migrating', 
     migrate(file, { hooks }),
     /does not match the recorded migrations \(up to 0018_search_normalization\)[\s\S]*missing    trigger poem_search_update/,
   );
-  assert.deepEqual(status(file).pending, ['0019_book_purchase_covers', latest]);
+  assert.deepEqual(status(file).pending, from('0019'));
 });
