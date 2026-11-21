@@ -160,6 +160,7 @@ test.describe('owner', () => {
     await row.getByLabel('Stoc').fill('0');
     await row.getByRole('button', { name: 'Salvează' }).click();
     await expect(row.getByText('Salvat.')).toBeVisible();
+    await expect(page.getByText('Stoc epuizat pentru toate cărțile cu preț.', { exact: false })).toBeVisible();
 
     await page.goto(salePath);
     await expect(page.locator('.shop-stock')).toHaveText('Stoc epuizat');
@@ -172,5 +173,52 @@ test.describe('owner', () => {
     await expect(row.getByText('Salvat.')).toBeVisible();
     await page.goto(salePath);
     await expect(page.locator('.shop-stock')).toHaveText('În stoc');
+  });
+
+  test('prices set on the shop page put covers on sale or take them off', async ({ page }) => {
+    await page.goto('/admin/magazin');
+    const row = page.getByRole('listitem').filter({ hasText: fixtureBook.record.title });
+    await expect(row).toContainText('Se vinde pe Poetio: coperta 1 – 10,00\u00a0USD');
+    await expect(row.getByLabel('Preț coperta 1 (USD)')).toHaveValue('10,00');
+    // Another tab records a stock count while the owner has the price form open.
+    const inventory = await page.context().newPage();
+    await inventory.goto('/admin/magazin');
+    const inventoryRow = inventory.getByRole('listitem').filter({ hasText: fixtureBook.record.title });
+    await inventoryRow.getByLabel('Stoc').fill('4');
+    await inventoryRow.getByRole('button', { name: 'Salvează' }).click();
+    await expect(inventoryRow.getByText('Salvat.')).toBeVisible();
+    await inventory.close();
+
+    await row.getByLabel('Preț coperta 2 (USD)').fill('12,50');
+    await row.getByRole('button', { name: 'Salvează' }).click();
+    await expect(row.getByText('Salvat.')).toBeVisible();
+    await expect(row).toContainText('coperta 2 – 12,50\u00a0USD');
+    await expect(row.getByLabel('Stoc')).toHaveValue('4');
+
+    await page.goto(`/carti/${fixtureBook.record.id}/cumpara?coperta=2`);
+    await expect(page.getByRole('group', { name: 'Variante' }).getByRole('button')).toHaveCount(2);
+    await expect(page.locator('.book-sale-amount')).toHaveAttribute('aria-label', '12,50\u00a0USD');
+
+    // Without any price nothing can be ordered, and the page says so.
+    await page.goto('/admin/magazin');
+    await row.getByLabel('Preț coperta 1 (USD)').fill('');
+    await row.getByLabel('Preț coperta 2 (USD)').fill('');
+    await row.getByRole('button', { name: 'Salvează' }).click();
+    await expect(row.getByText('Salvat.')).toBeVisible();
+    await expect(page.getByText('nicio carte nu are preț în USD')).toBeVisible();
+    await expect(row).toContainText('Nu se vinde încă');
+    await page.goto(salePath);
+    await expect(page.getByText('Cartea nu este încă de vânzare.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Adaugă în coș' })).toHaveCount(0);
+
+    // Put the price back as the other tests expect it.
+    await page.goto('/admin/magazin');
+    await row.getByLabel('Preț coperta 1 (USD)').fill('10');
+    await row.getByLabel('Stoc').fill('');
+    await row.getByRole('button', { name: 'Salvează' }).click();
+    await expect(row.getByText('Salvat.')).toBeVisible();
+    await expect(page.getByText('Magazinul este deschis: o carte se poate comanda.')).toBeVisible();
+    await page.goto(salePath);
+    await expect(page.locator('.book-sale-amount')).toHaveAttribute('aria-label', '10,00\u00a0USD');
   });
 });

@@ -101,20 +101,31 @@ export type ShopBook = {
   image_2_id: string | null;
   price_1: string | null;
   price_2: string | null;
+  /** The book's revision, so a price saved here cannot overwrite a newer edit. */
+  revision: number;
   stock: number | null;
   language: string;
 };
 
+const shopBookQuery = `SELECT books.id, books.title, books.author, books.image_id, books.image_2_id,
+  books.price_1, books.price_2, books.revision, book_shop.stock, COALESCE(book_shop.language, '') AS language
+  FROM books LEFT JOIN book_shop ON book_shop.book_id = books.id`;
+
 export async function listShopBooks(db: Database): Promise<ShopBook[]> {
-  return (
-    await db
-      .prepare(
-        `SELECT books.id, books.title, books.author, books.image_id, books.image_2_id, books.price_1, books.price_2,
-          book_shop.stock AS stock, COALESCE(book_shop.language, '') AS language
-         FROM books LEFT JOIN book_shop ON book_shop.book_id = books.id ORDER BY books.created_at DESC, books.id DESC`,
-      )
-      .all<ShopBook>()
-  ).results;
+  return (await db.prepare(`${shopBookQuery} ORDER BY books.created_at DESC, books.id DESC`).all<ShopBook>()).results;
+}
+
+async function getShopBook(db: Database, bookId: string) {
+  const book = await db.prepare(`${shopBookQuery} WHERE books.id = ?`).bind(bookId).first<ShopBook>();
+  if (!book) throw new AppError(404, 'Cartea nu mai există.');
+  return book;
+}
+
+function coverPrice(amount: unknown, currency: string, cover: number) {
+  if (amount === null || (typeof amount === 'string' && !amount.trim())) return null;
+  const price = typeof amount === 'string' && normalizeBookPrice(`${amount.trim()} ${currency}`);
+  if (!price) throw new AppError(400, `Scrie pentru coperta ${cover} un preț mai mare decât zero, de exemplu 45,50.`);
+  return price;
 }
 
 export async function getBookShop(db: Database, bookId: string) {
@@ -126,23 +137,71 @@ export async function getBookShop(db: Database, bookId: string) {
   );
 }
 
-export async function saveBookShop(db: Database, bookId: unknown, value: unknown) {
+export async function saveBookShop(db: Database, bookId: unknown, value: unknown): Promise<ShopBook> {
   if (!validImageId(bookId)) throw new AppError(400, 'Cartea este nevalidă.');
   const data = (value && typeof value === 'object' ? value : {}) as Row;
-  const stock = data.stock === null || data.stock === '' ? null : Number(data.stock);
+  const book = await getShopBook(db, bookId);
+  const stock =
+    data.stock === undefined ? book.stock : data.stock === null || data.stock === '' ? null : Number(data.stock);
   if (stock !== null && (!Number.isInteger(stock) || stock < 0 || stock > 100000))
     throw new AppError(400, 'Stocul trebuie să fie un număr întreg între 0 și 100000, sau gol (nelimitat).');
-  const language = typeof data.language === 'string' ? data.language : '';
-  if (language && !BOOK_LANGUAGES[language]) throw new AppError(400, 'Limba cărții nu este în listă.');
-  if (!(await db.prepare('SELECT id FROM books WHERE id = ?').bind(bookId).first()))
-    throw new AppError(404, 'Cartea nu mai există.');
-  await db
+  const language = data.language === undefined ? book.language : data.language;
+  if (typeof language !== 'string' || (language && !Object.hasOwn(BOOK_LANGUAGES, language)))
+    throw new AppError(400, 'Limba cărții nu este în listă.');
+
+  const conflict = () =>
+    new AppError(409, 'Datele cărții sau moneda magazinului s-au schimbat. Reîncarcă pagina înainte de a salva.');
+  if (
+    (data.expected_stock !== undefined && data.expected_stock !== book.stock) ||
+    (data.expected_language !== undefined && data.expected_language !== book.language)
+  )
+    throw conflict();
+
+  const edits = (['price_1', 'price_2'] as const).filter(key => data[key] !== undefined);
+  const currency = edits.length ? (await getShopSettings(db)).currency : null;
+  if (currency !== null) {
+    if (!Number.isInteger(data.revision)) throw new AppError(400, 'Reîncarcă pagina înainte de a salva prețul.');
+    if (book.revision !== data.revision) throw conflict();
+    if (data.currency !== undefined && data.currency !== currency) throw conflict();
+  }
+
+  // Compare the snapshot inside the transaction as a sale or another edit may have just changed it.
+  const inventory = db
     .prepare(
-      'INSERT INTO book_shop (book_id, stock, language) VALUES (?, ?, ?) ON CONFLICT(book_id) DO UPDATE SET stock = excluded.stock, language = excluded.language',
+      `INSERT INTO book_shop (book_id, stock, language)
+     SELECT books.id, ?, ? FROM books LEFT JOIN book_shop ON book_shop.book_id = books.id
+     WHERE books.id = ? AND books.revision = ? AND book_shop.stock IS ?
+       AND COALESCE(book_shop.language, '') = ?
+       AND (? IS NULL OR COALESCE((SELECT value FROM shop_settings WHERE key = 'currency'), ?) = ?)
+     ON CONFLICT(book_id) DO UPDATE SET stock = excluded.stock, language = excluded.language`,
     )
-    .bind(bookId, stock, language)
-    .run();
-  return { stock, language };
+    .bind(
+      stock,
+      language,
+      bookId,
+      book.revision,
+      book.stock,
+      book.language,
+      currency,
+      DEFAULT_SHOP_SETTINGS.currency,
+      currency,
+    );
+  const statements = [inventory];
+  if (currency !== null) {
+    const prices = edits.map(key => coverPrice(data[key], currency, key === 'price_1' ? 1 : 2));
+    // changes() is the affected row count of the inventory statement in this same batch.
+    statements.push(
+      db
+        .prepare(
+          `UPDATE books SET ${edits.map(key => `${key} = ?`).join(', ')}, revision = revision + 1, updated_at = ?
+       WHERE id = ? AND changes() = 1`,
+        )
+        .bind(...prices, Date.now(), bookId),
+    );
+  }
+  const [saved] = (await db.batch(statements)) as { meta: { changes: number } }[];
+  if (!saved.meta.changes) throw conflict();
+  return getShopBook(db, bookId);
 }
 
 export type QuoteLine = {

@@ -26,31 +26,59 @@ function missing(shop: PublicShop) {
   return list;
 }
 
-function BookRow({ book, currency }: { book: ShopBook; currency: string }) {
+/** The amount of a stored price ("45.00 RON" → "45,00") when it is in the shop's currency. */
+const amountIn = (price: string | null, currency: string) =>
+  price?.endsWith(` ${currency}`) ? price.split(' ')[0].replace('.', ',') : '';
+/** Covers of a book that can be ordered: those priced in the shop's currency. */
+const onSale = (book: ShopBook, currency: string) =>
+  ([1, 2] as const).filter(cover => amountIn(book[cover === 1 ? 'price_1' : 'price_2'], currency));
+
+function BookRow({ book, currency, onSaved }: { book: ShopBook; currency: string; onSaved: (book: ShopBook) => void }) {
+  const saved = { 1: amountIn(book.price_1, currency), 2: amountIn(book.price_2, currency) };
+  const [amounts, setAmounts] = useState(saved);
   const [stock, setStock] = useState(book.stock === null ? '' : String(book.stock));
   const [language, setLanguage] = useState(book.language);
   const [state, setState] = useState<{ kind: '' | 'saving' | 'saved' | 'error'; message?: string }>({ kind: '' });
-  const prices = [book.price_1, book.price_2]
-    .map((price, index) => ({ cover: index + 1, price }))
-    .filter(item => item.price);
-  const wrongCurrency = prices.filter(item => !item.price!.endsWith(` ${currency}`));
+  // The second cover is offered only when the book has one (or already has a price for it).
+  const covers = book.image_2_id || book.price_2 ? ([1, 2] as const) : ([1] as const);
+  const wrongCurrency = ([1, 2] as const).filter(cover => {
+    const price = book[cover === 1 ? 'price_1' : 'price_2'];
+    return price && !price.endsWith(` ${currency}`);
+  });
+  const selling = onSale(book, currency);
 
   async function save(event: FormEvent) {
     event.preventDefault();
     setState({ kind: 'saving' });
+    const prices = Object.fromEntries(
+      covers.filter(cover => amounts[cover].trim() !== saved[cover]).map(cover => [`price_${cover}`, amounts[cover]]),
+    );
+    const nextStock = stock.trim() === '' ? null : Number(stock);
     try {
       const response = await fetch(`/api/admin/shop/books/${book.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stock: stock.trim() === '' ? null : Number(stock), language }),
+        body: JSON.stringify({
+          revision: book.revision,
+          currency,
+          ...(nextStock !== book.stock && { stock: nextStock, expected_stock: book.stock }),
+          ...(language !== book.language && { language, expected_language: book.language }),
+          ...prices,
+        }),
       });
       const result = await response.json().catch(() => null);
       if (!response.ok) throw new Error(result?.error || 'Nu s-a salvat.');
+      const next: ShopBook = result.book;
+      setAmounts({ 1: amountIn(next.price_1, currency), 2: amountIn(next.price_2, currency) });
+      setStock(next.stock === null ? '' : String(next.stock));
+      setLanguage(next.language);
+      onSaved(next);
       setState({ kind: 'saved' });
     } catch (failure) {
       setState({ kind: 'error', message: (failure as Error).message });
     }
   }
+  const changed = () => setState({ kind: '' });
 
   const cover = book.image_id || book.image_2_id;
   return (
@@ -62,38 +90,61 @@ function BookRow({ book, currency }: { book: ShopBook; currency: string }) {
       )}
       <div>
         <h3>{book.title || 'Fără titlu'}</h3>
-        <p>
-          {prices.length
-            ? prices.map(item => `Coperta ${item.cover}: ${formatBookPrice(item.price, 'ro')}`).join(' · ')
-            : 'Fără preț: cartea nu se vinde. Pune un preț în pagina Cărți.'}
-        </p>
-        {wrongCurrency.length > 0 && (
-          <p className="shop-admin-warning">
-            Prețul pentru coperta {wrongCurrency.map(item => item.cover).join(' și ')} nu este în {currency}, moneda
-            magazinului, deci nu poate fi comandat. Schimbă-l în pagina Cărți.
+        {selling.length ? (
+          <p className="shop-admin-selling">
+            Se vinde pe Poetio:{' '}
+            {selling
+              .map(item => `coperta ${item} – ${formatBookPrice(book[item === 1 ? 'price_1' : 'price_2'], 'ro')}`)
+              .join(', ')}
           </p>
+        ) : (
+          <p className="shop-admin-warning">Nu se vinde încă: scrie prețul mai jos și apasă Salvează.</p>
         )}
+        {wrongCurrency.map(item => (
+          <p key={item} className="shop-admin-warning">
+            Prețul salvat pentru coperta {item} ({formatBookPrice(book[item === 1 ? 'price_1' : 'price_2'], 'ro')}) nu
+            este în {currency}, moneda magazinului. Scrie aici prețul în {currency}.
+          </p>
+        ))}
         <form className="shop-admin-book-form" onSubmit={event => void save(event)}>
+          {covers.map(item => (
+            <label key={item}>
+              {covers.length > 1 ? `Preț coperta ${item}` : 'Preț'} ({currency})
+              <input
+                disabled={state.kind === 'saving'}
+                inputMode="decimal"
+                maxLength={10}
+                placeholder="ex. 45"
+                value={amounts[item]}
+                onChange={event => {
+                  setAmounts(current => ({ ...current, [item]: event.target.value }));
+                  changed();
+                }}
+              />
+            </label>
+          ))}
           <label>
             Stoc
             <input
+              disabled={state.kind === 'saving'}
               inputMode="numeric"
               pattern="\d*"
               value={stock}
               placeholder="nelimitat"
               onChange={event => {
                 setStock(event.target.value);
-                setState({ kind: '' });
+                changed();
               }}
             />
           </label>
           <label>
             Limba cărții
             <select
+              disabled={state.kind === 'saving'}
               value={language}
               onChange={event => {
                 setLanguage(event.target.value);
-                setState({ kind: '' });
+                changed();
               }}
             >
               <option value="">—</option>
@@ -163,7 +214,7 @@ export default function ShopAdmin() {
       if (!response.ok) throw new Error(result?.error || 'Setările nu au fost salvate.');
       setShop(result.shop);
       setDraft(toDraft(result.shop));
-      setNotice(result.shop.ready ? 'Salvat. Magazinul primește comenzi.' : 'Salvat.');
+      setNotice('Setările magazinului au fost salvate.');
     } catch (failure) {
       setError((failure as Error).message);
     } finally {
@@ -185,26 +236,55 @@ export default function ShopAdmin() {
   );
 
   const gaps = shop ? missing(shop) : [];
+  const priced = shop ? books.filter(book => onSale(book, shop.currency).length) : [];
+  const available = priced.filter(book => book.stock !== 0).length;
   return (
     <ShopAdminFrame current="/admin/magazin" skip="Mergi la setările magazinului">
       <div className="admin-heading">
         <div>
           <p className="eyebrow">Vânzarea cărților pe Poetio</p>
           <h1>Magazin</h1>
-          <p>Vânzătorul, livrarea, plata și stocul cărților. Prețurile se pun la fiecare carte, în pagina Cărți.</p>
+          <p>Prețul și stocul fiecărei cărți, apoi vânzătorul, livrarea și plata.</p>
         </div>
       </div>
       {shop && (
-        <p className={shop.ready ? 'success-message' : 'error-message'} role="status">
-          {shop.ready
-            ? 'Magazinul este deschis: vizitatorii pot comanda cărțile care au preț.'
-            : `Comenzile sunt închise până completezi: ${gaps.join(', ')}.`}
+        <p className={shop.ready && available ? 'success-message' : 'error-message'} role="status">
+          {!shop.ready
+            ? `Comenzile sunt închise până completezi mai jos: ${gaps.join(', ')}.`
+            : available
+              ? `Magazinul este deschis: ${available === 1 ? 'o carte se poate' : `${available} cărți se pot`} comanda.`
+              : priced.length
+                ? 'Stoc epuizat pentru toate cărțile cu preț. Actualizează stocul pentru a primi comenzi.'
+                : `Magazinul este pregătit, dar nicio carte nu are preț în ${shop.currency}, deci nu se poate comanda nimic. Scrie prețul la carte, mai jos, și apasă Salvează.`}
         </p>
       )}
       {error && (
         <div className="error-message" role="alert">
           <p>{error}</p>
         </div>
+      )}
+      {draft && (
+        <section className="shop-admin-books" aria-labelledby="stock-title">
+          <h2 id="stock-title">Cărțile de vânzare</h2>
+          <p className="field-help">
+            O carte se poate comanda când are preț în moneda magazinului și este în stoc. Lasă câmpul gol pentru stoc
+            nelimitat. Cu stoc 0 cartea apare „Stoc epuizat”. Fiecare comandă scade stocul, anularea îl readuce.
+          </p>
+          {books.length ? (
+            <ul>
+              {books.map(book => (
+                <BookRow
+                  key={`${book.id}:${shop?.currency}`}
+                  book={book}
+                  currency={shop?.currency ?? draft.currency}
+                  onSaved={next => setBooks(list => list.map(item => (item.id === next.id ? next : item)))}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p>Nu există cărți.</p>
+          )}
+        </section>
       )}
       {draft && (
         <form className="editor-fields shop-admin-settings" onSubmit={event => void save(event)}>
@@ -285,24 +365,6 @@ export default function ShopAdmin() {
             </span>
           </div>
         </form>
-      )}
-      {draft && (
-        <section className="shop-admin-books" aria-labelledby="stock-title">
-          <h2 id="stock-title">Stocul cărților</h2>
-          <p className="field-help">
-            Lasă stocul gol dacă nu vrei să-l numeri. Cu stoc 0 cartea apare „Stoc epuizat”. Fiecare comandă scade
-            stocul; anularea îl readuce.
-          </p>
-          {books.length ? (
-            <ul>
-              {books.map(book => (
-                <BookRow key={book.id} book={book} currency={shop?.currency ?? draft.currency} />
-              ))}
-            </ul>
-          ) : (
-            <p>Nu există cărți.</p>
-          )}
-        </section>
       )}
     </ShopAdminFrame>
   );

@@ -170,3 +170,64 @@ test('delivery estimates count working days', () => {
   );
   assert.equal(rules.formatMoney(4990, 'RON', 'ro'), '49,90 RON');
 });
+
+test('prices set on the shop page use its currency, need the current revision and keep the history', async t => {
+  const db = await store(t);
+  // OTHER is priced in USD; the shop sells in RON.
+  assert.equal((await shop.quote(db, [{ book_id: OTHER, cover: 1, quantity: 1 }])).lines[0].problem, 'unavailable');
+  const saved = await shop.saveBookShop(db, OTHER, { revision: 1, stock: null, language: '', price_1: '45,5' });
+  assert.equal(saved.price_1, '45.50 RON');
+  assert.equal(saved.price_2, null);
+  assert.equal(saved.revision, 2);
+  assert.equal((await shop.quote(db, [{ book_id: OTHER, cover: 1, quantity: 1 }])).lines[0].unit_cents, 4550);
+
+  // A page loaded before another edit cannot overwrite it, and then changes nothing at all.
+  await assert.rejects(shop.saveBookShop(db, OTHER, { revision: 1, stock: 5, language: '', price_1: '50' }), {
+    status: 409,
+  });
+  assert.equal((await shop.getBookShop(db, OTHER)).stock, null);
+  for (const amount of ['0', 'gratis', '1.234,50'])
+    await assert.rejects(
+      shop.saveBookShop(db, OTHER, { revision: 2, stock: null, language: '', price_2: amount }),
+      /coperta 2/,
+      amount,
+    );
+
+  const cleared = await shop.saveBookShop(db, OTHER, { revision: 2, stock: null, language: '', price_1: '' });
+  assert.equal(cleared.price_1, null);
+  // Stock and language alone leave the book's revision as it is.
+  assert.equal((await shop.saveBookShop(db, OTHER, { stock: 2, language: 'ro' })).revision, 3);
+  const history = (
+    await db
+      .prepare("SELECT revision, snapshot FROM content_history WHERE kind = 'book' AND entity_id = ? ORDER BY revision")
+      .bind(OTHER)
+      .all()
+  ).results.map(row => [row.revision, JSON.parse(row.snapshot).price_1]);
+  assert.deepEqual(history.slice(-2), [
+    [2, '45.50 RON'],
+    [3, null],
+  ]);
+});
+
+test('a sale preserves its stock decrement when the owner edits a price from an open page', async t => {
+  const db = await store(t);
+  await shop.createOrder(db, { ...customer, items: [{ book_id: BOOK, cover: 1, quantity: 1 }] });
+  const edit = { revision: 1, price_1: '48', currency: 'RON' };
+  await assert.rejects(shop.saveBookShop(db, BOOK, { ...edit, stock: 5, expected_stock: 3 }), { status: 409 });
+  await assert.rejects(shop.saveBookShop(db, BOOK, { ...edit, currency: 'USD' }), { status: 409 });
+  const saved = await shop.saveBookShop(db, BOOK, edit);
+  assert.equal(saved.price_1, '48.00 RON');
+  assert.equal(saved.stock, 2);
+  assert.equal(saved.language, 'ro');
+});
+
+test('a failed price update rolls back the inventory edit', async t => {
+  const db = await store(t);
+  await db
+    .prepare(
+      "CREATE TRIGGER reject_price BEFORE UPDATE OF price_1 ON books BEGIN SELECT RAISE(ABORT, 'price failed'); END",
+    )
+    .run();
+  await assert.rejects(shop.saveBookShop(db, BOOK, { revision: 1, price_1: '48', stock: 5 }), /price failed/);
+  assert.equal((await shop.getBookShop(db, BOOK)).stock, 3);
+});
