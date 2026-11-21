@@ -5,7 +5,7 @@
 // search index. Playwright waits for http://127.0.0.1:<port + 1>/ready, which
 // answers once the poems are in. Requires `npm run build:vps` first.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -86,11 +86,22 @@ try {
     body: bookFixture({ count: fixtureBook.pages }),
   });
   if (upload.status !== 201) throw new Error(`Uploading the book failed: ${await upload.text()}`);
+  const covers = [];
+  for (const path of fixtureBook.covers) {
+    const id = crypto.randomUUID();
+    const image = await fetch(base + '/api/images', {
+      method: 'POST',
+      headers: { ...owner, 'Content-Type': 'image/webp', 'X-Upload-Id': id, 'X-File-Name': 'coperta.webp' },
+      body: readFileSync(join(root, path)),
+    });
+    if (!image.ok) throw new Error(`Uploading a cover failed: ${await image.text()}`);
+    covers.push((await image.json()).image.id);
+  }
   for (let attempt = 0; ; attempt++) {
     const response = await fetch(base + '/api/books', {
       method: 'POST',
       headers: { ...owner, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...fixtureBook.record, file_id: fileId }),
+      body: JSON.stringify({ ...fixtureBook.record, file_id: fileId, image_id: covers[0], image_2_id: covers[1] }),
     });
     if (response.status === 201) break;
     if (response.status !== 409 || attempt > 120) throw new Error(`Adding the book failed: ${await response.text()}`);

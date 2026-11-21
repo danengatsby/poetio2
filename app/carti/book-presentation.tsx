@@ -26,7 +26,7 @@ export default function BookPresentation({
   return (
     <>
       <article className="book-detail">
-        <BookCovers book={book} language={language} previewSources={[coverSrc, cover2Src]} />
+        <BookCovers book={book} language={language} previewSources={[coverSrc, cover2Src]} saleLinks={!preview} />
         <div>
           <p className="eyebrow">{ro ? 'Biblioteca Poetio' : 'Poetio library'}</p>
           <h1>{book.title || (ro ? 'Fără titlu' : 'Untitled')}</h1>

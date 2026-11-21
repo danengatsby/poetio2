@@ -1,24 +1,30 @@
 /* eslint-disable @next/next/no-img-element -- Uploaded derivatives and local previews use the same image display. */
 import { bookPurchaseUrl, type Book } from '@/lib/book-types';
+import { bookSalePath, purchaseOptions, type CoverNumber } from '@/lib/book-sale';
+import { withSiteLanguage } from '@/lib/site-language';
 import type { PoemLanguage } from '@/lib/poem-types';
 import { responsiveImage } from '@/lib/responsive-images';
 
 export type CoverBook = Pick<
   Book,
-  'title' | 'author' | 'image_id' | 'image_2_id' | 'purchase_url_1' | 'purchase_url_2'
+  'id' | 'title' | 'author' | 'image_id' | 'image_2_id' | 'purchase_url_1' | 'purchase_url_2'
 >;
 export default function BookCovers({
   book,
   language,
   previewSources = [],
   compact = false,
+  saleLinks = true,
 }: {
   book: CoverBook;
   language: PoemLanguage;
   previewSources?: (string | undefined)[];
   compact?: boolean;
+  /** With a purchase link, covers open the book's sale page (not in the editor's preview). */
+  saleLinks?: boolean;
 }) {
   const ro = language === 'ro';
+  const sale = saleLinks && Boolean(book.id) && purchaseOptions(book).length > 0;
   const covers = [
     { number: 1, id: book.image_id, url: book.purchase_url_1, src: previewSources[0] },
     { number: 2, id: book.image_2_id, url: book.purchase_url_2, src: previewSources[1] },
@@ -57,14 +63,34 @@ export default function BookCovers({
             />
             <span className="book-cover-caption">
               <span>{label}</span>
-              {url && (
-                <span className="book-cover-buy">
-                  {ro ? 'Cumpără' : 'Buy'} <span aria-hidden="true">↗</span>
-                </span>
+              {sale ? (
+                <span className="book-cover-buy">{ro ? 'Cumpără' : 'Buy'}</span>
+              ) : (
+                url && (
+                  <span className="book-cover-buy">
+                    {ro ? 'Cumpără' : 'Buy'} <span aria-hidden="true">↗</span>
+                  </span>
+                )
               )}
             </span>
           </>
         );
+        if (sale)
+          return (
+            <a
+              key={cover.number}
+              className="book-cover-option book-cover-link"
+              data-cover={cover.number}
+              href={withSiteLanguage(bookSalePath(book.id, cover.number as CoverNumber), language)}
+              aria-label={
+                ro
+                  ? `Detalii și cumpărare: ${book.title} — ${label.toLowerCase()}`
+                  : `Details and purchase: ${book.title} — ${label.toLowerCase()}`
+              }
+            >
+              {content}
+            </a>
+          );
         return url ? (
           <a
             key={cover.number}

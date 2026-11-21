@@ -1,0 +1,184 @@
+/* Book sale page: covers, details and a purchase box, in the site's own style. */
+.book-sale {
+  padding-block: 2.5rem 4rem;
+}
+.book-sale-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) minmax(240px, 300px);
+  gap: 2.5rem;
+  align-items: start;
+  margin-top: 1.5rem;
+}
+
+.book-sale-gallery {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+}
+.book-sale-cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  background: var(--tint);
+  border: 1px solid var(--line);
+}
+.book-sale-thumbs {
+  display: flex;
+  gap: 0.6rem;
+}
+.book-sale-thumbs button {
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+}
+.book-sale-thumbs button[aria-pressed='true'] {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--blue);
+}
+.book-sale-thumbs img {
+  display: block;
+  width: 52px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 3px;
+}
+.book-sale-sample {
+  width: 100%;
+}
+
+.book-sale-details h1 {
+  font: 400 clamp(1.7rem, 3vw, 2.4rem)/1.2 var(--serif);
+  margin: 0 0 0.5rem;
+  overflow-wrap: anywhere;
+}
+.book-sale-byline {
+  margin: 0 0 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-muted);
+}
+.book-sale-byline strong {
+  color: var(--blue);
+  font-weight: 400;
+}
+.book-sale-description {
+  white-space: pre-line;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  /* About ten lines, then "Read more". */
+  max-height: 16.5em;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, black 75%, transparent);
+}
+.book-sale-description.is-expanded {
+  max-height: none;
+  mask-image: none;
+}
+.book-sale-more {
+  margin-top: 0.4rem;
+}
+.book-sale-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2.5rem;
+  margin: 1.75rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+.book-sale-facts div {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  min-width: 7rem;
+  text-align: center;
+}
+.book-sale-facts dt {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+.book-sale-facts dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.book-sale-buy {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.book-sale-buy h2 {
+  font: 400 1.35rem/1.3 var(--serif);
+  margin: 0;
+}
+.book-sale-option {
+  display: grid;
+  gap: 0.4rem;
+}
+.book-sale-option.is-selected {
+  padding: 0.6rem;
+  margin: -0.6rem;
+  border-radius: 6px;
+  background: var(--tint);
+}
+.book-sale-option-label {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+.book-sale-buy-link {
+  width: 100%;
+}
+.book-sale-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.book-sale-share {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 0.4rem;
+}
+.book-sale-status:empty {
+  display: none;
+}
+
+@media (max-width: 1050px) {
+  .book-sale-layout {
+    grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+  }
+  .book-sale-buy {
+    grid-column: 2;
+  }
+}
+@media (max-width: 760px) {
+  .book-sale {
+    padding-block: 1.5rem 3rem;
+  }
+  .book-sale-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.75rem;
+  }
+  .book-sale-gallery {
+    max-width: 280px;
+    margin-inline: auto;
+    width: 100%;
+  }
+  .book-sale-buy {
+    grid-column: auto;
+    grid-row: 2;
+  }
+}
