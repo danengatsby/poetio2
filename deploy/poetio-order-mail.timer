@@ -1,0 +1,10 @@
+[Unit]
+Description=Send confirmations for new Poetio orders
+
+[Timer]
+OnBootSec=5s
+OnUnitInactiveSec=15s
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

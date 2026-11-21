@@ -57,3 +57,18 @@ Testele pornesc buildul pe o bază temporară, creată de runner. Poemele de tes
 ## Fără GitHub
 
 Dacă GitHub nu e disponibil, poți construi și împacheta local, într-un checkout curat al commitului: `npm ci && npm run build:vps && node scripts/package-build.mjs build-out`. Arhiva se publică apoi cu `prepare --artifact build-out/poetio-build-<commit>.tar.gz`. Dovezile notează `tested_by_ci: false`. Pe acest server, buildul local are nevoie de swap și de `choom`; vezi notele despre memorie.
+
+## Confirmările de comandă prin email
+
+Pe VPS, `poetio-order-mail.timer` verifică comenzile noi la fiecare 15 secunde. Serviciul trimite câte un mesaj vânzătorului și la adresa cumpărătorului din comandă. Vânzătorul primește mesajul la `POETIO_ORDER_TO`, dacă e setat în `/etc/poetio/notify.env`; altfel la emailul de contact din `/admin/magazin`, iar în lipsa lui la `POETIO_NOTIFY_TO`. La prima pornire ia drept punct de plecare ultima comandă existentă. Păstrează directorul privat `/var/lib/poetio-notify` la mutarea serviciului pe alt server.
+
+Instalează scriptul și unitățile din checkout pentru a activa serviciul pe un VPS nou.
+
+```sh
+sudo install -m 0755 scripts/notify-comments.py /usr/local/sbin/poetio-notify-comments
+sudo install -m 0644 deploy/poetio-order-mail.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now poetio-order-mail.timer
+```
+
+Serviciul citește expeditorul și datele SMTP din `/etc/poetio/notify.env` la fiecare rulare. Folosește modelul [poetio-notify.env.example](poetio-notify.env.example) și salvează configurația cu proprietarul root și permisiuni 0600. Pentru un cont Gmail, `sudo python3 -I deploy/configure-order-gmail.py` cere adresa contului și parola de aplicație, verifică autentificarea și scrie datele SMTP în acest fișier. Mesajele așteaptă până la configurarea SMTP. După un refuz SMTP, serviciul reîncearcă livrarea pentru destinatarul respectiv după cinci minute. Poți verifica numărul de comenzi în așteptare cu `sudo -u poetio /usr/local/sbin/poetio-notify-comments --check`.

@@ -107,28 +107,105 @@ class NoticeTests(unittest.TestCase):
         missing = subprocess.run([sys.executable, str(script), '--check', '--database', str(self.root / 'none.sqlite3'), '--state', str(self.state)], capture_output=True, text=True, env={})
         self.assertEqual((missing.returncode, missing.stderr.strip()), (1, 'Comment notice failed: OperationalError'))
 
-    def test_new_orders_are_announced_once_in_their_own_message(self):
+    def create_shop(self, contact='vanzator@example.org'):
+        schema = Path(__file__).parent.parent / 'drizzle' / '0022_shop.sql'
+        with closing(sqlite3.connect(self.database)) as db:
+            db.executescript(schema.read_text())
+            if contact is not None:
+                self.contact(contact)
+
+    def contact(self, email):
         with closing(sqlite3.connect(self.database)) as db, db:
-            db.execute('CREATE TABLE orders (id TEXT PRIMARY KEY, number INTEGER, customer_name TEXT, phone TEXT, email TEXT, address TEXT, city TEXT, county TEXT,'
-                       ' postal_code TEXT, note TEXT, payment_method TEXT, currency TEXT, total_cents INTEGER, created_at INTEGER, status TEXT)')
-            db.execute('CREATE TABLE order_items (order_id TEXT, title TEXT, cover INTEGER, quantity INTEGER)')
-            db.execute("INSERT INTO orders VALUES ('o1', 1001, 'Ana\r\nBcc: x@example.org', '0722 123 456', 'ana@example.org', 'Str. Teilor 5', 'Brașov', 'Brașov', '',"
-                       " 'Sună  înainte', 'cod', 'RON', 6500, 1790000000000, 'new')")
-            db.execute("INSERT INTO order_items VALUES ('o1', 'Carte de probă', 1, 2)")
-        self.add('poem_comments', 'c1', 1000)
-        self.assertEqual(self.run_notice(), {'configured': True, 'sent': 1, 'orders': 1})
-        message = self.sent[1][0]
-        self.assertEqual(message['Subject'], 'Poetio: comandă nouă nr. 1001 (65,00 RON)')
-        self.assertIsNone(message['Bcc'])
-        body = message.get_content()
-        self.assertIn('Comanda nr. 1001 · 65,00 RON · ramburs', body)
-        self.assertIn('Client: Ana Bcc: x@example.org · 0722 123 456 · ana@example.org', body)
-        self.assertIn('Livrare: Str. Teilor 5, Brașov, Brașov', body)
-        self.assertIn('2 × Carte de probă (coperta 1)', body)
-        self.assertIn('Observații: Sună înainte', body)
-        self.assertIn('https://poetio.cloud/admin/comenzi', body)
-        self.assertEqual(json.loads(self.state.with_name('orders.json').read_text()), {'notified_until': 1790000000000})
-        self.assertEqual(self.run_notice(), {'configured': True, 'sent': 0})
+            db.execute("INSERT INTO shop_settings VALUES ('contact_email', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", (email,))
+
+    def order(self, number, email='ana@example.org'):
+        with closing(sqlite3.connect(self.database)) as db, db:
+            db.execute("""INSERT INTO orders VALUES (?, ?, 'privatekey', 'new', 'Ana', ?, '0722 123 456', 'Str. Teilor 5',
+                          'Brașov', 'Brașov', '', '', 'cod', 'RON', 5000, 1500, 6500, 12345, 12345)""",
+                       (f'o{number}', number, email))
+            db.execute("INSERT INTO order_items VALUES (?, 'b', 1, 'Carte de probă', 2500, 2)", (f'o{number}',))
+
+    def mail(self, env=ENV, send=None):
+        return module.order_notices(self.database, self.state, env, send or (lambda message, _: self.sent.append(message)))
+
+    def test_order_confirmations_are_separate_and_only_for_new_orders(self):
+        self.create_shop()
+        self.order(1001)
+        self.mail(env={})
+        self.order(1002)
+        self.assertEqual(self.mail(env={})['pending'], 2)
+        # A later order in the same millisecond must also be delivered.
+        self.order(1003, 'ion@example.org')
+        self.assertEqual(self.mail()['delivered'], 4)
+        admin, buyer, admin2, buyer2 = self.sent
+        self.assertEqual([str(m['To']) for m in self.sent], ['vanzator@example.org', 'ana@example.org', 'vanzator@example.org', 'ion@example.org'])
+        self.assertIsNone(buyer['Cc'])
+        self.assertIsNone(buyer['Bcc'])
+        self.assertIn('/admin/comenzi', admin.get_content())
+        self.assertNotIn('privatekey', admin.get_content())
+        self.assertIn('/comanda/o1002?cheie=privatekey', buyer.get_content())
+        self.assertNotIn('/admin/comenzi', buyer.get_content())
+        self.assertIn('2 × Carte de probă', buyer.get_content())
+        self.assertIn('65,00 RON', buyer.get_content())
+        self.assertNotEqual(admin['Message-ID'], buyer['Message-ID'])
+        self.assertNotEqual(buyer['Message-ID'], buyer2['Message-ID'])
+        self.assertEqual(self.mail()['delivered'], 0)
+        self.assertEqual(len(self.sent), 4)
+
+    def test_one_refusal_does_not_block_other_recipients_or_resend_a_success(self):
+        self.create_shop()
+        self.mail()
+        self.order(1001)
+        self.order(1002, 'ion@example.org')
+        def refuse_one(message, _):
+            if message['To'] == 'ana@example.org':
+                raise smtplib.SMTPException('refused')
+            self.sent.append(message)
+        self.assertEqual(self.mail(send=refuse_one), {'configured': True, 'delivered': 3, 'failed': 1, 'pending': 1})
+        self.assertEqual(self.mail()['delivered'], 0)
+        with closing(sqlite3.connect(self.state.with_name('order-mail.sqlite3'))) as db, db:
+            db.execute('UPDATE deliveries SET retry_at = 0')
+        self.assertEqual(self.mail()['delivered'], 1)
+        self.assertEqual(self.sent[-1]['To'], 'ana@example.org')
+
+    def test_multiple_addresses_cannot_redirect_the_confirmation(self):
+        self.create_shop()
+        self.mail()
+        self.order(1001, 'victim@example.org,extra@example.org')
+        result = self.mail()
+        self.assertEqual((result['failed'], result['delivered']), (1, 1))
+        self.assertEqual(str(self.sent[0]['To']), 'vanzator@example.org')
+
+    def test_order_notice_recipient_comes_from_configuration(self):
+        self.create_shop(contact=None)
+        self.mail()
+        self.order(1001)
+        # Without a shop contact email the comment notice address is used.
+        self.assertEqual(self.mail()['delivered'], 2)
+        self.assertEqual(str(self.sent[0]['To']), 'owner@example.org')
+        # A contact email saved in /admin/magazin applies to the next order.
+        self.contact('vanzator@example.org')
+        self.order(1002)
+        self.mail()
+        self.assertEqual(str(self.sent[2]['To']), 'vanzator@example.org')
+        # POETIO_ORDER_TO overrides both.
+        self.order(1003)
+        self.mail(env={**ENV, 'POETIO_ORDER_TO': 'comenzi@example.org'})
+        self.assertEqual(str(self.sent[4]['To']), 'comenzi@example.org')
+        # With no address at all nothing is sent and the order waits.
+        self.contact('')
+        self.order(1004)
+        no_recipient = {key: value for key, value in ENV.items() if key != 'POETIO_NOTIFY_TO'}
+        self.assertEqual(self.mail(env=no_recipient), {'configured': False, 'delivered': 0, 'failed': 0, 'pending': 2})
+        self.assertEqual(len(self.sent), 6)
+
+    def test_a_contact_email_with_an_address_list_cannot_redirect_the_seller_notice(self):
+        self.create_shop(contact='vanzator@example.org,extra@example.org')
+        self.mail()
+        self.order(1001)
+        result = self.mail()
+        self.assertEqual((result['failed'], result['delivered']), (1, 1))
+        self.assertEqual(str(self.sent[0]['To']), 'ana@example.org')
 
     def test_settings(self):
         self.assertEqual(module.settings({**ENV, 'POETIO_SMTP_PORT': '465'})['mode'], 'ssl')
