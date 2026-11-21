@@ -124,7 +124,7 @@ export default function BookSale({
                 <div
                   ref={description}
                   id="book-sale-description"
-                  className={`book-sale-description${expanded ? ' is-expanded' : ''}`}
+                  className={`book-sale-description${expanded ? ' is-expanded' : long ? ' is-clamped' : ''}`}
                 >
                   {book.description}
                 </div>

@@ -74,11 +74,13 @@
   /* About ten lines, then "Read more". */
   max-height: 16.5em;
   overflow: hidden;
+}
+/* Fade the last lines only when text actually continues below. */
+.book-sale-description.is-clamped {
   mask-image: linear-gradient(to bottom, black 75%, transparent);
 }
 .book-sale-description.is-expanded {
   max-height: none;
-  mask-image: none;
 }
 .book-sale-more {
   margin-top: 0.4rem;

@@ -89,9 +89,11 @@ test('a cover opens the sale page with that cover, details and the store link', 
   const description = page.locator('#book-sale-description');
   const hidesText = () => description.evaluate(element => element.scrollHeight > element.clientHeight + 1);
   expect(await hidesText()).toBe(true);
+  await expect(description).toHaveClass(/is-clamped/);
   await page.getByRole('button', { name: 'Citește mai mult' }).click();
   await expect(page.getByRole('button', { name: 'Citește mai puțin' })).toHaveAttribute('aria-expanded', 'true');
   expect(await hidesText()).toBe(false);
+  await expect(description).not.toHaveClass(/is-clamped/);
 
   // Choosing the other cover updates the address, so a copied link keeps it.
   await thumbs.getByRole('button', { name: 'Coperta 1' }).click();
