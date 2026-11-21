@@ -5,9 +5,12 @@ import { getBook } from '@/db/books';
 import { getBookFile } from '@/db/book-files';
 import { getBookRenderer } from '@/db/book-pages';
 import { validImageId } from '@/db/images';
+import { getBookShop, getShopSettings } from '@/db/shop';
 import { requestLanguage } from '@/lib/request-language';
 import { contentMetadata, excerpt, safeJsonLd, siteOrigin } from '@/lib/content-metadata';
-import { bookCovers, bookSalePath, purchaseOptions, saleCover } from '@/lib/book-sale';
+import { bookCovers, bookSalePath, saleCover, saleVariants } from '@/lib/book-sale';
+import { withoutPurchaseLinks } from '@/lib/book-types';
+import { deliveryWindow, publicShop } from '@/lib/shop';
 import BookSale from '../../book-sale';
 export const dynamic = 'force-dynamic';
 type Props = {
@@ -19,8 +22,9 @@ async function read({ params, searchParams }: Props) {
   const { id } = await params;
   if (!validImageId(id)) notFound();
   const db = getPoemDb();
-  const book = await getBook(db, id);
-  if (!book) notFound();
+  const found = await getBook(db, id);
+  if (!found) notFound();
+  const book = withoutPurchaseLinks(found);
   const language = await requestLanguage();
   const cover = saleCover(
     (await searchParams).coperta,
@@ -33,7 +37,7 @@ async function read({ params, searchParams }: Props) {
   } catch {
     // The page count is a detail; the page works without it (e.g. no renderer).
   }
-  return { book, language, cover, pages };
+  return { db, book, language, cover, pages };
 }
 
 const coverImage = (book: Awaited<ReturnType<typeof read>>['book'], cover: 1 | 2 | null) => {
@@ -49,7 +53,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     author: book.author,
     description: excerpt(
       book.description,
-      ro ? `${book.title} — detalii și cumpărare pe Poetio.` : `${book.title} — details and purchase on Poetio.`,
+      ro ? `${book.title} — comandă cartea pe Poetio.` : `${book.title} — order the book on Poetio.`,
     ),
     path: bookSalePath(book.id),
     image: coverImage(book, cover),
@@ -61,8 +65,14 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 }
 
 export default async function BookSalePage(props: Props) {
-  const { book, language, cover, pages } = await read(props);
-  const options = purchaseOptions(book);
+  const { db, book, language, cover, pages } = await read(props);
+  const [settings, stock] = await Promise.all([getShopSettings(db), getBookShop(db, book.id)]);
+  const shop = publicShop(settings);
+  const now = new Date();
+  const delivery = { ro: deliveryWindow(now, settings, 'ro'), 'en-US': deliveryWindow(now, settings, 'en-US') };
+  const offers = shop.ready
+    ? saleVariants(book).filter(variant => variant.price.endsWith(` ${settings.currency}`))
+    : [];
   return (
     <>
       <script
@@ -74,26 +84,38 @@ export default async function BookSalePage(props: Props) {
             name: book.title,
             ...(book.author ? { author: { '@type': 'Person', name: book.author } } : {}),
             ...(book.description ? { description: book.description } : {}),
+            ...(stock.language ? { inLanguage: stock.language } : {}),
             image: siteOrigin + coverImage(book, cover),
             ...(pages ? { numberOfPages: pages } : {}),
             url: siteOrigin + bookSalePath(book.id),
-            ...(options.some(option => option.price)
+            ...(offers.length
               ? {
-                  offers: options
-                    .filter(option => option.price)
-                    .map(option => {
-                      const [price, priceCurrency] = option.price!.split(' ');
-                      return { '@type': 'Offer', price, priceCurrency, url: option.url };
-                    }),
+                  offers: offers.map(offer => {
+                    const [price, priceCurrency] = offer.price.split(' ');
+                    return {
+                      '@type': 'Offer',
+                      price,
+                      priceCurrency,
+                      url: siteOrigin + bookSalePath(book.id, offer.cover),
+                      availability: `https://schema.org/${stock.stock === 0 ? 'OutOfStock' : 'InStock'}`,
+                      seller: { '@type': 'Organization', name: settings.seller_name },
+                    };
+                  }),
                 }
-              : {}),
-            ...(options.length
-              ? { potentialAction: options.map(option => ({ '@type': 'BuyAction', target: option.url })) }
               : {}),
           }),
         }}
       />
-      <BookSale book={book} initialLanguage={language} initialCover={cover} pages={pages} />
+      <BookSale
+        book={book}
+        initialLanguage={language}
+        initialCover={cover}
+        pages={pages}
+        shop={shop}
+        stock={stock.stock}
+        bookLanguage={stock.language}
+        delivery={delivery}
+      />
     </>
   );
 }

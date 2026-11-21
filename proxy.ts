@@ -14,5 +14,15 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/poeme/:path*', '/video/:path*', '/carti/:path*', '/autor', '/admin/:path*'],
+  matcher: [
+    '/',
+    '/poeme/:path*',
+    '/video/:path*',
+    '/carti/:path*',
+    '/autor',
+    '/cos',
+    '/comanda/:path*',
+    '/termeni',
+    '/admin/:path*',
+  ],
 };

@@ -102,10 +102,33 @@ class NoticeTests(unittest.TestCase):
         self.add('video_comments', 'c2', 6000, status='hidden')
         script = Path(__file__).parent.parent / 'scripts' / 'notify-comments.py'
         result = subprocess.run([sys.executable, str(script), '--check', '--database', str(self.database), '--state', str(self.state)], capture_output=True, text=True, env={})
-        self.assertEqual((result.returncode, json.loads(result.stdout)), (0, {'pending': 1}))
+        self.assertEqual((result.returncode, json.loads(result.stdout)), (0, {'pending': 1, 'orders': 0}))
         self.assertFalse(self.state.exists())
         missing = subprocess.run([sys.executable, str(script), '--check', '--database', str(self.root / 'none.sqlite3'), '--state', str(self.state)], capture_output=True, text=True, env={})
         self.assertEqual((missing.returncode, missing.stderr.strip()), (1, 'Comment notice failed: OperationalError'))
+
+    def test_new_orders_are_announced_once_in_their_own_message(self):
+        with closing(sqlite3.connect(self.database)) as db, db:
+            db.execute('CREATE TABLE orders (id TEXT PRIMARY KEY, number INTEGER, customer_name TEXT, phone TEXT, email TEXT, address TEXT, city TEXT, county TEXT,'
+                       ' postal_code TEXT, note TEXT, payment_method TEXT, currency TEXT, total_cents INTEGER, created_at INTEGER, status TEXT)')
+            db.execute('CREATE TABLE order_items (order_id TEXT, title TEXT, cover INTEGER, quantity INTEGER)')
+            db.execute("INSERT INTO orders VALUES ('o1', 1001, 'Ana\r\nBcc: x@example.org', '0722 123 456', 'ana@example.org', 'Str. Teilor 5', 'Brașov', 'Brașov', '',"
+                       " 'Sună  înainte', 'cod', 'RON', 6500, 1790000000000, 'new')")
+            db.execute("INSERT INTO order_items VALUES ('o1', 'Carte de probă', 1, 2)")
+        self.add('poem_comments', 'c1', 1000)
+        self.assertEqual(self.run_notice(), {'configured': True, 'sent': 1, 'orders': 1})
+        message = self.sent[1][0]
+        self.assertEqual(message['Subject'], 'Poetio: comandă nouă nr. 1001 (65,00 RON)')
+        self.assertIsNone(message['Bcc'])
+        body = message.get_content()
+        self.assertIn('Comanda nr. 1001 · 65,00 RON · ramburs', body)
+        self.assertIn('Client: Ana Bcc: x@example.org · 0722 123 456 · ana@example.org', body)
+        self.assertIn('Livrare: Str. Teilor 5, Brașov, Brașov', body)
+        self.assertIn('2 × Carte de probă (coperta 1)', body)
+        self.assertIn('Observații: Sună înainte', body)
+        self.assertIn('https://poetio.cloud/admin/comenzi', body)
+        self.assertEqual(json.loads(self.state.with_name('orders.json').read_text()), {'notified_until': 1790000000000})
+        self.assertEqual(self.run_notice(), {'configured': True, 'sent': 0})
 
     def test_settings(self):
         self.assertEqual(module.settings({**ENV, 'POETIO_SMTP_PORT': '465'})['mode'], 'ssl')

@@ -298,6 +298,12 @@ export default function VideoAdmin({
           <a className="nav-link" href="/admin/comentarii">
             Comentarii
           </a>
+          <a className="nav-link" href="/admin/comenzi">
+            Comenzi
+          </a>
+          <a className="nav-link" href="/admin/magazin">
+            Magazin
+          </a>
           <a className="nav-link" href="/video">
             Vezi videourile ↗
           </a>

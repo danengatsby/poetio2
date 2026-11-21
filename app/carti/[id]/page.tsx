@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getPoemDb } from '@/db/binding';
 import { getBook } from '@/db/books';
+import { withoutPurchaseLinks } from '@/lib/book-types';
 import { validImageId } from '@/db/images';
 import { requestLanguage } from '@/lib/request-language';
 import { contentMetadata, contentPath, excerpt } from '@/lib/content-metadata';
@@ -43,5 +44,5 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
 export default async function BookPage(props: Props) {
   const { book, language } = await read(props);
-  return <BooksView book={book} initialLanguage={language} />;
+  return <BooksView book={withoutPurchaseLinks(book)} initialLanguage={language} />;
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getPoemDb } from '@/db/binding';
-import type { BookWithCommentCount } from '@/lib/book-types';
+import { withoutPurchaseLinks, type BookWithCommentCount } from '@/lib/book-types';
 import { listBooks } from '@/db/books';
 import { isOwnerEmail } from '@/lib/access';
 import { requestLanguage } from '@/lib/request-language';
@@ -20,7 +20,7 @@ export default async function BooksPage() {
   let books: BookWithCommentCount[] = [];
   let failed = false;
   try {
-    books = await listBooks(getPoemDb());
+    books = (await listBooks(getPoemDb())).map(withoutPurchaseLinks);
   } catch (error) {
     console.error('Book collection unavailable', error);
     failed = true;

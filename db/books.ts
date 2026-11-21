@@ -38,15 +38,14 @@ export function validateBook(value: unknown, current?: Book | null): BookInput {
   };
   const purchase_url_1 = purchase('purchase_url_1', 1),
     purchase_url_2 = purchase('purchase_url_2', 2);
-  const price = (key: 'price_1' | 'price_2', number: number, link: string | null) => {
+  // A price puts the cover on sale in Poetio's own shop; old purchase links are only kept.
+  const price = (key: 'price_1' | 'price_2', number: number) => {
     const value = normalizeBookPrice(data[key] === undefined ? (current?.[key] ?? null) : data[key]);
     if (value === undefined)
       throw new AppError(
         400,
         `Prețul pentru coperta ${number} trebuie să fie o sumă, de exemplu 10,00, urmată de RON, EUR, USD sau GBP.`,
       );
-    if (value && !link)
-      throw new AppError(400, `Adaugă linkul de achiziție pentru coperta ${number} sau șterge prețul ei.`);
     return value;
   };
   return {
@@ -58,8 +57,8 @@ export function validateBook(value: unknown, current?: Book | null): BookInput {
     image_2_id: second as string | null,
     purchase_url_1,
     purchase_url_2,
-    price_1: price('price_1', 1, purchase_url_1),
-    price_2: price('price_2', 2, purchase_url_2),
+    price_1: price('price_1', 1),
+    price_2: price('price_2', 2),
   };
 }
 async function requireFile(db: Database, id: string, validator?: BookValidator) {

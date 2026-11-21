@@ -62,7 +62,10 @@ test('phone: the page number field turns the page on Enter and when left', async
   await expect(input).toHaveValue('9');
 });
 
-test('a cover opens the sale page with that cover, details and the store link', async ({ page, context }) => {
+test('a cover opens the sale page with that cover, details and an order button on Poetio', async ({
+  page,
+  context,
+}) => {
   await page.goto('/carti');
   const cover = page.getByRole('link', { name: `Detalii și cumpărare: ${fixtureBook.record.title} — coperta 2` });
   await expect(cover).toHaveAttribute('href', new RegExp(`/carti/${fixtureBook.record.id}/cumpara\\?coperta=2`));
@@ -74,18 +77,28 @@ test('a cover opens the sale page with that cover, details and the store link', 
   await expect(thumbs.getByRole('button', { name: 'Coperta 2' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('img', { name: `Coperta 2: ${fixtureBook.record.title}` })).toBeVisible();
 
-  const buy = page.getByRole('link', { name: 'Cumpără acum pe example.com (filă nouă)' });
-  await expect(buy).toHaveAttribute('href', fixtureBook.record.purchase_url_1);
-  await expect(buy).toHaveAttribute('target', '_blank');
-  await expect(buy).toHaveAttribute('rel', /noopener/);
+  // Only cover 1 has a price, so that is the copy sold, on Poetio itself.
+  const buy = page.getByRole('link', { name: 'Cumpără acum' });
+  await expect(buy).toHaveAttribute(
+    'href',
+    new RegExp(`^/comanda\\?carte=${fixtureBook.record.id}&coperta=1&cantitate=1&lang=ro$`),
+  );
+  await expect(page.getByRole('button', { name: 'Adaugă în coș' })).toBeEnabled();
   await expect(page.locator('.book-sale-facts')).toContainText(`${fixtureBook.pages} pagini`);
+  await expect(page.locator('.book-sale-facts')).toContainText('Română');
   await expect(page.locator('.book-sale-amount')).toHaveAttribute('aria-label', '10,00\u00a0USD');
-  await expect(page.getByRole('button', { name: /Carte\s+10,00/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: /Carte tipărită\s*10,00/ })).toHaveAttribute('aria-pressed', 'true');
   const offer = await page
     .locator('script[type="application/ld+json"]')
     .evaluate(script => JSON.parse(script.textContent).offers[0]);
-  expect(offer).toMatchObject({ price: '10.00', priceCurrency: 'USD', url: fixtureBook.record.purchase_url_1 });
-  await expect(page.locator('.book-sale-facts')).toContainText('example.com');
+  expect(offer).toMatchObject({ price: '10.00', priceCurrency: 'USD', availability: 'https://schema.org/InStock' });
+  expect(offer.url).toMatch(new RegExp(`/carti/${fixtureBook.record.id}/cumpara\\?coperta=1$`));
+  // No link, text or data leads to another store.
+  expect(await page.content()).not.toContain('example.com/carte-de-proba');
+  const external = await page.$$eval('a[href]', links =>
+    links.map(link => link.href).filter(href => new URL(href).origin !== location.origin),
+  );
+  expect(external).toEqual([]);
   await expect(page.getByRole('link', { name: 'Citește un fragment' })).toHaveAttribute(
     'href',
     new RegExp(`/carti/${fixtureBook.record.id}(\\?|$)`),
@@ -129,7 +142,7 @@ test('phone: the sale page shows the title, then the covers and the purchase box
 test.describe('editor', () => {
   test.use({ extraHTTPHeaders: { 'oai-authenticated-user-email': OWNER_EMAIL } });
 
-  test("a price set in the editor appears on the sale page, in the reader's format", async ({ page }) => {
+  test("a price set in the editor puts that cover on sale, in the reader's format", async ({ page }) => {
     await page.goto('/admin/carti');
     await expect(page.locator('#book-price-1')).toHaveValue('10.00');
     // The preview's covers open the saved book's sale page in a new tab.
@@ -139,20 +152,32 @@ test.describe('editor', () => {
     await expect(previewCover).toHaveAttribute('target', '_blank');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toBeHidden();
+    // The editor no longer asks for links to other stores.
+    await expect(page.getByLabel(/Link de achiziție/)).toHaveCount(0);
+    const save = async () => {
+      const saved = page.waitForResponse(response => response.request().method() === 'PUT' && response.ok());
+      await page.getByRole('button', { name: 'Salvează carte' }).click();
+      return (await (await saved).json()).book;
+    };
     await page.locator('#book-price-2').fill('12,50');
-    await page.getByRole('button', { name: 'Salvează carte' }).click();
-    await expect(page.getByRole('alert')).toContainText('Adaugă linkul de achiziție pentru coperta 2');
+    expect((await save()).price_2).toBe('12.50 USD');
 
+    await page.goto(`/carti/${fixtureBook.record.id}/cumpara?coperta=2`);
+    await expect(page.getByRole('button', { name: /Coperta 2\s*12,50/ })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.book-sale-amount')).toHaveAttribute('aria-label', '12,50\u00a0USD');
+    await page.goto(`/carti/${fixtureBook.record.id}/cumpara?coperta=2&lang=en-US`);
+    await expect(page.locator('.book-sale-amount')).toHaveAttribute('aria-label', '$12.50');
+
+    // A price in another currency than the shop's is kept, but not offered.
+    await page.goto('/admin/carti');
+    await page.locator('#book-currency-2').selectOption('EUR');
+    expect((await save()).price_2).toBe('12.50 EUR');
+    await page.goto(`/carti/${fixtureBook.record.id}/cumpara?coperta=2`);
+    await expect(page.getByRole('group', { name: 'Variante' }).getByRole('button')).toHaveCount(1);
+
+    // Leave the book as the other tests expect it.
+    await page.goto('/admin/carti');
     await page.locator('#book-price-2').fill('');
-    await page.locator('#book-price-1').fill('12,50');
-    await page.locator('#book-currency-1').selectOption('EUR');
-    const saved = page.waitForResponse(response => response.request().method() === 'PUT' && response.ok());
-    await page.getByRole('button', { name: 'Salvează carte' }).click();
-    expect((await (await saved).json()).book.price_1).toBe('12.50 EUR');
-
-    await page.goto(`/carti/${fixtureBook.record.id}/cumpara`);
-    await expect(page.locator('.book-sale-amount')).toHaveAttribute('aria-label', '12,50 EUR');
-    await page.goto(`/carti/${fixtureBook.record.id}/cumpara?lang=en-US`);
-    await expect(page.locator('.book-sale-amount')).toHaveAttribute('aria-label', '€12.50');
+    expect((await save()).price_2).toBe(null);
   });
 });

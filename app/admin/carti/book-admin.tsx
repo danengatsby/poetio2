@@ -3,15 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import RecoveryTools from '../recovery-tools';
 import type { EditorSnapshot } from '@/lib/editorial';
-import {
-  MAX_BOOK_BYTES,
-  BOOK_ACCEPT,
-  MAX_PURCHASE_URL,
-  bookPurchaseUrl,
-  bookFileType,
-  type Book,
-  type BookValidation,
-} from '@/lib/book-types';
+import { MAX_BOOK_BYTES, BOOK_ACCEPT, bookFileType, type Book, type BookValidation } from '@/lib/book-types';
 import ThemeToggle from '../../theme-toggle';
 import BookPresentation from '../../carti/book-presentation';
 import { BOOK_PRICE_CURRENCIES, bookPriceParts, normalizeBookPrice } from '@/lib/book-price';
@@ -426,18 +418,10 @@ export default function BookAdmin({
       );
       return;
     }
-    if ([draft.purchase_url_1, draft.purchase_url_2].some(value => value?.trim() && !bookPurchaseUrl(value))) {
-      setError('Completează linkurile de achiziție cu adrese HTTP sau HTTPS valide.');
-      return;
-    }
     for (const number of [1, 2] as const) {
       const price = normalizeBookPrice(draft[number === 1 ? 'price_1' : 'price_2']);
       if (price === undefined) {
         setError(`Prețul pentru coperta ${number} trebuie să fie o sumă, de exemplu 10,00, cu o monedă din listă.`);
-        return;
-      }
-      if (price && !draft[number === 1 ? 'purchase_url_1' : 'purchase_url_2']?.trim()) {
-        setError(`Adaugă linkul de achiziție pentru coperta ${number} sau șterge prețul ei.`);
         return;
       }
     }
@@ -552,6 +536,12 @@ export default function BookAdmin({
           </a>
           <a className="nav-link" href="/admin/comentarii">
             Comentarii
+          </a>
+          <a className="nav-link" href="/admin/comenzi">
+            Comenzi
+          </a>
+          <a className="nav-link" href="/admin/magazin">
+            Magazin
           </a>
           <a className="nav-link" href="/carti">
             Vezi cărțile ↗
@@ -688,9 +678,11 @@ export default function BookAdmin({
                   <div className="book-admin-covers">
                     {([1, 2] as const).map(number => {
                       const imageField = number === 1 ? 'image_id' : 'image_2_id',
-                        urlField = number === 1 ? 'purchase_url_1' : 'purchase_url_2',
                         priceField = number === 1 ? 'price_1' : 'price_2';
-                      const price = bookPriceParts(draft[priceField]);
+                      // A new price starts in the currency of the other cover's price.
+                      const parsed = bookPriceParts(draft[priceField]),
+                        other = bookPriceParts(draft[number === 1 ? 'price_2' : 'price_1']);
+                      const price = parsed.amount || !other.amount ? parsed : { amount: '', currency: other.currency };
                       const setPrice = (amount: string, currency: string) =>
                         setDraft({ ...draft, [priceField]: amount.trim() ? `${amount.trim()} ${currency}` : '' });
                       const chosen = number === 1 ? cover : cover2;
@@ -734,7 +726,7 @@ export default function BookAdmin({
                                     setCover2(null);
                                     setUploadedCover2Id(null);
                                   }
-                                  setDraft({ ...draft, [imageField]: null, [urlField]: '', [priceField]: '' });
+                                  setDraft({ ...draft, [imageField]: null, [priceField]: '' });
                                   setMissingFiles({ ...missingFiles, [number === 1 ? 'cover' : 'cover2']: false });
                                   setSuccess('');
                                 }}
@@ -743,21 +735,6 @@ export default function BookAdmin({
                               </button>
                             </>
                           )}
-                          <label htmlFor={`book-purchase-${number}`}>
-                            Link de achiziție pentru coperta {number}
-                            <input
-                              id={`book-purchase-${number}`}
-                              type="url"
-                              inputMode="url"
-                              maxLength={MAX_PURCHASE_URL}
-                              placeholder="https://magazin.ro/carte"
-                              value={draft[urlField] || ''}
-                              onChange={event => {
-                                setDraft({ ...draft, [urlField]: event.target.value });
-                                setSuccess('');
-                              }}
-                            />
-                          </label>
                           <div className="book-price-fields">
                             <label htmlFor={`book-price-${number}`}>
                               Preț pentru coperta {number} <span className="optional-label">(opțional)</span>
@@ -790,8 +767,9 @@ export default function BookAdmin({
                             </label>
                           </div>
                           <p className="field-help">
-                            Apăsarea copertei deschide pagina de vânzare a cărții, cu butonul spre acest link. Prețul
-                            apare acolo, lângă buton; prețul final rămâne cel din magazin.
+                            Cu un preț, coperta {number} se poate comanda direct pe Poetio, din pagina de vânzare a
+                            cărții. Stocul, livrarea și plata se stabilesc în pagina{' '}
+                            <a href="/admin/magazin">Magazin</a>.
                           </p>
                         </section>
                       );

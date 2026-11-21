@@ -16,7 +16,7 @@ export type Book = {
   image_2_id: string | null;
   purchase_url_1: string | null;
   purchase_url_2: string | null;
-  /** "10.00 USD"; see lib/book-price.ts. Only shown with the matching purchase link. */
+  /** "10.00 USD"; see lib/book-price.ts. A cover with a price is sold on Poetio's own shop. */
   price_1: string | null;
   price_2: string | null;
   revision: number;
@@ -37,6 +37,10 @@ export type BookInput = Pick<
   | 'price_1'
   | 'price_2'
 >;
+/** Old external purchase links are kept in the database but never sent to visitors. */
+export function withoutPurchaseLinks<T extends Pick<Book, 'purchase_url_1' | 'purchase_url_2'>>(book: T): T {
+  return { ...book, purchase_url_1: null, purchase_url_2: null };
+}
 export const MAX_PURCHASE_URL = 2048;
 export function bookPurchaseUrl(value: unknown): string | null {
   if (

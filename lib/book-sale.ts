@@ -1,28 +1,19 @@
-import { bookPurchaseUrl, type Book } from './book-types';
+import type { Book } from './book-types';
 import { normalizeBookPrice } from './book-price';
 
 export type CoverNumber = 1 | 2;
-export type PurchaseOption = { cover: CoverNumber; url: string; host: string; price: string | null };
-
-/** The book's valid purchase links, one per destination, with the store's host name. */
-export function purchaseOptions(
-  book: Pick<Book, 'purchase_url_1' | 'purchase_url_2'> & Partial<Pick<Book, 'price_1' | 'price_2'>>,
-): PurchaseOption[] {
-  const options: PurchaseOption[] = [];
-  for (const [cover, value, price] of [
-    [1, book.purchase_url_1, book.price_1],
-    [2, book.purchase_url_2, book.price_2],
-  ] as const) {
-    const url = bookPurchaseUrl(value);
-    if (!url || options.some(option => option.url === url)) continue;
-    options.push({
-      cover,
-      url,
-      host: new URL(url).hostname.replace(/^www\./, ''),
-      price: normalizeBookPrice(price) ?? null,
-    });
-  }
-  return options;
+/** The covers sold on Poetio: those with a price. */
+export type SaleVariant = { cover: CoverNumber; price: string };
+export function saleVariants(book: Partial<Pick<Book, 'price_1' | 'price_2'>>): SaleVariant[] {
+  return (
+    [
+      [1, book.price_1],
+      [2, book.price_2],
+    ] as const
+  ).flatMap(([cover, value]) => {
+    const price = normalizeBookPrice(value);
+    return price ? [{ cover, price }] : [];
+  });
 }
 
 export function bookCovers(book: Pick<Book, 'image_id' | 'image_2_id'>) {

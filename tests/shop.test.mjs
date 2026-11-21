@@ -1,0 +1,172 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { tsImport } from 'tsx/esm/api';
+import { migrate } from '../scripts/migrate.mjs';
+import { openDatabase } from '../server/vps-storage.mjs';
+
+const shop = await tsImport('../db/shop.ts', import.meta.url);
+const rules = await tsImport('../lib/shop.ts', import.meta.url);
+const BOOK = '7d3f5a1e-2b4c-4d6e-8f90-1a2b3c4d5e6f';
+const OTHER = '11111111-2222-4333-8444-555555555555';
+
+async function store(t) {
+  const directory = mkdtempSync(join(tmpdir(), 'poetio-shop-'));
+  const file = join(directory, 'poetio.sqlite3');
+  await migrate(file, { create: true });
+  const db = openDatabase(file);
+  t.after(() => {
+    db.close();
+    rmSync(directory, { recursive: true, force: true });
+  });
+  await db.batch([
+    db.prepare(
+      "INSERT INTO book_files (id, object_key, file_name, content_type, byte_size, content_hash, owner_email, created_at) VALUES ('f', 'k', 'n', 'application/pdf', 1, 'h', 'o', 1)",
+    ),
+    db
+      .prepare(
+        "INSERT INTO books (id, title, author, description, file_id, price_1, price_2, revision, created_at, updated_at) VALUES (?, 'Europa', 'Autor', '', 'f', '49.90 RON', '59.90 RON', 1, 1, 1)",
+      )
+      .bind(BOOK),
+    db
+      .prepare(
+        "INSERT INTO books (id, title, author, description, file_id, price_1, revision, created_at, updated_at) VALUES (?, 'Dolari', 'Autor', '', 'f', '10.00 USD', 1, 2, 2)",
+      )
+      .bind(OTHER),
+  ]);
+  await shop.saveShopSettings(db, {
+    ...rules.DEFAULT_SHOP_SETTINGS,
+    seller_name: 'Dan Enache',
+    contact_email: 'autor@example.com',
+    shipping_amount: '15',
+  });
+  await shop.saveBookShop(db, BOOK, { stock: 3, language: 'ro' });
+  return db;
+}
+
+const customer = {
+  name: 'Ana Pop',
+  email: 'ana@example.com',
+  phone: '+40 712 345 678',
+  address: 'Str. Florilor 1',
+  city: 'Iași',
+  county: 'Iași',
+  postal_code: '700000',
+  payment_method: 'cod',
+  accept_terms: true,
+};
+
+test('settings are validated, normalized and opened only when complete', async t => {
+  const db = await store(t);
+  const settings = await shop.getShopSettings(db);
+  assert.equal(settings.shipping_amount, '15.00');
+  assert.equal(rules.shopReady(settings), true);
+  assert.deepEqual(rules.paymentMethods(settings), ['cod']);
+  await assert.rejects(shop.saveShopSettings(db, { ...settings, transfer_enabled: true, transfer_iban: '' }), /IBAN/);
+  await assert.rejects(shop.saveShopSettings(db, { ...settings, shipping_amount: 'gratis' }), /Costul livrării/);
+  await assert.rejects(
+    shop.saveShopSettings(db, { ...settings, delivery_min_days: 5, delivery_max_days: 2 }),
+    /Termenul maxim/,
+  );
+  assert.equal(rules.shopReady({ ...settings, seller_name: '' }), false);
+});
+
+test('a quote uses stored prices and stock, not what the browser sends', async t => {
+  const db = await store(t);
+  const offer = await shop.quote(db, [
+    { book_id: BOOK, cover: 1, quantity: 2, unit_cents: 1 },
+    { book_id: BOOK, cover: 2, quantity: 1 },
+  ]);
+  assert.deepEqual(
+    offer.lines.map(line => [line.cover, line.unit_cents, line.problem]),
+    [
+      [1, 4990, ''],
+      [2, 5990, ''],
+    ],
+  );
+  assert.equal(offer.subtotal_cents, 2 * 4990 + 5990);
+  assert.equal(offer.shipping_cents, 1500);
+  assert.equal(offer.total_cents, 2 * 4990 + 5990 + 1500);
+  assert.equal(offer.ok, true);
+  // Both covers draw on the same three copies.
+  assert.equal(
+    (
+      await shop.quote(db, [
+        { book_id: BOOK, cover: 1, quantity: 2 },
+        { book_id: BOOK, cover: 2, quantity: 2 },
+      ])
+    ).lines[1].problem,
+    'too_many',
+  );
+  // A price in another currency than the shop's cannot be ordered.
+  assert.equal((await shop.quote(db, [{ book_id: OTHER, cover: 1, quantity: 1 }])).lines[0].problem, 'unavailable');
+  await assert.rejects(shop.quote(db, [{ book_id: BOOK, cover: 3, quantity: 1 }]), /nevalid/);
+  await assert.rejects(shop.quote(db, []), /gol/);
+});
+
+test('an order takes a number, totals from the database and decrements the stock', async t => {
+  const db = await store(t);
+  const first = await shop.createOrder(db, { ...customer, items: [{ book_id: BOOK, cover: 1, quantity: 2 }] });
+  assert.equal(first.number, 1001);
+  assert.match(first.key, /^[0-9a-f]{48}$/);
+  assert.equal((await shop.getBookShop(db, BOOK)).stock, 1);
+  const order = await shop.getCustomerOrder(db, first.id, first.key);
+  assert.equal(order.total_cents, 2 * 4990 + 1500);
+  assert.equal(order.items[0].title, 'Europa');
+  assert.equal(order.access_key, undefined);
+  assert.equal(await shop.getCustomerOrder(db, first.id, 'a'.repeat(48)), null);
+
+  // Two copies are no longer available: refused, nothing written.
+  await assert.rejects(shop.createOrder(db, { ...customer, items: [{ book_id: BOOK, cover: 2, quantity: 2 }] }), {
+    status: 409,
+  });
+  assert.equal((await shop.listOrders(db, 'all', 0)).orders.length, 1);
+  assert.equal((await shop.getBookShop(db, BOOK)).stock, 1);
+  const second = await shop.createOrder(db, { ...customer, items: [{ book_id: BOOK, cover: 2, quantity: 1 }] });
+  assert.equal(second.number, 1002);
+  assert.equal((await shop.getBookShop(db, BOOK)).stock, 0);
+  assert.equal((await shop.quote(db, [{ book_id: BOOK, cover: 1, quantity: 1 }])).lines[0].problem, 'sold_out');
+});
+
+test('orders refuse incomplete details, bots and unavailable payment methods', async t => {
+  const db = await store(t);
+  const items = [{ book_id: BOOK, cover: 1, quantity: 1 }];
+  await assert.rejects(shop.createOrder(db, { ...customer, items, phone: 'abc' }), /telefon/);
+  await assert.rejects(shop.createOrder(db, { ...customer, items, email: 'nu' }), /email/);
+  await assert.rejects(shop.createOrder(db, { ...customer, items, accept_terms: false }), /termenii/);
+  await assert.rejects(shop.createOrder(db, { ...customer, items, payment_method: 'transfer' }), /metodă de plată/);
+  await assert.rejects(shop.createOrder(db, { ...customer, items, website: 'http://spam' }), /nu a putut/);
+  assert.equal((await shop.getBookShop(db, BOOK)).stock, 3);
+});
+
+test('status changes follow the order flow and a cancellation returns the copies once', async t => {
+  const db = await store(t);
+  const order = await shop.createOrder(db, { ...customer, items: [{ book_id: BOOK, cover: 1, quantity: 2 }] });
+  await assert.rejects(shop.updateOrderStatus(db, order.id, { from: 'new', status: 'delivered' }), /nu este permisă/);
+  assert.equal((await shop.updateOrderStatus(db, order.id, { from: 'new', status: 'confirmed' })).status, 'confirmed');
+  assert.equal(
+    (await shop.updateOrderStatus(db, order.id, { from: 'confirmed', status: 'cancelled' })).status,
+    'cancelled',
+  );
+  assert.equal((await shop.getBookShop(db, BOOK)).stock, 3);
+  // A repeated cancellation from a stale page changes nothing.
+  await assert.rejects(shop.updateOrderStatus(db, order.id, { from: 'confirmed', status: 'cancelled' }), {
+    status: 409,
+  });
+  assert.equal((await shop.getBookShop(db, BOOK)).stock, 3);
+  const page = await shop.listOrders(db, 'cancelled', 0);
+  assert.equal(page.counts.cancelled, 1);
+  assert.equal(page.orders[0].number, 1001);
+});
+
+test('delivery estimates count working days', () => {
+  // Friday 20 November 2026, 10:00 in Bucharest: Monday is the first working day after it.
+  const friday = new Date('2026-11-20T08:00:00Z');
+  assert.equal(
+    rules.deliveryWindow(friday, { delivery_min_days: 2, delivery_max_days: 4 }, 'ro'),
+    'marți, 24 noiembrie – joi, 26 noiembrie',
+  );
+  assert.equal(rules.formatMoney(4990, 'RON', 'ro'), '49,90 RON');
+});

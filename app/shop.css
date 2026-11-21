@@ -1,0 +1,432 @@
+/* Poetio's own book shop: cart, checkout, order and terms pages, and the buttons shared with the sale page. */
+.shop {
+  padding-block: 1.5rem 4rem;
+}
+.shop-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.shop-bar .book-back {
+  margin: 0;
+  color: var(--blue);
+}
+.shop-cart-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.9375rem;
+}
+.shop-cart-link:hover,
+.shop-cart-link[aria-current='page'] {
+  background: var(--tint);
+}
+.shop-cart-count {
+  min-width: 1.5rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--shop-yellow);
+  color: var(--shop-on-yellow);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+:root {
+  --shop-yellow: #ffd814;
+  --shop-yellow-border: #f2c200;
+  --shop-yellow-hover: #f7ca00;
+  --shop-orange: #ffa41c;
+  --shop-orange-border: #f08a00;
+  --shop-orange-hover: #fa8900;
+  --shop-on-yellow: #0f1111;
+}
+
+/* Yellow "Add to cart" and orange "Buy now", as on bookstore product pages. */
+.shop-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 1.25rem;
+  border: 1px solid var(--shop-yellow-border);
+  border-radius: 999px;
+  background: var(--shop-yellow);
+  color: var(--shop-on-yellow);
+  font: 500 0.9375rem/1.3 var(--sans);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.shop-button:hover {
+  background: var(--shop-yellow-hover);
+}
+.shop-button-orange {
+  border-color: var(--shop-orange-border);
+  background: var(--shop-orange);
+}
+.shop-button-orange:hover {
+  background: var(--shop-orange-hover);
+}
+.shop-button:disabled,
+.shop-button[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.shop-button:focus-visible,
+.shop-cart-link:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.shop-stock {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.shop-stock-in {
+  color: var(--success-foreground);
+}
+.shop-stock-low {
+  color: var(--warning-foreground);
+}
+.shop-stock-out {
+  color: var(--error-foreground);
+}
+.shop-quantity {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+.shop-quantity select,
+.shop-line select {
+  min-height: 36px;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--input);
+  border-radius: 8px;
+  background: var(--muted);
+  color: var(--ink);
+  font: inherit;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+}
+.shop-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.shop-status {
+  margin: 0;
+  font-size: 0.875rem;
+}
+.shop-status:empty {
+  display: none;
+}
+.shop-alert {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--error-border);
+  border-radius: 8px;
+  background: var(--error-background);
+  color: var(--error-foreground);
+}
+.shop-ok {
+  border-color: var(--success-border);
+  background: var(--success-background);
+  color: var(--success-foreground);
+}
+
+/* Cart and checkout */
+.shop-title {
+  margin: 0 0 1.25rem;
+  font: 400 clamp(1.6rem, 2.4vw, 2rem)/1.25 var(--sans);
+}
+.shop-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 2rem;
+  align-items: start;
+}
+.shop-panel {
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.shop-summary {
+  display: grid;
+  gap: 0.75rem;
+  position: sticky;
+  top: 1rem;
+}
+.shop-summary dl {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+.shop-summary dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.shop-summary dt {
+  color: var(--text-muted);
+}
+.shop-summary dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.shop-total {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.shop-total dt {
+  color: var(--ink);
+}
+.shop-lines {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.shop-line {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 1rem;
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.shop-line img,
+.shop-line-cover {
+  display: block;
+  width: 72px;
+  height: 96px;
+  object-fit: cover;
+  background: var(--tint);
+  border-radius: 4px;
+}
+.shop-line h2,
+.shop-line h3 {
+  margin: 0 0 0.2rem;
+  font: 400 1.05rem/1.35 var(--sans);
+  overflow-wrap: anywhere;
+}
+.shop-line h2 a {
+  color: var(--ink);
+}
+.shop-line p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+.shop-line-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.6rem;
+  font-size: 0.875rem;
+}
+.shop-link-button {
+  padding: 0.35rem 0;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  font: inherit;
+  cursor: pointer;
+}
+.shop-link-button:hover {
+  text-decoration: underline;
+}
+.shop-line-price {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.shop-problem {
+  color: var(--error-foreground) !important;
+  font-weight: 600;
+}
+.shop-empty {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+}
+.shop-empty .shop-button {
+  width: auto;
+}
+
+/* Checkout form */
+.shop-form {
+  display: grid;
+  gap: 1.5rem;
+}
+.shop-form fieldset {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+  margin: 0;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.shop-form legend {
+  padding-inline: 0.35rem;
+  font-weight: 700;
+}
+.shop-field {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+}
+.shop-field-wide {
+  grid-column: 1 / -1;
+}
+.shop-field input,
+.shop-field textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--input);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font: 1rem/1.4 var(--sans);
+}
+.shop-field textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+.shop-field small {
+  color: var(--text-muted);
+}
+.shop-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  grid-column: 1 / -1;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+.shop-choice input {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: 0.1rem;
+  flex: none;
+  accent-color: var(--blue);
+}
+.shop-choice small {
+  display: block;
+  color: var(--text-muted);
+}
+/* Bots fill in every field; people never see this one. */
+.shop-trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Order confirmation and terms */
+.shop-document {
+  max-width: 760px;
+  line-height: 1.6;
+}
+.shop-document h2 {
+  margin: 2rem 0 0.5rem;
+  font: 700 1.15rem/1.3 var(--sans);
+}
+.shop-document p,
+.shop-document li {
+  overflow-wrap: anywhere;
+}
+.shop-details {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.35rem 1.25rem;
+  margin: 0;
+}
+.shop-details dt {
+  color: var(--text-muted);
+}
+.shop-details dd {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.shop-iban {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 860px) {
+  .shop-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .shop-summary {
+    position: static;
+  }
+}
+@media (max-width: 560px) {
+  .shop-form fieldset {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0.9rem;
+  }
+  .shop-line {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+  .shop-line img,
+  .shop-line-cover {
+    width: 56px;
+    height: 75px;
+  }
+  .shop-line-price {
+    grid-column: 2;
+    text-align: left;
+  }
+  .shop-details {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+  .shop-details dd {
+    margin-bottom: 0.5rem;
+  }
+}
+.shop-details-text {
+  white-space: pre-line;
+}
+/* Links inside text stand out. */
+.shop-document a:not([class]),
+.shop-status a,
+.shop-form a:not([class]),
+.shop-summary a:not([class]),
+.shop-empty a:not([class]),
+.site-footer p a {
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.shop-document > .shop-note {
+  margin: 0.6rem 0 1.5rem;
+}
+.shop-panel > h2:first-child {
+  margin-top: 0;
+}
+.shop-document > .shop-panel {
+  margin-top: 1rem;
+}

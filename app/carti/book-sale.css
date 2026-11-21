@@ -83,14 +83,6 @@
 .book-sale-pill:hover {
   background: var(--tint);
 }
-.book-sale-buy-now {
-  border-color: var(--blue);
-  background: var(--blue);
-  color: var(--primary-foreground);
-}
-.book-sale-buy-now:hover {
-  background: var(--primary-hover);
-}
 
 /* Details */
 .book-sale-title {
@@ -234,6 +226,15 @@
 .book-sale-currency {
   font-size: 0.5em;
 }
+.book-sale-shipping,
+.book-sale-delivery {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.book-sale-shipping {
+  color: var(--text-muted);
+}
 .book-sale-no-price {
   margin: 0;
   font-size: 1.05rem;
@@ -252,7 +253,7 @@
 }
 .book-sale-terms div {
   display: grid;
-  grid-template-columns: 6rem minmax(0, 1fr);
+  grid-template-columns: 6.5rem minmax(0, 1fr);
   gap: 0.5rem;
 }
 .book-sale-terms dt {
@@ -322,4 +323,7 @@
     flex: 1 1 0;
     padding-inline: 0.5rem;
   }
+}
+.book-sale-terms a {
+  color: var(--blue);
 }

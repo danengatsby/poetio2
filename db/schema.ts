@@ -1,4 +1,5 @@
-import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
+import { check, index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const poemImages = sqliteTable('poem_images', {
   id: text('id').primaryKey(),
@@ -304,3 +305,63 @@ export const bookSearchState = sqliteTable('book_search_state', {
   status: text('status').notNull().default('preparing'),
   updatedAt: integer('updated_at').notNull(),
 });
+
+// Shop: books sold directly on Poetio. Stock lives apart from the editorial book row,
+// so orders never touch the book's history.
+export const bookShop = sqliteTable(
+  'book_shop',
+  {
+    bookId: text('book_id')
+      .primaryKey()
+      .references(() => books.id, { onDelete: 'cascade' }),
+    stock: integer('stock'),
+    language: text('language').notNull().default(''),
+  },
+  table => [check('book_shop_stock_not_negative', sql`${table.stock} IS NULL OR ${table.stock} >= 0`)],
+);
+
+export const shopSettings = sqliteTable('shop_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+});
+
+export const orders = sqliteTable(
+  'orders',
+  {
+    id: text('id').primaryKey(),
+    number: integer('number').notNull().unique(),
+    accessKey: text('access_key').notNull(),
+    status: text('status').notNull().default('new'),
+    customerName: text('customer_name').notNull(),
+    email: text('email').notNull(),
+    phone: text('phone').notNull(),
+    address: text('address').notNull(),
+    city: text('city').notNull(),
+    county: text('county').notNull(),
+    postalCode: text('postal_code').notNull(),
+    note: text('note').notNull().default(''),
+    paymentMethod: text('payment_method').notNull(),
+    currency: text('currency').notNull(),
+    subtotalCents: integer('subtotal_cents').notNull(),
+    shippingCents: integer('shipping_cents').notNull(),
+    totalCents: integer('total_cents').notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  table => [index('idx_orders_created_at').on(table.createdAt)],
+);
+
+export const orderItems = sqliteTable(
+  'order_items',
+  {
+    orderId: text('order_id')
+      .notNull()
+      .references(() => orders.id, { onDelete: 'cascade' }),
+    bookId: text('book_id').notNull(),
+    cover: integer('cover').notNull(),
+    title: text('title').notNull(),
+    unitCents: integer('unit_cents').notNull(),
+    quantity: integer('quantity').notNull(),
+  },
+  table => [primaryKey({ columns: [table.orderId, table.bookId, table.cover] })],
+);

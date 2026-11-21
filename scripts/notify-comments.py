@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Email the site owner when reader comments are waiting for moderation.
+"""Email the site owner when reader comments are waiting for moderation and when books are ordered.
 
 Runs from a systemd timer. It reads the Poetio database read-only, sends one
-message that lists every comment still pending since the last notice, and
-remembers how far it has reported. Without SMTP settings it does nothing.
+message that lists every comment still pending since the last notice, one that
+lists the orders placed since the last notice, and remembers how far it has
+reported. Without SMTP settings it does nothing.
 """
 import argparse
 from contextlib import closing
@@ -60,6 +61,51 @@ def pending(database, after):
     return sorted(rows, key=lambda row: (row["created_at"], row["id"]))
 
 
+def new_orders(database, after):
+    """Orders placed after the last notice; none while the shop's tables do not exist yet."""
+    with closing(sqlite3.connect(Path(database).resolve().as_uri() + "?mode=ro", uri=True)) as db:
+        db.row_factory = sqlite3.Row
+        if not db.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'orders'").fetchone():
+            return []
+        rows = [dict(row) for row in db.execute(
+            "SELECT id, number, customer_name, phone, email, address, city, county, postal_code, note, payment_method,"
+            " currency, total_cents, created_at FROM orders WHERE created_at > ? ORDER BY created_at, number", (after,))]
+        for row in rows:
+            row["items"] = [dict(item) for item in db.execute(
+                "SELECT title, cover, quantity FROM order_items WHERE order_id = ? ORDER BY title", (row["id"],))]
+    return rows
+
+
+PAYMENTS = {"cod": "ramburs", "transfer": "transfer bancar"}
+
+
+def compose_orders(rows, config):
+    count = len(rows)
+    line = lambda value: " ".join(str(value or "").split())
+    money = lambda row: f"{row['total_cents'] // 100},{row['total_cents'] % 100:02d} {row['currency']}"
+    message = EmailMessage()
+    message["Subject"] = (f"Poetio: comandă nouă nr. {rows[0]['number']} ({money(rows[0])})" if count == 1
+                          else f"Poetio: {count} comenzi noi")
+    message["From"], message["To"] = config["sender"], config["recipient"]
+    parts = []
+    for row in rows[:LIMIT]:
+        when = dt.datetime.fromtimestamp(row["created_at"] / 1000, dt.timezone.utc).strftime("%d.%m.%Y, %H:%M UTC")
+        books = "\n".join(f"  {item['quantity']} × {line(item['title'])} (coperta {item['cover']})" for item in row["items"])
+        place = ", ".join(line(value) for value in (row["address"], row["city"], row["county"], row["postal_code"]) if line(value))
+        text = (f"Comanda nr. {row['number']} · {money(row)} · {PAYMENTS.get(row['payment_method'], line(row['payment_method']))} · {when}\n"
+                f"Client: {line(row['customer_name'])} · {line(row['phone'])} · {line(row['email'])}\n"
+                f"Livrare: {place}\n{books}")
+        if line(row["note"]):
+            text += f"\nObservații: {line(row['note'])[:EXCERPT]}"
+        parts.append(text)
+    if count > LIMIT:
+        parts.append(f"… și încă {count - LIMIT}.")
+    intro = "Ai o comandă nouă." if count == 1 else f"Ai {count} comenzi noi."
+    message.set_content(f"{intro}\n\n" + "\n\n".join(parts)
+                        + f"\n\nComenzi: {config['site']}/admin/comenzi\n\nConfirmă comanda după ce verifici datele clientului.\n")
+    return message
+
+
 def compose(rows, config):
     count = len(rows)
     message = EmailMessage()
@@ -113,28 +159,38 @@ def save(path, notified_until):
         Path(name).unlink(missing_ok=True)
 
 
+def orders_state(state):
+    return Path(state).with_name("orders.json")
+
+
 def run(database, state, env, send=deliver):
     config = settings(env)
     if config is None:
         return {"configured": False, "sent": 0}
     rows = pending(database, load(state))
-    if not rows:
-        return {"configured": True, "sent": 0}
     # Report only after the server accepted the message; a failure is retried.
-    send(compose(rows, config), config)
-    save(state, max(row["created_at"] for row in rows))
-    return {"configured": True, "sent": len(rows)}
+    if rows:
+        send(compose(rows, config), config)
+        save(state, max(row["created_at"] for row in rows))
+    result = {"configured": True, "sent": len(rows)}
+    orders = new_orders(database, load(orders_state(state)))
+    if orders:
+        send(compose_orders(orders, config), config)
+        save(orders_state(state), max(row["created_at"] for row in orders))
+        result["orders"] = len(orders)
+    return result
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, default=Path("/var/lib/poetio/poetio.sqlite3"))
     parser.add_argument("--state", type=Path, default=Path("/var/lib/poetio-notify/comments.json"))
-    parser.add_argument("--check", action="store_true", help="Count the comments that would be announced; send and record nothing.")
+    parser.add_argument("--check", action="store_true", help="Count the comments and orders that would be announced; send and record nothing.")
     args = parser.parse_args()
     os.umask(0o077)
     if args.check:
-        print(json.dumps({"pending": len(pending(args.database, load(args.state)))}))
+        print(json.dumps({"pending": len(pending(args.database, load(args.state))),
+                          "orders": len(new_orders(args.database, load(orders_state(args.state))))}))
         return
     print(json.dumps(run(args.database, args.state, os.environ)))
 

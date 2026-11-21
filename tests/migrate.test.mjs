@@ -123,13 +123,13 @@ test('rolls back a failing migration and leaves it pending', async t => {
   const directory = workspace(t);
   cpSync(fileURLToPath(new URL('../drizzle/', import.meta.url)), directory, { recursive: true });
   writeFileSync(
-    join(directory, '0021_broken.sql'),
+    join(directory, '9999_broken.sql'),
     'CREATE TABLE half_done (value TEXT);\nINSERT INTO missing VALUES (1);\n',
   );
   const file = join(directory, 'poetio.sqlite3');
-  await assert.rejects(migrate(file, { directory, create: true, hooks: {} }), /0021_broken: no such table: missing/);
+  await assert.rejects(migrate(file, { directory, create: true, hooks: {} }), /9999_broken: no such table: missing/);
   assert.deepEqual(read(file, "SELECT name FROM sqlite_master WHERE name = 'half_done'"), []);
-  assert.deepEqual(status(file, { directory }).pending, ['0021_broken']);
+  assert.deepEqual(status(file, { directory }).pending, ['9999_broken']);
 });
 
 test('repeats only the data step after it failed', async t => {

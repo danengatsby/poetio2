@@ -55,8 +55,27 @@ export const fixtureBook = {
       'Capitolul 7: Încheiere',
       'Mulțumiri',
     ].join('\n'),
+    // An old external link: it stays in the database and must never reach visitors.
     purchase_url_1: 'https://www.example.com/carte-de-proba',
     price_1: '10.00 USD',
   },
   covers: ['public/assets/poem-rain.webp', 'public/assets/poem-spring.webp'],
+  stock: 3,
+};
+
+// Poetio's own shop, open for orders.
+export const fixtureShop = {
+  seller_name: 'Editura de Probă',
+  seller_details: 'CUI 123456',
+  contact_email: 'comenzi@example.com',
+  contact_phone: '0700 000 000',
+  currency: 'USD',
+  shipping_amount: '5.00',
+  delivery_min_days: 2,
+  delivery_max_days: 4,
+  cod_enabled: true,
+  transfer_enabled: true,
+  transfer_iban: 'RO49AAAA1B31007593840000',
+  transfer_bank: 'Banca de Probă',
+  transfer_beneficiary: 'Editura de Probă',
 };

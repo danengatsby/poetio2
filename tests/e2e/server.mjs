@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tsImport } from 'tsx/esm/api';
 import { migrate } from '../../scripts/migrate.mjs';
-import { OWNER_EMAIL, fixtureBook, fixturePoems } from './fixture.mjs';
+import { OWNER_EMAIL, fixtureBook, fixturePoems, fixtureShop } from './fixture.mjs';
 import { bookFixture } from '../book-fixture.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -106,6 +106,18 @@ try {
     if (response.status === 201) break;
     if (response.status !== 409 || attempt > 120) throw new Error(`Adding the book failed: ${await response.text()}`);
     await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  // Open the shop and count the book's copies.
+  for (const [path, body] of [
+    ['/api/admin/shop', fixtureShop],
+    [`/api/admin/shop/books/${fixtureBook.record.id}`, { stock: fixtureBook.stock, language: 'ro' }],
+  ]) {
+    const response = await fetch(base + path, {
+      method: 'PUT',
+      headers: { ...owner, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error(`Setting up the shop failed: ${await response.text()}`);
   }
 } catch (error) {
   console.error(error);

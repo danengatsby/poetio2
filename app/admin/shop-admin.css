@@ -1,0 +1,266 @@
+/* Shop administration: orders and shop settings. */
+.shop-admin-main {
+  max-width: 1100px;
+  min-height: 65vh;
+}
+.shop-admin-feedback > p:empty {
+  margin: 0;
+}
+.shop-admin-feedback {
+  margin-bottom: 1rem;
+}
+.shop-admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 1.5rem;
+}
+.shop-admin-filters [aria-pressed='true'] {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--primary-foreground);
+}
+.shop-admin-empty {
+  color: var(--text-muted);
+}
+.shop-admin-orders,
+.shop-admin-books ul {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.shop-admin-card {
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--line);
+  background: var(--card);
+  overflow-wrap: anywhere;
+}
+.shop-admin-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.shop-admin-card h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.shop-admin-card h3 {
+  margin: 1rem 0 0.25rem;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.shop-admin-card p {
+  margin: 0;
+  line-height: 1.5;
+}
+.shop-admin-meta {
+  margin-top: 0.35rem !important;
+  color: var(--text-muted);
+}
+.shop-admin-note {
+  white-space: pre-line;
+}
+.shop-admin-badge {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.shop-admin-new {
+  border-color: var(--warning-foreground);
+  color: var(--warning-foreground);
+}
+.shop-admin-confirmed,
+.shop-admin-shipped {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.shop-admin-delivered {
+  border-color: var(--success-border);
+  background: var(--success-background);
+  color: var(--success-foreground);
+}
+.shop-admin-cancelled {
+  color: var(--text-muted);
+}
+.shop-admin-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0 2rem;
+}
+.shop-admin-items {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.shop-admin-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+.shop-admin-items small {
+  color: var(--text-muted);
+}
+.shop-admin-total {
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--line);
+  font-weight: 700;
+}
+.shop-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+.shop-admin-cancel {
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+
+/* Settings */
+.shop-admin-settings {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 720px;
+  margin-top: 1.5rem;
+}
+.shop-admin-settings fieldset {
+  margin: 0;
+  padding: 1.25rem 1.25rem 0.25rem;
+  border: 1px solid var(--line);
+  min-width: 0;
+}
+.shop-admin-settings legend {
+  padding-inline: 0.35rem;
+  font-weight: 700;
+}
+.shop-admin-settings textarea {
+  min-height: 6rem;
+  font-family: var(--sans);
+  font-size: 1rem;
+}
+.shop-admin-settings select {
+  display: block;
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid var(--input);
+  border-radius: 4px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+.shop-admin-settings .field-help {
+  display: block;
+  margin-top: 0.3rem;
+  font-weight: 400;
+}
+.editor-fields .shop-admin-check {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.editor-fields .shop-admin-check input {
+  display: inline-block;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: 0;
+  accent-color: var(--blue);
+}
+.success-text {
+  color: var(--success-foreground);
+}
+.shop-admin-books {
+  max-width: 900px;
+  margin-top: 2.5rem;
+}
+.shop-admin-books h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+}
+.shop-admin-books ul {
+  margin-top: 1rem;
+}
+.shop-admin-book {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+.shop-admin-book img,
+.shop-admin-book-cover {
+  display: block;
+  width: 48px;
+  height: 64px;
+  object-fit: cover;
+  background: var(--tint);
+}
+.shop-admin-book h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+.shop-admin-book p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+.shop-admin-book .shop-admin-warning {
+  margin-top: 0.35rem;
+  color: var(--error-foreground);
+}
+.shop-admin-book-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.shop-admin-book-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+}
+.shop-admin-book-form input,
+.shop-admin-book-form select {
+  min-height: 44px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--input);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+.shop-admin-book-form input {
+  width: 8rem;
+}
+.shop-admin-saved {
+  color: var(--success-foreground);
+  font-size: 0.875rem;
+  align-self: center;
+}
+.shop-admin-error {
+  color: var(--error-foreground);
+  font-size: 0.875rem;
+  align-self: center;
+}
+@media (max-width: 760px) {
+  .shop-admin-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .shop-admin-card {
+    padding: 1rem;
+  }
+}
