@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from '
 import type { BookPageText } from '@/lib/book-text';
 import BookTextView from './book-text-view';
 import useReadingPreferences from './use-reading-preferences';
-import { ArrowLeft, ArrowRight, CornerDownLeft, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronFirst, ChevronLast, CornerDownLeft, ZoomIn, ZoomOut } from 'lucide-react';
 import { readingPages, readingPositionKey, restoredPage } from '@/lib/book-reading';
 
 const phoneQuery = '(max-width: 760px), (pointer: coarse) and (max-height: 600px)';
@@ -153,6 +153,8 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
       ? 'Previous page'
       : 'Previous pages';
   const nextLabel = ro ? (single ? 'Pagina următoare' : 'Paginile următoare') : single ? 'Next page' : 'Next pages';
+  const firstLabel = ro ? 'Prima pagină' : 'First page';
+  const lastLabel = ro ? 'Ultima pagină' : 'Last page';
   const zoomLabel = enlarged ? (ro ? 'Potrivește în pagină' : 'Fit to page') : ro ? 'Mărește' : 'Zoom in';
   function navigation(position: 'top' | 'bottom') {
     return (
@@ -165,6 +167,16 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
             : `Page navigation ${position === 'top' ? 'top' : 'bottom'}`
         }
       >
+        <button
+          className="secondary-button"
+          aria-label={firstLabel}
+          title={firstLabel}
+          disabled={firstVisible === 1}
+          onClick={() => go(1)}
+        >
+          <ChevronFirst size={18} aria-hidden="true" />
+          <span className="book-control-text">{firstLabel}</span>
+        </button>
         <button
           className="secondary-button"
           aria-label={previousLabel}
@@ -196,6 +208,8 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
               onChange={event => setInput(event.target.value)}
               onBlur={() => {
                 if (!input.trim()) setInput(String(page));
+                // Phones hide the Go button: leaving the field with a new number turns the page.
+                else if (layout === 'single' && Number(input) !== page) go(Number(input));
               }}
             />
           </label>
@@ -203,7 +217,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
             / {pages}
           </span>
           <button
-            className="secondary-button"
+            className="secondary-button book-go-button"
             type="submit"
             aria-label={ro ? 'Mergi la pagină' : 'Go to page'}
             title={ro ? 'Mergi la pagină' : 'Go to page'}
@@ -222,9 +236,19 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
           <span className="book-control-text">{ro ? 'Înainte' : 'Next'}</span>
           <ArrowRight size={18} aria-hidden="true" />
         </button>
+        <button
+          className="secondary-button"
+          aria-label={lastLabel}
+          title={lastLabel}
+          disabled={lastVisible === pages}
+          onClick={() => go(pages)}
+        >
+          <span className="book-control-text">{lastLabel}</span>
+          <ChevronLast size={18} aria-hidden="true" />
+        </button>
         {mode === 'original' && (
           <button
-            className="secondary-button"
+            className="secondary-button book-zoom-button"
             aria-label={zoomLabel}
             title={zoomLabel}
             aria-pressed={enlarged}
@@ -341,8 +365,8 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
                 tabIndex={0}
                 aria-label={
                   ro
-                    ? 'Pagina cărții; săgețile schimbă pagina, Escape închide mărirea'
-                    : 'Book page; arrow keys turn pages, Escape exits zoom'
+                    ? 'Pagina cărții; săgețile schimbă pagina, Home și End duc la prima și la ultima, Escape închide mărirea'
+                    : 'Book page; arrow keys turn pages, Home and End go to the first and last, Escape exits zoom'
                 }
                 onKeyDown={event => {
                   if (event.altKey || event.ctrlKey || event.metaKey) return;
@@ -359,6 +383,14 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
                   if (!enlarged && event.key === 'ArrowLeft' && firstVisible > 1) {
                     event.preventDefault();
                     previous();
+                  }
+                  if (!enlarged && event.key === 'Home' && firstVisible > 1) {
+                    event.preventDefault();
+                    go(1);
+                  }
+                  if (!enlarged && event.key === 'End' && lastVisible < pages) {
+                    event.preventDefault();
+                    go(pages);
                   }
                 }}
               >

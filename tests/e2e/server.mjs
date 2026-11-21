@@ -12,7 +12,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tsImport } from 'tsx/esm/api';
 import { migrate } from '../../scripts/migrate.mjs';
-import { OWNER_EMAIL, fixturePoems } from './fixture.mjs';
+import { OWNER_EMAIL, fixtureBook, fixturePoems } from './fixture.mjs';
+import { bookFixture } from '../book-fixture.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const port = Number(process.env.POETIO_E2E_PORT || 4310);
@@ -75,6 +76,25 @@ try {
       body: JSON.stringify(body),
     });
     if (response.status !== 201) throw new Error(`Adding "${poem.title}" failed: ${await response.text()}`);
+  }
+  // A book: upload the PDF, then publish once its pages have been checked.
+  const owner = { Origin: base, 'oai-authenticated-user-email': OWNER_EMAIL };
+  const fileId = crypto.randomUUID();
+  const upload = await fetch(base + '/api/book-files', {
+    method: 'POST',
+    headers: { ...owner, 'Content-Type': 'application/pdf', 'X-Upload-Id': fileId, 'X-File-Name': 'carte.pdf' },
+    body: bookFixture({ count: fixtureBook.pages }),
+  });
+  if (upload.status !== 201) throw new Error(`Uploading the book failed: ${await upload.text()}`);
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetch(base + '/api/books', {
+      method: 'POST',
+      headers: { ...owner, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...fixtureBook.record, file_id: fileId }),
+    });
+    if (response.status === 201) break;
+    if (response.status !== 409 || attempt > 120) throw new Error(`Adding the book failed: ${await response.text()}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 } catch (error) {
   console.error(error);

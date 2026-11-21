@@ -34,3 +34,13 @@ export const fixturePoems = [
     source_language: 'en-US',
   },
 ];
+
+export const fixtureBook = {
+  pages: 12,
+  record: {
+    id: '7d3f5a1e-2b4c-4d6e-8f90-1a2b3c4d5e6f',
+    title: 'Carte de probă',
+    author: 'Autor',
+    description: 'O carte cu douăsprezece pagini.',
+  },
+};

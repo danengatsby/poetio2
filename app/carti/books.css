@@ -360,8 +360,10 @@
   top: 0;
   z-index: 10;
   display: flex;
-  flex-wrap: nowrap;
-  gap: 4px;
+  /* First, previous, page, next and last stay on one row from 320px; zoom moves to a
+     second row only when the screen is narrower than about 360px. */
+  flex-wrap: wrap;
+  gap: 4px 3px;
   padding: 0.4rem 0;
   background: var(--paper);
   border-bottom: 1px solid var(--line);
@@ -373,13 +375,20 @@
 .book-reader[data-layout='single'] .book-control-text {
   display: none;
 }
+/* The phone keyboard's Go key (and leaving the field) turns the page instead. */
+.book-reader[data-layout='single'] .book-go-button {
+  display: none;
+}
+.book-reader[data-layout='single'] .book-zoom-button {
+  margin-inline-start: auto;
+}
 .book-reader[data-layout='single'] .book-page-controls form {
   display: flex;
-  flex: 1;
+  /* Never narrower than its content: buttons that do not fit wrap instead of overlapping. */
+  flex: 1 0 auto;
   justify-content: center;
   flex-wrap: nowrap;
   gap: 4px;
-  min-width: 0;
 }
 .book-reader[data-layout='single'] .book-page-controls input {
   width: 3rem;
