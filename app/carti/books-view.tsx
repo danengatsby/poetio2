@@ -12,6 +12,7 @@ import BookCovers from './book-covers';
 import { ReaderComments } from '../poem-comments';
 import { commentCountLabel } from '@/lib/poem-comments';
 import './books.css';
+import LegalLinks from '../legal-links';
 
 export default function BooksView({
   books = [],
@@ -129,7 +130,9 @@ export default function BooksView({
         <a href={withSiteLanguage('/', language)} className="wordmark">
           Poetio<span aria-hidden="true">✳</span>
         </a>
-        <p>{copy.footer}</p>
+        <p>
+          {copy.footer} · <LegalLinks language={language} />
+        </p>
         <a href="#" className="back-top">
           {copy.back} ↑
         </a>

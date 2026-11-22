@@ -79,6 +79,31 @@ def order_recipient(source, env, has_shop):
     return chosen or env.get("POETIO_NOTIFY_TO", "").strip()
 
 
+SELLER_KEYS = ("seller_name", "seller_address", "contact_email", "contact_phone")
+
+
+def seller_details(source, has_shop):
+    """The seller's name, address and contacts from /admin/magazin, each on one line."""
+    if not has_shop:
+        return {}
+    rows = source.execute(f"SELECT key, value FROM shop_settings WHERE key IN ({', '.join('?' * len(SELLER_KEYS))})", SELLER_KEYS)
+    return {row[0]: ", ".join(" ".join(line.split()) for line in row[1].splitlines() if line.strip()) for row in rows}
+
+
+def buyer_terms(config):
+    """Who sells, how to reach them, and the right of withdrawal: the confirmation the law asks for (OUG 34/2014)."""
+    seller = config.get("seller") or {}
+    who = ", ".join(seller[key] for key in ("seller_name", "seller_address") if seller.get(key))
+    contact = " · ".join(seller[key] for key in ("contact_email", "contact_phone") if seller.get(key))
+    lines = [f"Vânzător: {who}"] if who else []
+    if contact:
+        lines.append(f"Contact: {contact}")
+    lines += ["", "Poți renunța la cumpărare în 14 zile de la primirea cărților, fără să explici motivul. "
+              "Cărțile au garanția legală de conformitate de 2 ani. Termenii, formularul de retragere și garanția: "
+              f"{config['site']}/termeni#retur"]
+    return "\n".join(lines).strip("\n")
+
+
 def compose_order(order, items, role, config):
     number = order["number"]
     total = f"{order['total_cents'] // 100},{order['total_cents'] % 100:02d} {order['currency']}"
@@ -100,8 +125,9 @@ def compose_order(order, items, role, config):
         message["Subject"] = f"Poetio: am primit comanda nr. {number}"
         intro = f"Bună, {order['customer_name']}!\n\nÎți mulțumim pentru comandă."
         link = f"Detaliile comenzii tale: {config['site']}/comanda/{order['id']}?cheie={order['access_key']}"
+    terms = f"\n{buyer_terms(config)}\n" if role == "buyer" else ""
     message.set_content(f"{intro}\n\nComanda nr. {number}\n{books}\nTotal cu livrare: {total}\n"
-                        f"Plată: {PAYMENTS[order['payment_method']]}\n\n{link}\n")
+                        f"Plată: {PAYMENTS[order['payment_method']]}\n\n{link}\n{terms}")
     return message
 
 
@@ -163,6 +189,8 @@ def order_notices(database, state, env, send):
         has_shop = source.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'orders'").fetchone()
         # Read on every run, so a contact email changed in /admin/magazin applies to the next order.
         config = settings({**env, "POETIO_NOTIFY_TO": order_recipient(source, env, has_shop)})
+        if config:
+            config["seller"] = seller_details(source, has_shop)
         queue_orders(source, queue, has_shop)
         delivered, failed = deliver_orders(source, queue, config, send) if config and has_shop else (0, 0)
         return {"configured": bool(config), "delivered": delivered, "failed": failed,

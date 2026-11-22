@@ -8,6 +8,7 @@ import { cartCount, useCart } from '@/lib/cart';
 import { rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
 import SiteHeader from './site-header';
 import './shop.css';
+import LegalLinks from './legal-links';
 
 export function useShopLanguage(initial: PoemLanguage) {
   const router = useRouter();
@@ -75,10 +76,7 @@ export default function ShopFrame({
           Poetio<span aria-hidden="true">✳</span>
         </a>
         <p>
-          {copy.footer} ·{' '}
-          <a href={withSiteLanguage('/termeni', language)}>
-            {language === 'ro' ? 'Termeni și condiții' : 'Terms and conditions'}
-          </a>
+          {copy.footer} · <LegalLinks language={language} />
         </p>
         <a href="#" className="back-top">
           {copy.back} ↑

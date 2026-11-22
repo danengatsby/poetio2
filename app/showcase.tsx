@@ -9,6 +9,7 @@ import SiteLogo from './site-logo';
 import PoemCover from './poem-cover';
 import SiteHeader from './site-header';
 import './collection.css';
+import LegalLinks from './legal-links';
 
 const number = (n: number) => String(n).padStart(2, '0');
 
@@ -177,7 +178,7 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
           Poetio<span aria-hidden="true">✳</span>
         </a>
         <p>
-          {copy.count(total)}. {copy.footer}
+          {copy.count(total)}. {copy.footer} · <LegalLinks language={language} />
         </p>
         <a className="back-top" href="#">
           {copy.back} <span aria-hidden="true">↑</span>

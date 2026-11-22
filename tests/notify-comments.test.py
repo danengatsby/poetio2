@@ -152,6 +152,22 @@ class NoticeTests(unittest.TestCase):
         self.assertEqual(self.mail()['delivered'], 0)
         self.assertEqual(len(self.sent), 4)
 
+    def test_the_buyer_confirmation_names_the_seller_and_the_right_of_withdrawal(self):
+        self.create_shop()
+        with closing(sqlite3.connect(self.database)) as db, db:
+            db.executemany("INSERT INTO shop_settings VALUES (?, ?)", [
+                ('seller_name', 'Dan Enache'), ('seller_address', 'Str. Lungă 2\nIași'), ('contact_phone', '0700 000 000')])
+        self.mail(env={})
+        self.order(1001)
+        self.assertEqual(self.mail()['delivered'], 2)
+        admin, buyer = self.sent
+        text = buyer.get_content()
+        self.assertIn('Vânzător: Dan Enache, Str. Lungă 2, Iași', text)
+        self.assertIn('Contact: vanzator@example.org · 0700 000 000', text)
+        self.assertIn('14 zile de la primirea cărților', text)
+        self.assertIn('https://poetio.cloud/termeni#retur', text)
+        self.assertNotIn('14 zile', admin.get_content())
+
     def test_one_refusal_does_not_block_other_recipients_or_resend_a_success(self):
         self.create_shop()
         self.mail()

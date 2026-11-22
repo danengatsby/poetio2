@@ -355,6 +355,20 @@
 .shop-document li {
   overflow-wrap: anywhere;
 }
+.shop-document ul {
+  display: grid;
+  gap: 0.6rem;
+  padding-left: 1.25rem;
+}
+/* The model withdrawal form, ready to copy into a letter or email. */
+.shop-withdrawal-form {
+  padding: 0.9rem 1.1rem;
+  border: 1px dashed var(--line);
+  background: var(--card);
+}
+.shop-withdrawal-form p {
+  margin: 0.3rem 0;
+}
 .shop-details {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);

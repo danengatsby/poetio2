@@ -210,7 +210,7 @@ export default function CheckoutView({
               <a href={withSiteLanguage('/termeni', language)} target="_blank" rel="noopener">
                 {ro ? 'termenii și condițiile' : 'terms and conditions'}
               </a>
-              .
+              {ro ? ', inclusiv dreptul de retragere în 14 zile.' : ', including the 14-day right of withdrawal.'}
             </span>
           </label>
           {error && (
@@ -219,12 +219,22 @@ export default function CheckoutView({
             </p>
           )}
           <button type="submit" className="shop-button shop-button-orange" disabled={sending || !quote.ok}>
-            {sending ? (ro ? 'Se trimite…' : 'Sending…') : ro ? 'Plasează comanda' : 'Place your order'}
+            {sending
+              ? ro
+                ? 'Se trimite…'
+                : 'Sending…'
+              : ro
+                ? 'Comandă cu obligație de plată'
+                : 'Order with obligation to pay'}
           </button>
           <p className="shop-note">
             {ro
-              ? 'Comanda te obligă la plată. Datele tale sunt folosite doar pentru livrarea cărților.'
-              : 'Placing the order means you agree to pay. Your details are used only to deliver the books.'}
+              ? 'Comanda te obligă la plată. Datele tale sunt folosite doar pentru livrarea cărților ('
+              : 'Placing the order means you agree to pay. Your details are used only to deliver the books ('}
+            <a href={withSiteLanguage('/confidentialitate', language)} target="_blank" rel="noopener">
+              {ro ? 'confidențialitate' : 'privacy'}
+            </a>
+            ).
           </p>
         </aside>
       </form>

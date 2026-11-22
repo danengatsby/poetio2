@@ -26,6 +26,7 @@ const PAGE_LABEL: Record<string, string> = {
   '/cos': 'Coșul de cumpărături',
   '/comanda': 'Finalizarea comenzii',
   '/termeni': 'Termeni și condiții',
+  '/confidentialitate': 'Confidențialitate',
   '/subtitrari': 'Subtitrări',
 };
 const DEVICE_LABEL: Record<string, string> = { mobil: 'Telefon', tabletă: 'Tabletă', desktop: 'Calculator' };
@@ -554,8 +555,8 @@ export default function VisitsAdmin() {
             Se numără paginile deschise în browsere reale, fără roboți și fără paginile de administrare. IP-ul și datele
             browserului se șterg după {VISIT_IP_RETENTION_DAYS} de zile; numărul vizitelor, paginile și localitatea
             rămân. Vizitatorii sunt anunțați în{' '}
-            <a href="/termeni#vizite" target="_blank" rel="noreferrer">
-              termeni
+            <a href="/confidentialitate#vizite" target="_blank" rel="noreferrer">
+              nota de confidențialitate
             </a>
             .
           </p>

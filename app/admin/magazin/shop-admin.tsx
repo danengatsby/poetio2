@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { ShopBook } from '@/db/shop';
 import { BOOK_PRICE_CURRENCIES, formatBookPrice } from '@/lib/book-price';
-import { BOOK_LANGUAGES, type PublicShop, type ShopSettings } from '@/lib/shop';
+import { BOOK_LANGUAGES, legalGaps, type PublicShop, type ShopSettings } from '@/lib/shop';
 import ShopAdminFrame from '../shop-admin-frame';
 
 type Draft = Omit<ShopSettings, 'delivery_min_days' | 'delivery_max_days'> & {
@@ -236,6 +236,7 @@ export default function ShopAdmin() {
   );
 
   const gaps = shop ? missing(shop) : [];
+  const legal = shop ? legalGaps(shop) : [];
   const priced = shop ? books.filter(book => onSale(book, shop.currency).length) : [];
   const available = priced.filter(book => book.stock !== 0).length;
   return (
@@ -256,6 +257,11 @@ export default function ShopAdmin() {
               : priced.length
                 ? 'Stoc epuizat pentru toate cărțile cu preț. Actualizează stocul pentru a primi comenzi.'
                 : `Magazinul este pregătit, dar nicio carte nu are preț în ${shop.currency}, deci nu se poate comanda nimic. Scrie prețul la carte, mai jos, și apasă Salvează.`}
+        </p>
+      )}
+      {shop && legal.length > 0 && (
+        <p className="error-message shop-admin-legal">
+          Legea cere în termeni și {legal.join(', ')}. Comenzile rămân deschise, dar completează-le mai jos.
         </p>
       )}
       {error && (
@@ -295,6 +301,19 @@ export default function ShopAdmin() {
               help: 'Apare la „Vândut de” și în termeni.',
             })}
             <label>
+              Adresa
+              <textarea
+                maxLength={300}
+                rows={2}
+                value={draft.seller_address}
+                onChange={event => set('seller_address')(event.target.value)}
+              />
+              <span className="field-help">
+                Stradă, număr, localitate, județ. Legea cere adresa în termeni și în formularul de retragere; poate fi o
+                adresă de corespondență. Apare public.
+              </span>
+            </label>
+            <label>
               Date de identificare (opțional)
               <textarea
                 maxLength={1000}
@@ -302,7 +321,7 @@ export default function ShopAdmin() {
                 onChange={event => set('seller_details')(event.target.value)}
               />
               <span className="field-help">
-                De exemplu CUI, adresa sediului, nr. Registrul Comerțului. Apar în termeni.
+                De exemplu CUI și nr. Registrul Comerțului, dacă vinzi printr-o firmă sau un PFA. Apar în termeni.
               </span>
             </label>
             {text('contact_email', 'Email de contact', { type: 'email', max: 200 })}

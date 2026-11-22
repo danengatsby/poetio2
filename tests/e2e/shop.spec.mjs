@@ -51,10 +51,10 @@ test('cart and checkout: an order paid by bank transfer', async ({ page }) => {
   await fillAddress(page);
   await page.getByLabel(/^Transfer bancar/).check();
   // The terms must be accepted first.
-  await page.getByRole('button', { name: 'Plasează comanda' }).click();
+  await page.getByRole('button', { name: 'Comandă cu obligație de plată' }).click();
   await expect(page).toHaveURL(/\/comanda(\?|$)/);
   await page.getByLabel(/Am citit și accept/).check();
-  await page.getByRole('button', { name: 'Plasează comanda' }).click();
+  await page.getByRole('button', { name: 'Comandă cu obligație de plată' }).click();
 
   await expect(page).toHaveURL(/\/comanda\/[0-9a-f-]{36}\?cheie=[0-9a-f]{48}/);
   await expect(page.getByRole('status').first()).toHaveText('Mulțumim! Comanda nr. 1001 a fost înregistrată.');
@@ -83,7 +83,7 @@ test('buy now orders one book with cash on delivery and leaves the cart alone', 
   await fillAddress(page);
   await expect(page.getByLabel(/^Ramburs/)).toBeChecked();
   await page.getByLabel(/Am citit și accept/).check();
-  await page.getByRole('button', { name: 'Plasează comanda' }).click();
+  await page.getByRole('button', { name: 'Comandă cu obligație de plată' }).click();
 
   await expect(page.getByRole('status').first()).toHaveText('Mulțumim! Comanda nr. 1002 a fost înregistrată.');
   await expect(page.getByText(nbsp('Plătești 15,00 USD curierului, când primești coletul.'))).toBeVisible();
@@ -116,12 +116,42 @@ test('phone: cart, checkout and order pages fit the screen', async ({ page }) =>
   await page.getByRole('button', { name: /^Șterge/ }).click();
 });
 
-test('the terms name the seller and the 14-day returns', async ({ page }) => {
+test('the terms name the seller, the 14-day withdrawal with its form, the guarantee and disputes', async ({ page }) => {
   await page.goto('/termeni');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Termeni și condiții de vânzare');
   await expect(page.locator('#retur')).toHaveText('Dreptul de retragere și returul');
+  const main = page.locator('main');
   await expect(page.getByText(`vândute și expediate de ${fixtureShop.seller_name}`)).toBeVisible();
-  await expect(page.locator('main')).toContainText('14 zile de la primirea cărților');
+  await expect(main).toContainText('Adresa: Str. Probei 1, Iași');
+  await expect(main).toContainText(`Email: ${fixtureShop.contact_email}`);
+  await expect(main).toContainText(`Telefon: ${fixtureShop.contact_phone}`);
+  await expect(main).toContainText('Poți renunța la cumpărare în 14 zile');
+  await expect(page.locator('#formular-retragere')).toHaveText('Formularul de retragere');
+  await expect(page.locator('.shop-withdrawal-form')).toContainText(
+    `Către: ${fixtureShop.seller_name}, Str. Probei 1, Iași, ${fixtureShop.contact_email}`,
+  );
+  const mail = page.getByRole('link', { name: 'Trimite formularul prin email' });
+  await expect(mail).toHaveAttribute('href', new RegExp(`^mailto:${fixtureShop.contact_email}\\?subject=Retragere`));
+  await expect(page.locator('#garantie')).toHaveText('Garanția legală de conformitate');
+  await expect(main).toContainText('timp de 2 ani de la livrare');
+  await expect(page.getByRole('link', { name: 'anpc.ro/ce-este-sal' })).toHaveAttribute(
+    'href',
+    'https://anpc.ro/ce-este-sal/',
+  );
+
+  // The privacy notice, linked from the terms and from every footer.
+  await page.getByRole('link', { name: 'nota de confidențialitate' }).click();
+  await expect(page).toHaveURL(/\/confidentialitate/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Nota de confidențialitate');
+  await expect(page.locator('main')).toContainText(
+    `Operatorul datelor este ${fixtureShop.seller_name}, Str. Probei 1, Iași.`,
+  );
+  await expect(page.locator('#vizite')).toContainText('se șterg după 90 de zile');
+  await page.goto('/?lang=en-US');
+  await expect(page.locator('footer').getByRole('link', { name: 'Privacy' })).toHaveAttribute(
+    'href',
+    '/confidentialitate?lang=en-US',
+  );
 });
 
 test.describe('owner', () => {

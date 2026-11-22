@@ -8,6 +8,7 @@ import { rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-lan
 import AboutPoetio from '../about-poetio';
 import SiteHeader from '../site-header';
 import { ReaderComments } from '../poem-comments';
+import LegalLinks from '../legal-links';
 
 export default function AuthorProfile({ initialLanguage }: { initialLanguage: PoemLanguage }) {
   const [language, setLanguage] = useState(initialLanguage);
@@ -48,7 +49,9 @@ export default function AuthorProfile({ initialLanguage }: { initialLanguage: Po
         <a className="wordmark" href={withSiteLanguage('/', language)}>
           Poetio<span aria-hidden="true">✳</span>
         </a>
-        <p>{copy.footer}</p>
+        <p>
+          {copy.footer} · <LegalLinks language={language} />
+        </p>
         <a className="back-top" href="#">
           {copy.back} <span aria-hidden="true">↑</span>
         </a>

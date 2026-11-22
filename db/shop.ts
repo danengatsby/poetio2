@@ -64,6 +64,7 @@ export async function saveShopSettings(db: Database, value: unknown) {
   if (!isCurrency(data.currency)) throw new AppError(400, 'Alege moneda magazinului.');
   const settings: ShopSettings = {
     seller_name: text('seller_name', 160, 'Vânzător'),
+    seller_address: text('seller_address', 300, 'Adresa vânzătorului'),
     seller_details: text('seller_details', 1000, 'Datele vânzătorului'),
     contact_email: email,
     contact_phone: text('contact_phone', 40, 'Telefon'),

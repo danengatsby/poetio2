@@ -301,3 +301,21 @@ test('a failed price update rolls back the inventory edit', async t => {
   await assert.rejects(shop.saveBookShop(db, BOOK, { revision: 1, price_1: '48', stock: 5 }), /price failed/);
   assert.equal((await shop.getBookShop(db, BOOK)).stock, 3);
 });
+
+test('the seller address is saved and missing legal details are listed without closing the shop', async t => {
+  const db = await store(t);
+  let settings = await shop.getShopSettings(db);
+  assert.equal(settings.seller_address, '');
+  assert.equal(rules.shopReady(settings), true);
+  assert.deepEqual(rules.legalGaps(settings), ['adresa vânzătorului', 'telefonul de contact']);
+  await shop.saveShopSettings(db, {
+    ...settings,
+    seller_address: ' Str. Lungă 2\r\nIași ',
+    contact_phone: '0700 000 000',
+  });
+  settings = await shop.getShopSettings(db);
+  assert.equal(settings.seller_address, 'Str. Lungă 2\nIași');
+  assert.equal(rules.addressLine(settings.seller_address), 'Str. Lungă 2, Iași');
+  assert.deepEqual(rules.legalGaps(settings), []);
+  await assert.rejects(shop.saveShopSettings(db, { ...settings, seller_address: 'x'.repeat(301) }), /maximum 300/);
+});

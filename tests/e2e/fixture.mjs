@@ -66,6 +66,7 @@ export const fixtureBook = {
 // Poetio's own shop, open for orders.
 export const fixtureShop = {
   seller_name: 'Editura de Probă',
+  seller_address: 'Str. Probei 1\nIași',
   seller_details: 'CUI 123456',
   contact_email: 'comenzi@example.com',
   contact_phone: '0700 000 000',

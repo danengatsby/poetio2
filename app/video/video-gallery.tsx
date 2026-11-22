@@ -15,6 +15,7 @@ import VideoCover from './video-cover';
 import { ReaderComments } from '../poem-comments';
 import { commentCountLabel } from '@/lib/poem-comments';
 import './video.css';
+import LegalLinks from '../legal-links';
 
 export default function VideoGallery({
   videos,
@@ -131,7 +132,9 @@ export default function VideoGallery({
         <a href={withSiteLanguage('/', language)} className="wordmark">
           Poetio<span aria-hidden="true">✳</span>
         </a>
-        <p>{copy.footer}</p>
+        <p>
+          {copy.footer} · <LegalLinks language={language} />
+        </p>
         <a href="#" className="back-top">
           {copy.back} ↑
         </a>

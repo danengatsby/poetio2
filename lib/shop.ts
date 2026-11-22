@@ -19,6 +19,8 @@ export const ORDER_LIMITS = {
 
 export type ShopSettings = {
   seller_name: string;
+  /** Postal address shown in the terms and the withdrawal form (required by OUG 34/2014). */
+  seller_address: string;
   seller_details: string;
   contact_email: string;
   contact_phone: string;
@@ -35,6 +37,7 @@ export type ShopSettings = {
 
 export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
   seller_name: '',
+  seller_address: '',
   seller_details: '',
   contact_email: '',
   contact_phone: '',
@@ -67,6 +70,23 @@ export function shopReady(settings: ShopSettings) {
     settings.shipping_amount !== '' &&
     paymentMethods(settings).length,
   );
+}
+
+/** A multi-line address on one line ("Str. Lungă 2, Iași"). */
+export const addressLine = (text: string) =>
+  text
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join(', ');
+
+/** Seller details the law asks for (OUG 34/2014, Legea 365/2002) that are still empty. They do not close the shop. */
+export function legalGaps(settings: ShopSettings) {
+  const list: string[] = [];
+  if (!settings.seller_address) list.push('adresa vânzătorului');
+  if (!settings.contact_email) list.push('emailul de contact');
+  if (!settings.contact_phone) list.push('telefonul de contact');
+  return list;
 }
 
 export function publicShop(settings: ShopSettings): PublicShop {

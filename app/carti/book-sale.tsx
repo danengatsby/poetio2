@@ -15,6 +15,7 @@ import SiteHeader from '../site-header';
 import { CartLink } from '../shop-frame';
 import './books.css';
 import './book-sale.css';
+import LegalLinks from '../legal-links';
 
 function Price({ value, language }: { value: string | null; language: PoemLanguage }) {
   const price = bookPriceDisplay(value, language);
@@ -381,7 +382,9 @@ export default function BookSale({
         <a href={withSiteLanguage('/', language)} className="wordmark">
           Poetio<span aria-hidden="true">✳</span>
         </a>
-        <p>{copy.footer}</p>
+        <p>
+          {copy.footer} · <LegalLinks language={language} />
+        </p>
         <a href="#" className="back-top">
           {copy.back} ↑
         </a>

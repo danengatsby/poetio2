@@ -23,6 +23,7 @@ export const config = {
     '/cos',
     '/comanda/:path*',
     '/termeni',
+    '/confidentialitate',
     '/admin/:path*',
   ],
 };

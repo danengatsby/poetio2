@@ -11,6 +11,7 @@ import VideoReading from './video/video-reading';
 import { useState } from 'react';
 import './video/video.css';
 import './content-detail.css';
+import LegalLinks from './legal-links';
 
 export default function ContentDetail({
   poem,
@@ -97,7 +98,10 @@ export default function ContentDetail({
         <a href={withSiteLanguage('/', language)} className="wordmark">
           Poetio✳
         </a>
-        <a href={collectionPath}>{ro ? 'Înapoi la colecție' : 'Back to collection'}</a>
+        <p>
+          <a href={collectionPath}>{ro ? 'Înapoi la colecție' : 'Back to collection'}</a> ·{' '}
+          <LegalLinks language={language} />
+        </p>
       </footer>
     </>
   );
