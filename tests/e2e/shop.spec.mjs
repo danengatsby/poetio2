@@ -1,6 +1,6 @@
 // Poetio's own shop: the sale page, the cart, checkout, the order page and the owner's order list.
 // The tests run in order and share one database: the book starts with 3 copies.
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test.mjs';
 import { OWNER_EMAIL, fixtureBook, fixtureShop } from './fixture.mjs';
 
 const salePath = `/carti/${fixtureBook.record.id}/cumpara?coperta=1`;

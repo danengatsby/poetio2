@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test.mjs';
 import { OWNER_EMAIL, fixtureBook } from './fixture.mjs';
 
 // tests/e2e/server.mjs installs MaxMind's test database, where these addresses

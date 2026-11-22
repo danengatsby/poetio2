@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test.mjs';
 
 const meeting = 'Întâlnirea din crâng';
 const poemIds = async page =>
@@ -67,6 +67,15 @@ test('collection pages have a canonical address and a sharing preview; favicon.i
     await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', /Poetio/);
     await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
   }
+  // Every page carries the (report-only) Content Security Policy and the Permissions-Policy.
+  const home = await request.get('/');
+  expect(home.headers()['content-security-policy-report-only']).toContain("default-src 'self'");
+  expect(home.headers()['permissions-policy']).toContain('camera=()');
+  const report = await request.post('/api/csp-report', {
+    headers: { 'Content-Type': 'application/csp-report' },
+    data: JSON.stringify({ 'csp-report': { 'document-uri': 'http://127.0.0.1/', 'violated-directive': 'img-src' } }),
+  });
+  expect(report.status()).toBe(204);
   const icon = await request.get('/favicon.ico');
   expect(icon.status()).toBe(200);
   expect(icon.headers()['content-type']).toMatch(/icon/);

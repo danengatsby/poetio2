@@ -89,3 +89,13 @@ sudo systemctl start poetio-geoip.service
 ```
 
 Prima descărcare are aproximativ 60 MB (127 MB după dezarhivare). Site-ul preia noul fișier în cel mult 10 minute, fără repornire. Fără bază, vizitele se înregistrează fără localitate. Backupul nu include baza de localizare, care se poate descărca din nou oricând.
+
+## Content Security Policy și Permissions-Policy
+
+Aplicația trimite pe fiecare răspuns `Content-Security-Policy-Report-Only` și `Permissions-Policy` (`lib/security-headers.ts`, aplicate din `next.config.ts`). Deocamdată politica doar raportează: browserele nu blochează nimic, dar trimit la `/api/csp-report` ce ar fi blocat. Serverul scrie fiecare raport în jurnal, fără parametrii adresei, cel mult 200 pe oră:
+
+```sh
+journalctl -u poetio --since "-7 days" | grep "CSP violation"
+```
+
+Testele de browser verifică pe fiecare pagină deschisă că nu apare nicio încălcare (`tests/e2e/test.mjs`). Când jurnalul rămâne curat câteva zile, redenumește antetul în `Content-Security-Policy` din `next.config.ts` ca politica să fie aplicată. Dacă apar rapoarte, verifică dacă sunt reale (o resursă nouă a site-ului) sau zgomot (extensii de browser, de obicei `chrome-extension:` sau scripturi injectate).

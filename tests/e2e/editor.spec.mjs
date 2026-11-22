@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test.mjs';
 import { OWNER_EMAIL } from './fixture.mjs';
 
 // The app trusts this header; on the VPS only nginx sets it, after Basic Auth.
