@@ -212,3 +212,61 @@ test('reports totals, days, pages with titles, places, sources and recent visits
     ],
   );
 });
+
+test('names the sources people come from', () => {
+  assert.equal(rules.sourceLabel(''), 'Intrare directă');
+  assert.equal(rules.sourceLabel('www.google.com'), 'Google');
+  assert.equal(rules.sourceLabel('www.google.ro'), 'Google');
+  assert.equal(rules.sourceLabel('mail.google.com'), 'Gmail');
+  assert.equal(rules.sourceLabel('l.facebook.com'), 'Facebook');
+  assert.equal(rules.sourceLabel('com.instagram.android'), 'Instagram');
+  assert.equal(rules.sourceLabel('t.co'), 'X (Twitter)');
+  assert.equal(rules.sourceLabel('blog.example.ro'), 'blog.example.ro');
+  assert.equal(
+    rules.orderIdOfPath('/comanda/0D5C6A2E-1B3F-4C5D-8E9F-0A1B2C3D4E5F'),
+    '0d5c6a2e-1b3f-4c5d-8e9f-0a1b2c3d4e5f',
+  );
+  assert.equal(rules.orderIdOfPath('/comanda'), null);
+  assert.equal(rules.orderIdOfPath('/comanda/1234'), null);
+});
+
+test('a visit shows the order placed in it; a later visit to the order page shows it as revisited', async t => {
+  const db = await store(t);
+  const order = '0d5c6a2e-1b3f-4c5d-8e9f-0a1b2c3d4e5f';
+  await db
+    .prepare(
+      `INSERT INTO orders (id, number, access_key, status, customer_name, email, phone, address, city, county, postal_code,
+         payment_method, currency, subtotal_cents, shipping_cents, total_cents, created_at, updated_at)
+       VALUES (?, 1007, 'k', 'confirmed', 'Ana', 'ana@example.com', '0712345678', 'a', 'c', 'j', '', 'cod', 'RON', 4000, 1500, 5500, ?, ?)`,
+    )
+    .bind(order, NOON - DAY + 180_000, NOON - DAY + 180_000)
+    .run();
+  // Placed: the sale page, checkout, then the order page right after sending it.
+  await visit(db, { path: '/carti/b/cumpara', now: NOON - DAY });
+  await visit(db, { path: '/comanda', now: NOON - DAY + 120_000 });
+  await visit(db, { path: `/comanda/${order}`, now: NOON - DAY + 181_000 });
+  // The next day, from the link in the confirmation email.
+  await visit(db, { ip: '86.120.1.1', path: `/comanda/${order}`, now: NOON - 60_000 });
+  // A visit without an order, and a page for an order that does not exist.
+  await visit(db, { ip: '198.51.100.7', path: `/comanda/11111111-2222-4333-8444-555555555555`, now: NOON - 30_000 });
+
+  const stats = await visits.visitStats(db, { days: 7, now: NOON });
+  const [unknown, later, placed] = stats.sessions;
+  assert.deepEqual(unknown.orders, []);
+  assert.deepEqual(
+    later.orders.map(item => [item.number, item.placed]),
+    [[1007, false]],
+  );
+  assert.deepEqual(placed.orders, [
+    {
+      id: order,
+      number: 1007,
+      status: 'confirmed',
+      total_cents: 5500,
+      currency: 'RON',
+      created_at: NOON - DAY + 180_000,
+      placed: true,
+    },
+  ]);
+  assert.equal(stats.titles[`/comanda/${order}`], 'nr. 1007');
+});

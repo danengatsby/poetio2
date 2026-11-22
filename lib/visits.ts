@@ -86,6 +86,36 @@ export function referrerHost(value: unknown, siteHost: string) {
   }
 }
 
+const SOURCES: [RegExp, string][] = [
+  [/^mail\.google\.com$|^com\.google\.android\.gm$/, 'Gmail'],
+  [/(^|\.)google\.[a-z.]+$|^com\.google\.android\.googlequicksearchbox$/, 'Google'],
+  [/(^|\.)facebook\.com$|^fb\.me$|^com\.facebook\.(katana|orca)$/, 'Facebook'],
+  [/(^|\.)instagram\.com$|^com\.instagram\.android$/, 'Instagram'],
+  [/(^|\.)whatsapp\.com$|^wa\.me$|^com\.whatsapp$/, 'WhatsApp'],
+  [/(^|\.)youtube\.com$|^youtu\.be$/, 'YouTube'],
+  [/(^|\.)tiktok\.com$/, 'TikTok'],
+  [/^t\.co$|(^|\.)x\.com$|(^|\.)twitter\.com$/, 'X (Twitter)'],
+  [/(^|\.)linkedin\.com$|^lnkd\.in$/, 'LinkedIn'],
+  [/(^|\.)bing\.com$/, 'Bing'],
+  [/(^|\.)yahoo\.com$/, 'Yahoo'],
+  [/(^|\.)duckduckgo\.com$/, 'DuckDuckGo'],
+  [/(^|\.)chatgpt\.com$|(^|\.)openai\.com$/, 'ChatGPT'],
+];
+
+/** "Google", "Facebook"… for a referrer host; the host itself when unknown; "Intrare directă" when empty. */
+export function sourceLabel(host: string) {
+  if (!host) return 'Intrare directă';
+  return SOURCES.find(([pattern]) => pattern.test(host))?.[1] ?? host;
+}
+
+/** The id of the order whose page this is (/comanda/<uuid>), or null. */
+export function orderIdOfPath(path: string) {
+  return (
+    path.match(/^\/comanda\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1].toLowerCase() ??
+    null
+  );
+}
+
 export type PlaceFields = { country: string; region: string; city: string };
 
 /** Country name in Romanian from its ISO code. */

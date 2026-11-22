@@ -8,8 +8,10 @@ import {
   VISIT_TIME_ZONE,
   countryName,
   placeLabel,
+  sourceLabel,
   type VisitRange,
 } from '@/lib/visits';
+import { formatMoney, statusLabel } from '@/lib/shop';
 import ShopAdminFrame from '../shop-admin-frame';
 import './visits-admin.css';
 
@@ -44,7 +46,7 @@ function pageLabel(path: string, titles: Record<string, string>) {
     if (path.startsWith('/carti/')) return `Carte: ${title}`;
   }
   if (PAGE_LABEL[path]) return PAGE_LABEL[path];
-  if (path.startsWith('/comanda/')) return 'Pagina unei comenzi';
+  if (path.startsWith('/comanda/')) return title ? `Pagina comenzii ${title}` : 'Pagina unei comenzi';
   return path;
 }
 
@@ -182,7 +184,8 @@ function Ranking({
   );
 }
 
-function SessionCard({
+/** One visit: a row of the "Accesări" table (a card on a phone). */
+function AccessRow({
   session,
   titles,
   until,
@@ -195,58 +198,90 @@ function SessionCard({
   onIp: (ip: string) => void;
 }) {
   const minutes = Math.round((session.ended - session.started) / 60_000);
-  const details = [
-    DEVICE_LABEL[session.device] ?? session.device,
+  const browser = [
     session.browser,
     session.os,
     session.language === 'en-US' ? 'site în engleză' : session.language === 'ro' ? 'site în română' : '',
   ].filter(Boolean);
+  const placed = session.orders.some(order => order.placed);
   return (
-    <li className="shop-admin-card visits-session">
-      <div className="visits-session-top">
+    <tr className={placed ? 'visits-row-order' : undefined}>
+      <th scope="row" data-label="Data">
         <time dateTime={new Date(session.started).toISOString()}>
-          {time(session.started, { dateStyle: 'medium', timeStyle: 'short' })}
+          {time(session.started, { day: 'numeric', month: 'short', year: 'numeric' })}
         </time>
+      </th>
+      <td data-label="Ora" className="visits-hour">
+        {time(session.started, { timeStyle: 'short' })}
+      </td>
+      <td data-label="IP">
         {session.ip ? (
           <button
             type="button"
             className="visits-ip"
             onClick={() => onIp(session.ip!)}
-            title="Toate vizitele acestui IP"
+            title="Doar accesările acestui IP"
           >
             {session.ip}
           </button>
         ) : (
           <span className="visits-ip-gone">
             {session.started < until - VISIT_IP_RETENTION_DAYS * 86_400_000
-              ? `IP șters (după ${VISIT_IP_RETENTION_DAYS} de zile)`
-              : 'IP necunoscut'}
+              ? `Șters după ${VISIT_IP_RETENTION_DAYS} de zile`
+              : 'Necunoscut'}
           </span>
         )}
-        <span className="visits-place">{placeLabel(session)}</span>
-      </div>
-      <p className="visits-session-meta">
-        {details.join(' · ')}
-        {' · '}
-        {session.referrer ? `venit de pe ${session.referrer}` : 'intrare directă'}
-      </p>
-      <details>
-        <summary>
-          {plural(session.views.length, 'pagină', 'pagini')}
-          {minutes > 0 ? `, ${plural(minutes, 'minut', 'minute')}` : ''}
-        </summary>
-        <ol className="visits-pages">
-          {session.views.map(view => (
-            <li key={`${view.at}-${view.path}`}>
-              <time dateTime={new Date(view.at).toISOString()}>{time(view.at, { timeStyle: 'short' })}</time>{' '}
-              <a href={view.path} target="_blank" rel="noreferrer">
-                {pageLabel(view.path, titles)}
-              </a>
-            </li>
-          ))}
-        </ol>
-      </details>
-    </li>
+      </td>
+      <td data-label="Locația">{placeLabel(session)}</td>
+      <td data-label="Sursa">
+        <span title={session.referrer || undefined}>{sourceLabel(session.referrer)}</span>
+      </td>
+      <td data-label="Dispozitiv">
+        {DEVICE_LABEL[session.device] ?? (session.device || 'Necunoscut')}
+        {browser.length > 0 && <small>{browser.join(' · ')}</small>}
+      </td>
+      <td data-label="Pagini și pași" className="visits-steps">
+        <details>
+          <summary>
+            {plural(session.views.length, 'pagină', 'pagini')}
+            {minutes > 0 ? ` · ${plural(minutes, 'minut', 'minute')}` : ''}
+          </summary>
+          <ol className="visits-pages">
+            {session.views.map(view => (
+              <li key={`${view.at}-${view.path}`}>
+                <time dateTime={new Date(view.at).toISOString()}>{time(view.at, { timeStyle: 'short' })}</time>{' '}
+                <a href={view.path} target="_blank" rel="noreferrer">
+                  {pageLabel(view.path, titles)}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </details>
+      </td>
+      <td data-label="Comanda">
+        {session.orders.length ? (
+          <ul className="visits-orders">
+            {session.orders.map(order => (
+              <li key={order.id}>
+                <span className="visits-order-line">
+                  <a href="/admin/comenzi">nr. {order.number}</a> ·{' '}
+                  {formatMoney(order.total_cents, order.currency, 'ro')}
+                </span>{' '}
+                <span className={`shop-admin-badge shop-admin-${order.status}`}>{statusLabel[order.status]}</span>
+                {!order.placed && (
+                  <small>
+                    revăzută; plasată pe{' '}
+                    {time(order.created_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </small>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <span className="visits-none">—</span>
+        )}
+      </td>
+    </tr>
   );
 }
 
@@ -465,29 +500,44 @@ export default function VisitsAdmin() {
             </div>
 
             <section className="visits-sessions" aria-labelledby="visits-sessions-title">
-              <h2 id="visits-sessions-title">Vizite recente</h2>
+              <h2 id="visits-sessions-title">Accesări</h2>
               <p className="field-help">
-                O vizită grupează paginile deschise de același IP, din același browser, la mai puțin de 30 de minute una
-                de alta. Apasă pe un IP ca să vezi toate vizitele lui.
+                Un rând este o vizită: paginile deschise de același IP, din același browser, la mai puțin de 30 de
+                minute una de alta. Apasă pe un IP ca să vezi doar accesările lui. Comanda apare când cumpărătorul
+                ajunge la pagina comenzii, imediat după ce o trimite.
               </p>
               {stats.sessions.length ? (
-                <ul className="shop-admin-orders">
-                  {stats.sessions.map(session => (
-                    <SessionCard
-                      key={session.id}
-                      session={session}
-                      titles={stats.titles}
-                      until={stats.until}
-                      onIp={address => show({ ip: address })}
-                    />
-                  ))}
-                </ul>
+                <table className="visits-access">
+                  <thead>
+                    <tr>
+                      <th scope="col">Data</th>
+                      <th scope="col">Ora</th>
+                      <th scope="col">IP</th>
+                      <th scope="col">Locația</th>
+                      <th scope="col">Sursa</th>
+                      <th scope="col">Dispozitiv</th>
+                      <th scope="col">Pagini și pași</th>
+                      <th scope="col">Comanda</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.sessions.map(session => (
+                      <AccessRow
+                        key={session.id}
+                        session={session}
+                        titles={stats.titles}
+                        until={stats.until}
+                        onIp={address => show({ ip: address })}
+                      />
+                    ))}
+                  </tbody>
+                </table>
               ) : (
-                <p className="shop-admin-empty">Nicio vizită în această perioadă.</p>
+                <p className="shop-admin-empty">Nicio accesare în această perioadă.</p>
               )}
               {stats.hasMore && (
                 <button type="button" className="secondary-button visits-more" disabled={more} onClick={loadMore}>
-                  {more ? 'Se încarcă…' : 'Vizite mai vechi'}
+                  {more ? 'Se încarcă…' : 'Accesări mai vechi'}
                 </button>
               )}
             </section>

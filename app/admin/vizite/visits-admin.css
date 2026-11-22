@@ -259,24 +259,90 @@
   opacity: 0.55;
 }
 
-/* Recent visits */
+/* Accesări: one visit per row */
 .visits-sessions {
   margin-bottom: 2rem;
 }
-.visits-sessions .shop-admin-orders {
-  gap: 0.6rem;
+.visits-access {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-collapse: collapse;
+  background: var(--card);
+  font-size: 0.875rem;
+  line-height: 1.45;
 }
-.shop-admin-card.visits-session {
-  padding: 0.8rem 1.1rem;
+.visits-access th,
+.visits-access td {
+  padding: 0.6rem 0.45rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
 }
-.visits-session-top {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem 1rem;
-}
-.visits-session-top time {
+.visits-access thead th {
+  color: var(--text-muted);
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.visits-access tbody th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.visits-access .visits-hour {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.visits-access td small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.visits-access td[data-label='IP'] {
+  min-width: 7.75rem;
+  max-width: 10rem;
+}
+.visits-access .visits-ip {
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.visits-access td[data-label='Dispozitiv'] {
+  min-width: 7rem;
+}
+.visits-steps {
+  min-width: 9.5rem;
+}
+.visits-steps summary {
+  cursor: pointer;
+  color: var(--blue);
+  white-space: nowrap;
+}
+.visits-orders {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.visits-order-line {
+  white-space: nowrap;
+}
+.visits-orders a {
+  color: var(--blue);
+  font-weight: 600;
+}
+.visits-orders .shop-admin-badge {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.05rem 0.5rem;
+  font-size: 0.75rem;
+}
+.visits-row-order > :first-child {
+  box-shadow: inset 3px 0 0 var(--success-border);
+}
+.visits-none {
+  color: var(--text-muted);
 }
 .visits-ip {
   padding: 0;
@@ -293,20 +359,9 @@
   color: var(--text-muted);
   font-size: 0.875rem;
 }
-.visits-session-meta {
-  margin: 0.35rem 0 0.5rem !important;
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-.visits-session summary {
-  cursor: pointer;
-  color: var(--blue);
-  font-size: 0.9375rem;
-}
 .visits-pages {
   margin: 0.5rem 0 0;
   padding-left: 1.25rem;
-  font-size: 0.9375rem;
   line-height: 1.6;
 }
 .visits-pages time {
@@ -335,6 +390,60 @@
 .visits-ignore input {
   width: 1.1rem;
   height: 1.1rem;
+}
+
+/* Narrower screens: each visit becomes a card with labelled fields. */
+@media (max-width: 1080px) {
+  .visits-access,
+  .visits-access tbody {
+    display: block;
+    border: 0;
+    background: none;
+  }
+  .visits-access thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .visits-access tr {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.6rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+  .visits-access tbody th,
+  .visits-access td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+  .visits-access [data-label]::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 400;
+  }
+  .visits-access .visits-steps,
+  .visits-access td:last-child {
+    grid-column: 1 / -1;
+  }
+  .visits-row-order > :first-child {
+    box-shadow: none;
+  }
+  .visits-access tr.visits-row-order {
+    box-shadow: inset 3px 0 0 var(--success-border);
+  }
+  .visits-access td[data-label='IP'] {
+    min-width: 0;
+    max-width: none;
+  }
 }
 
 @media (max-width: 640px) {

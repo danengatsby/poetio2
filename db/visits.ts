@@ -1,5 +1,6 @@
 // Page views of the public site and the statistics shown in /admin/vizite.
 import type { Database } from './poems';
+import type { OrderStatus } from '../lib/shop';
 import {
   VISIT_IP_RETENTION_DAYS,
   VISIT_SESSION_GAP_MS,
@@ -7,6 +8,7 @@ import {
   describeBrowser,
   isBot,
   localBucket,
+  orderIdOfPath,
   referrerHost,
   visitPath,
   type PlaceFields,
@@ -101,6 +103,17 @@ export async function recordVisit(db: Database, input: VisitInput) {
 }
 
 export type VisitView = { at: number; path: string };
+/** An order whose page was opened during a visit. */
+export type VisitOrder = {
+  id: string;
+  number: number;
+  status: OrderStatus;
+  total_cents: number;
+  currency: string;
+  created_at: number;
+  /** Placed during this visit; false when the visitor came back later to look at it. */
+  placed: boolean;
+};
 export type VisitSession = PlaceFields & {
   id: string;
   started: number;
@@ -112,6 +125,7 @@ export type VisitSession = PlaceFields & {
   referrer: string;
   language: string;
   views: VisitView[];
+  orders: VisitOrder[];
 };
 export type VisitBucket = { key: string; visitors: number; visits: number; views: number };
 export type VisitStats = {
@@ -244,6 +258,7 @@ export async function visitStats(
         referrer: row.referrer as string,
         language: row.language as string,
         views: [],
+        orders: [],
       };
       bySession.set(id, session);
     }
@@ -251,7 +266,21 @@ export async function visitStats(
     session.views.push({ at: row.created_at as number, path: row.path as string });
   }
 
-  const listed = new Set([...pages.map(page => page.path), ...viewRows.map(row => row.path as string)]);
+  const listed = [...new Set([...pages.map(page => page.path), ...viewRows.map(row => row.path as string)])];
+  // After placing an order the buyer lands on its page, /comanda/<id>: that ties the order to the visit.
+  const orders = await ordersOfPages(db, listed);
+  for (const session of bySession.values()) {
+    for (const view of session.views) {
+      const id = orderIdOfPath(view.path);
+      const order = id ? orders.get(id) : undefined;
+      if (!order || session.orders.some(known => known.id === order.id)) continue;
+      // Allows a minute for a buyer whose checkout page view was not reported.
+      const placed = order.created_at >= session.started - 60_000 && order.created_at <= view.at;
+      session.orders.push({ ...order, placed });
+    }
+  }
+  const titles = await pageTitles(db, listed);
+  for (const [id, order] of orders) titles[`/comanda/${id}`] = `nr. ${order.number}`;
   return {
     days: options.days,
     ip,
@@ -270,8 +299,22 @@ export async function visitStats(
     devices,
     sessions: ids.map(id => bySession.get(id)!).filter(Boolean),
     hasMore: sessionPage.length > SESSIONS_PER_PAGE,
-    titles: await pageTitles(db, [...listed]),
+    titles,
   };
+}
+
+async function ordersOfPages(db: Database, paths: string[]) {
+  const ids = [...new Set(paths.map(orderIdOfPath).filter((id): id is string => id !== null))];
+  if (!ids.length) return new Map<string, Omit<VisitOrder, 'placed'>>();
+  const rows = (
+    await db
+      .prepare(
+        `SELECT id, number, status, total_cents, currency, created_at FROM orders WHERE id IN (${ids.map(() => '?').join(', ')})`,
+      )
+      .bind(...ids)
+      .all<Omit<VisitOrder, 'placed'>>()
+  ).results;
+  return new Map(rows.map(row => [row.id, row]));
 }
 
 const CONTENT = [
