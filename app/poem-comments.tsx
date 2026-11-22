@@ -1,10 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
-import type { PoemLanguage } from '@/lib/poem-types';
+import type { SiteLanguage } from '@/lib/poem-types';
 import { commentCountLabel, COMMENT_NAME_LIMIT, COMMENT_BODY_LIMIT, type ReaderComment } from '@/lib/poem-comments';
 import './poem-comments.css';
 import useCommentDraft from './use-comment-draft';
+import { pick } from '@/lib/site-language';
 
 const copy = {
   ro: {
@@ -41,6 +42,23 @@ const copy = {
     slow: 'You have posted too many comments. Wait a minute and try again.',
     success: 'Your comment has been received and will appear after administrator approval.',
   },
+  fr: {
+    title: 'Commentaires',
+    intro: 'Qu’est-ce que ce poème vous a évoqué\u00a0? Partagez quelques pensées.',
+    name: 'Votre nom',
+    body: 'Votre commentaire',
+    note: 'Votre nom et votre commentaire seront publics après validation par l’administrateur. Merci de rester respectueux.',
+    send: 'Envoyer le commentaire',
+    sending: 'Envoi…',
+    loading: 'Chargement des commentaires…',
+    empty: 'Soyez le premier à laisser un commentaire.',
+    more: 'Plus de commentaires',
+    retry: 'Réessayer',
+    loadError: 'Les commentaires n’ont pas pu être chargés pour le moment.',
+    sendError: 'Votre commentaire n’a pas pu être publié. Votre texte a été conservé\u00a0; réessayez.',
+    slow: 'Vous avez envoyé trop de commentaires. Attendez une minute et réessayez.',
+    success: 'Votre commentaire a bien été reçu et apparaîtra après validation par l’administrateur.',
+  },
 };
 
 export default function PoemComments({
@@ -49,7 +67,7 @@ export default function PoemComments({
   onCountChange,
 }: {
   poemId: string;
-  language: PoemLanguage;
+  language: SiteLanguage;
   onCountChange?: (poemId: string, total: number) => void;
 }) {
   const updateCount = useCallback((total: number) => onCountChange?.(poemId, total), [poemId, onCountChange]);
@@ -70,7 +88,7 @@ export function ReaderComments({
   onCountChange,
 }: {
   endpoint: string;
-  language: PoemLanguage;
+  language: SiteLanguage;
   intro?: string;
   onCountChange?: (total: number) => void;
 }) {
@@ -85,7 +103,7 @@ function CommentForm({
   onCountChange,
 }: {
   endpoint: string;
-  language: PoemLanguage;
+  language: SiteLanguage;
   intro?: string;
   onCountChange?: (total: number) => void;
 }) {
@@ -229,12 +247,18 @@ function CommentForm({
           <>
             <p className="comment-note" role="status">
               {recovery.available
-                ? language === 'ro'
-                  ? 'Schița se păstrează în această filă la schimbarea limbii și reîncărcare, cel mult 24 de ore.'
-                  : 'The draft survives language changes and reloads in this tab for up to 24 hours.'
-                : language === 'ro'
-                  ? 'Browserul nu permite păstrarea schiței. Copiază textul înainte de a părăsi pagina.'
-                  : 'This browser cannot save the draft. Copy your text before leaving this page.'}
+                ? pick(
+                    language,
+                    'Schița se păstrează în această filă la schimbarea limbii și reîncărcare, cel mult 24 de ore.',
+                    'The draft survives language changes and reloads in this tab for up to 24 hours.',
+                    'Le brouillon reste dans cet onglet malgré les changements de langue et les rechargements, pendant 24 heures au plus.',
+                  )
+                : pick(
+                    language,
+                    'Browserul nu permite păstrarea schiței. Copiază textul înainte de a părăsi pagina.',
+                    'This browser cannot save the draft. Copy your text before leaving this page.',
+                    'Ce navigateur ne peut pas enregistrer le brouillon. Copiez votre texte avant de quitter cette page.',
+                  )}
             </p>
             <button
               type="button"
@@ -243,9 +267,12 @@ function CommentForm({
               onClick={() => {
                 if (
                   window.confirm(
-                    language === 'ro'
-                      ? 'Ștergi numele și comentariul netrimis?'
-                      : 'Discard the name and unsent comment?',
+                    pick(
+                      language,
+                      'Ștergi numele și comentariul netrimis?',
+                      'Discard the name and unsent comment?',
+                      'Effacer le nom et le commentaire non envoyé\u00a0?',
+                    ),
                   )
                 ) {
                   recovery.clear();
@@ -254,7 +281,7 @@ function CommentForm({
                 }
               }}
             >
-              {language === 'ro' ? 'Abandonează schița' : 'Discard draft'}
+              {pick(language, 'Abandonează schița', 'Discard draft', 'Effacer le brouillon')}
             </button>
           </>
         )}

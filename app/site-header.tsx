@@ -1,8 +1,8 @@
 'use client';
 
 // Use document navigation for the shared VPS/Sites header.
-import type { PoemLanguage } from '@/lib/poem-types';
-import { siteCopy, withSiteLanguage } from '@/lib/site-language';
+import type { SiteLanguage } from '@/lib/poem-types';
+import { pick, siteCopy, withSiteLanguage } from '@/lib/site-language';
 import LanguageSelector from './language-selector';
 import ThemeToggle from './theme-toggle';
 import { useEffect, useRef } from 'react';
@@ -16,8 +16,8 @@ export default function SiteHeader({
   booksPage = false,
   poemPage = false,
 }: {
-  language: PoemLanguage;
-  onLanguageChange: (language: PoemLanguage) => void;
+  language: SiteLanguage;
+  onLanguageChange: (language: SiteLanguage) => void;
   authorPage?: boolean;
   videoPage?: boolean;
   booksPage?: boolean;
@@ -56,14 +56,14 @@ export default function SiteHeader({
           href={withSiteLanguage('/video', language)}
           aria-current={videoPage ? 'page' : undefined}
         >
-          Video
+          {pick(language, 'Video', 'Video', 'Vidéo')}
         </a>
         <a
           className="nav-link"
           href={withSiteLanguage('/carti', language)}
           aria-current={booksPage ? 'page' : undefined}
         >
-          {language === 'ro' ? 'Cărți' : 'Books'}
+          {pick(language, 'Cărți', 'Books', 'Livres')}
         </a>
         <a
           className="nav-link"
@@ -85,7 +85,7 @@ export default function SiteHeader({
           }
         }}
       >
-        <summary>{language === 'ro' ? 'Opțiuni' : 'Options'}</summary>
+        <summary>{pick(language, 'Opțiuni', 'Options', 'Options')}</summary>
         <div className="site-options-panel">
           <ThemeToggle language={language} />
           <a className="admin-entry" href="/admin">

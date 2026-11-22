@@ -1,5 +1,7 @@
 // Shop rules shared by the server and the pages: money, delivery dates, labels.
 import { BOOK_PRICE_CURRENCIES, normalizeBookPrice, type BookPriceCurrency } from './book-price';
+import { pick } from './site-language';
+import type { SiteLanguage } from './poem-types';
 
 export type PaymentMethod = 'cod' | 'transfer';
 export const ORDER_STATUSES = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const;
@@ -105,8 +107,8 @@ export function amountCents(amount: string) {
   return /^\d{1,6}\.\d{2}$/.test(amount) ? Math.round(Number(amount) * 100) : null;
 }
 
-export function formatMoney(cents: number, currency: string, language: 'ro' | 'en-US') {
-  return new Intl.NumberFormat(language === 'ro' ? 'ro-RO' : 'en-US', { style: 'currency', currency }).format(
+export function formatMoney(cents: number, currency: string, language: SiteLanguage) {
+  return new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR'), { style: 'currency', currency }).format(
     cents / 100,
   );
 }
@@ -129,9 +131,9 @@ function addBusinessDays(start: Date, days: number) {
 export function deliveryWindow(
   now: Date,
   settings: Pick<ShopSettings, 'delivery_min_days' | 'delivery_max_days'>,
-  language: 'ro' | 'en-US',
+  language: SiteLanguage,
 ) {
-  const format = new Intl.DateTimeFormat(language === 'ro' ? 'ro-RO' : 'en-US', {
+  const format = new Intl.DateTimeFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR'), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -142,10 +144,13 @@ export function deliveryWindow(
   return first === last ? first : `${first} – ${last}`;
 }
 
-export const paymentLabel = (method: PaymentMethod, language: 'ro' | 'en-US') =>
-  language === 'ro'
-    ? { cod: 'Ramburs (plătești la livrare)', transfer: 'Transfer bancar' }[method]
-    : { cod: 'Cash on delivery', transfer: 'Bank transfer' }[method];
+export const paymentLabel = (method: PaymentMethod, language: SiteLanguage) =>
+  pick(
+    language,
+    { cod: 'Ramburs (plătești la livrare)', transfer: 'Transfer bancar' },
+    { cod: 'Cash on delivery', transfer: 'Bank transfer' },
+    { cod: 'Paiement à la livraison', transfer: 'Virement bancaire' },
+  )[method];
 
 export const statusLabel: Record<OrderStatus, string> = {
   new: 'Nouă',
@@ -164,11 +169,11 @@ export const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 };
 
-export const BOOK_LANGUAGES: Record<string, { ro: string; en: string }> = {
-  ro: { ro: 'Română', en: 'Romanian' },
-  en: { ro: 'Engleză', en: 'English' },
-  fr: { ro: 'Franceză', en: 'French' },
-  de: { ro: 'Germană', en: 'German' },
-  it: { ro: 'Italiană', en: 'Italian' },
-  es: { ro: 'Spaniolă', en: 'Spanish' },
+export const BOOK_LANGUAGES: Record<string, { ro: string; en: string; fr: string }> = {
+  ro: { ro: 'Română', en: 'Romanian', fr: 'Roumain' },
+  en: { ro: 'Engleză', en: 'English', fr: 'Anglais' },
+  fr: { ro: 'Franceză', en: 'French', fr: 'Français' },
+  de: { ro: 'Germană', en: 'German', fr: 'Allemand' },
+  it: { ro: 'Italiană', en: 'Italian', fr: 'Italien' },
+  es: { ro: 'Spaniolă', en: 'Spanish', fr: 'Espagnol' },
 };

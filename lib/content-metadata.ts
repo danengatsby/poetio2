@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import type { SiteLanguage } from './poem-types';
+import { pick } from './site-language';
 export const siteOrigin = 'https://poetio.cloud';
 export const contentPath = (kind: 'poem' | 'video' | 'book', id: string) =>
   `${kind === 'poem' ? '/poeme' : kind === 'book' ? '/carti' : '/video'}/${encodeURIComponent(id)}`;
@@ -23,7 +25,7 @@ export function contentMetadata({
   description: string;
   path: string;
   image: string;
-  language: string;
+  language: SiteLanguage;
   updated: number;
   published: number;
   video?: string;
@@ -40,7 +42,7 @@ export function contentMetadata({
       description,
       url,
       siteName: 'Poetio',
-      locale: language === 'en-US' ? 'en_US' : 'ro_RO',
+      locale: pick(language, 'ro_RO', 'en_US', 'fr_FR'),
       images: [{ url: siteOrigin + image, alt: title }],
       ...(video
         ? { type: 'video.other' as const, videos: [{ url: siteOrigin + video }] }
@@ -69,7 +71,16 @@ export const siteIntro = {
     description:
       'A collection of poems about light, memory, and the small things we almost miss. Step inside and stay for a poem.',
   },
+  fr: {
+    title: 'Poetio — Un instant de répit',
+    description:
+      'Une collection de poèmes sur la lumière, les souvenirs et les petites choses que l’on remarque à peine. Entrez et restez le temps d’un poème.',
+  },
 } as const;
+
+/** The address of a page in a site language (Romanian has no parameter). */
+export const languagePath = (path: string, language: SiteLanguage) =>
+  path + pick(language, '', '?lang=en-US', '?lang=fr');
 
 /** Canonical address, language versions and sharing preview of a collection page (/, /carti, /video, /autor). */
 export function pageMetadata({
@@ -82,20 +93,23 @@ export function pageMetadata({
   title: string;
   description: string;
   path: string;
-  language: string;
+  language: SiteLanguage;
   image?: { url: string; width: number; height: number };
 }): Metadata {
-  const url = (lang: string) => siteOrigin + path + (lang === 'en-US' ? '?lang=en-US' : '');
+  const url = (lang: SiteLanguage) => siteOrigin + languagePath(path, lang);
   return {
     title,
     description,
-    alternates: { canonical: url(language), languages: { ro: url('ro'), 'en-US': url('en-US') } },
+    alternates: {
+      canonical: url(language),
+      languages: { ro: url('ro'), 'en-US': url('en-US'), fr: url('fr') },
+    },
     openGraph: {
       title,
       description,
       url: url(language),
       siteName: 'Poetio',
-      locale: language === 'en-US' ? 'en_US' : 'ro_RO',
+      locale: pick(language, 'ro_RO', 'en_US', 'fr_FR'),
       type: 'website',
       images: [{ ...image, url: siteOrigin + image.url, alt: title }],
     },

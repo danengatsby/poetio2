@@ -15,6 +15,10 @@ export const fixturePoems = [
     translated_theme: 'Test light',
     translated_content:
       'The meeting in the grove\nhas steps of leaf and water.\n\nIn the labyrinth of evening\nwe find each other without a map.',
+    fr_title: 'La rencontre au bosquet',
+    fr_theme: 'Lumière d’essai',
+    fr_content:
+      'La rencontre au bosquet\na des pas de feuille et d’eau.\n\nDans le labyrinthe du soir\nnous nous trouvons sans carte.',
   },
   {
     title: 'Seara la margine'.normalize('NFD'),

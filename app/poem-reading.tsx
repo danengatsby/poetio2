@@ -1,9 +1,10 @@
 'use client';
-import type { Poem, PoemLanguage } from '@/lib/poem-types';
+import type { Poem, SiteLanguage } from '@/lib/poem-types';
 import { poemVersion } from '@/lib/poem-languages';
 import PoemAudioPlayer from './poem-audio-player';
 import usePoemReadingPreferences from './use-poem-reading-preferences';
 import './poem-reading.css';
+import { pick } from '@/lib/site-language';
 
 export type ReadablePoem = Pick<
   Poem,
@@ -15,6 +16,9 @@ export type ReadablePoem = Pick<
   | 'translated_title'
   | 'translated_theme'
   | 'translated_content'
+  | 'fr_title'
+  | 'fr_theme'
+  | 'fr_content'
   | 'audio_ro_id'
   | 'audio_en_id'
 >;
@@ -26,34 +30,44 @@ export default function PoemReading({
   children,
 }: {
   poem: ReadablePoem;
-  language: PoemLanguage;
+  language: SiteLanguage;
   audioSrc?: string;
   mediaStatus?: boolean;
   children?: React.ReactNode;
 }) {
   const version = poemVersion(poem, language),
     text = version ?? poem;
-  const actualLanguage = version ? language : poem.source_language,
-    ro = language === 'ro';
+  const actualLanguage = version ? language : poem.source_language;
+  // There are Romanian and English recordings; the French page plays the original's.
+  const recording = actualLanguage === 'fr' ? poem.source_language : actualLanguage;
+  const audioField = recording === 'en-US' ? 'audio_en_id' : 'audio_ro_id';
   const { preferences, storageAvailable, setPreferences, resetPreferences } = usePoemReadingPreferences();
   return (
     <article className="poem-reading" lang={language}>
       <p className="eyebrow" lang={actualLanguage}>
-        {text.theme || (ro ? 'Poezie' : 'Poetry')}
+        {text.theme || pick(language, 'Poezie', 'Poetry', 'Poésie')}
       </p>
-      <h1 lang={actualLanguage}>{text.title || (ro ? 'Fără titlu' : 'Untitled')}</h1>
+      <h1 lang={actualLanguage}>{text.title || pick(language, 'Fără titlu', 'Untitled', 'Sans titre')}</h1>
       {poem.author && <p className="reader-author">{poem.author}</p>}
       {children}
       <details className="poem-reading-settings">
-        <summary>{ro ? 'Confort de lectură' : 'Reading comfort'}</summary>
+        <summary>{pick(language, 'Confort de lectură', 'Reading comfort', 'Confort de lecture')}</summary>
         <div className="poem-reading-controls">
-          <div role="group" aria-label={ro ? 'Dimensiunea versurilor' : 'Poem text size'}>
+          <div
+            role="group"
+            aria-label={pick(language, 'Dimensiunea versurilor', 'Poem text size', 'Taille du texte du poème')}
+          >
             <button
               type="button"
               className="secondary-button"
               disabled={preferences.textSize <= 1}
               onClick={() => setPreferences({ textSize: Math.max(1, preferences.textSize - 0.125) })}
-              aria-label={ro ? 'Micșorează versurile' : 'Decrease poem text size'}
+              aria-label={pick(
+                language,
+                'Micșorează versurile',
+                'Decrease poem text size',
+                'Réduire le texte du poème',
+              )}
             >
               A−
             </button>
@@ -63,49 +77,59 @@ export default function PoemReading({
               className="secondary-button"
               disabled={preferences.textSize >= 2}
               onClick={() => setPreferences({ textSize: Math.min(2, preferences.textSize + 0.125) })}
-              aria-label={ro ? 'Mărește versurile' : 'Increase poem text size'}
+              aria-label={pick(language, 'Mărește versurile', 'Increase poem text size', 'Agrandir le texte du poème')}
             >
               A+
             </button>
           </div>
           <label>
-            {ro ? 'Lățimea textului' : 'Text width'}
+            {pick(language, 'Lățimea textului', 'Text width', 'Largeur du texte')}
             <select
               value={preferences.width}
               onChange={event => setPreferences({ width: event.target.value as typeof preferences.width })}
             >
-              <option value="narrow">{ro ? 'Îngustă' : 'Narrow'}</option>
-              <option value="normal">{ro ? 'Medie' : 'Medium'}</option>
-              <option value="wide">{ro ? 'Largă' : 'Wide'}</option>
+              <option value="narrow">{pick(language, 'Îngustă', 'Narrow', 'Étroite')}</option>
+              <option value="normal">{pick(language, 'Medie', 'Medium', 'Moyenne')}</option>
+              <option value="wide">{pick(language, 'Largă', 'Wide', 'Large')}</option>
             </select>
           </label>
           <button type="button" className="secondary-button" onClick={resetPreferences}>
-            {ro ? 'Resetează lectura' : 'Reset reading settings'}
+            {pick(language, 'Resetează lectura', 'Reset reading settings', 'Réinitialiser les réglages de lecture')}
           </button>
         </div>
         <p className="field-help" role="status">
           {storageAvailable
-            ? ro
-              ? 'Preferințele poemelor se păstrează în acest browser.'
-              : 'Poem preferences are saved in this browser.'
-            : ro
-              ? 'Preferințele nu pot fi salvate. Reglajele funcționează până la reîncărcare.'
-              : 'Preferences cannot be saved. Controls still work until you reload.'}
+            ? pick(
+                language,
+                'Preferințele poemelor se păstrează în acest browser.',
+                'Poem preferences are saved in this browser.',
+                'Les préférences de lecture sont enregistrées dans ce navigateur.',
+              )
+            : pick(
+                language,
+                'Preferințele nu pot fi salvate. Reglajele funcționează până la reîncărcare.',
+                'Preferences cannot be saved. Controls still work until you reload.',
+                'Les préférences ne peuvent pas être enregistrées. Les réglages fonctionnent jusqu’au prochain rechargement.',
+              )}
         </p>
       </details>
       <PoemAudioPlayer
-        key={audioSrc || poem[actualLanguage === 'en-US' ? 'audio_en_id' : 'audio_ro_id']}
-        audioId={poem[actualLanguage === 'en-US' ? 'audio_en_id' : 'audio_ro_id']}
+        key={audioSrc || poem[audioField]}
+        audioId={poem[audioField]}
         src={audioSrc}
         title={text.title}
-        language={actualLanguage}
+        language={language}
+        recording={recording}
         showStatus={mediaStatus}
       />
       {!version && (
         <p className="original-language-note">
-          {ro
-            ? 'Traducerea nu este disponibilă; se afișează originalul.'
-            : 'Translation unavailable; showing the original.'}
+          {pick(
+            language,
+            'Traducerea nu este disponibilă; se afișează originalul.',
+            'Translation unavailable; showing the original.',
+            'Traduction indisponible\u00a0; voici l’original.',
+          )}
         </p>
       )}
       <div

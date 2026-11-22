@@ -1,14 +1,17 @@
-import type { PoemLanguage } from '@/lib/poem-types';
-import { withSiteLanguage } from '@/lib/site-language';
+import type { SiteLanguage } from '@/lib/poem-types';
+import { pick, withSiteLanguage } from '@/lib/site-language';
 
 /** The terms of sale and the privacy notice, in the footer of every public page. */
-export default function LegalLinks({ language }: { language: PoemLanguage }) {
-  const ro = language === 'ro';
+export default function LegalLinks({ language }: { language: SiteLanguage }) {
   return (
     <span className="legal-links">
-      <a href={withSiteLanguage('/termeni', language)}>{ro ? 'Termeni și condiții' : 'Terms and conditions'}</a>
+      <a href={withSiteLanguage('/termeni', language)}>
+        {pick(language, 'Termeni și condiții', 'Terms and conditions', 'Conditions générales')}
+      </a>
       {' · '}
-      <a href={withSiteLanguage('/confidentialitate', language)}>{ro ? 'Confidențialitate' : 'Privacy'}</a>
+      <a href={withSiteLanguage('/confidentialitate', language)}>
+        {pick(language, 'Confidențialitate', 'Privacy', 'Confidentialité')}
+      </a>
     </span>
   );
 }

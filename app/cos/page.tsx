@@ -1,12 +1,16 @@
 import type { Metadata } from 'next';
 import { requestLanguage } from '@/lib/request-language';
 import CartView from './cart-view';
+import { pick } from '@/lib/site-language';
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const ro = (await requestLanguage()) === 'ro';
-  return { title: ro ? 'Coșul de cumpărături — Poetio' : 'Shopping cart — Poetio', robots: { index: false } };
+  const language = await requestLanguage();
+  return {
+    title: pick(language, 'Coșul de cumpărături — Poetio', 'Shopping cart — Poetio', 'Panier — Poetio'),
+    robots: { index: false },
+  };
 }
 
 export default async function CartPage() {

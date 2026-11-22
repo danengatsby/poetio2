@@ -3,11 +3,11 @@
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import type { PoemLanguage } from '@/lib/poem-types';
+import type { SiteLanguage } from '@/lib/poem-types';
+import { pick } from '@/lib/site-language';
 
-export default function ThemeToggle({ language = 'ro' }: { language?: PoemLanguage }) {
+export default function ThemeToggle({ language = 'ro' }: { language?: SiteLanguage }) {
   const { resolvedTheme, setTheme } = useTheme();
-  const romanian = language === 'ro';
 
   return (
     <Button
@@ -15,22 +15,27 @@ export default function ThemeToggle({ language = 'ro' }: { language?: PoemLangua
       variant="outline"
       className="theme-toggle"
       lang={language}
-      title={romanian ? 'Schimbă tema: noapte / zi' : 'Switch theme: night / day'}
+      title={pick(
+        language,
+        'Schimbă tema: noapte / zi',
+        'Switch theme: night / day',
+        'Changer de thème\u00a0: nuit / jour',
+      )}
       onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
     >
       {/* CSS selects the label before hydration, matching the saved theme immediately. */}
       <span className="theme-toggle-night">
         <Moon aria-hidden="true" />
         <span>
-          <span className="sr-only">{romanian ? 'Activează tema de ' : 'Switch to '}</span>
-          {romanian ? 'Noapte' : 'Night'}
+          <span className="sr-only">{pick(language, 'Activează tema de ', 'Switch to ', 'Passer au thème ')}</span>
+          {pick(language, 'Noapte', 'Night', 'Nuit')}
         </span>
       </span>
       <span className="theme-toggle-day">
         <Sun aria-hidden="true" />
         <span>
-          <span className="sr-only">{romanian ? 'Activează tema de ' : 'Switch to '}</span>
-          {romanian ? 'Zi' : 'Day'}
+          <span className="sr-only">{pick(language, 'Activează tema de ', 'Switch to ', 'Passer au thème ')}</span>
+          {pick(language, 'Zi', 'Day', 'Jour')}
         </span>
       </span>
     </Button>

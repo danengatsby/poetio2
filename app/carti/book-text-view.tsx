@@ -1,20 +1,22 @@
 'use client';
+import type { SiteLanguage } from '@/lib/poem-types';
 import { useEffect, useRef, useState } from 'react';
 import { fetchBookText, fetchBookSearch, textMatch, type BookPageText, type BookSearchResult } from '@/lib/book-text';
 import { bookTextSize } from '@/lib/book-reading';
+import { pick } from '@/lib/site-language';
 
 type Props = {
   previewText?: BookPageText;
   fileId: string;
   page: number;
   pages: number;
-  ro: boolean;
+  language: SiteLanguage;
   size: number;
   onSizeChange: (size: number) => void;
   onGo: (page: number) => void;
   onRead: (page: number) => void;
 };
-export default function BookTextView({ previewText, fileId, page, ro, size, onSizeChange, onGo, onRead }: Props) {
+export default function BookTextView({ previewText, fileId, page, language, size, onSizeChange, onGo, onRead }: Props) {
   const [query, setQuery] = useState(''),
     [searched, setSearched] = useState('');
   const [result, setResult] = useState<BookSearchResult | null>(null);
@@ -81,13 +83,17 @@ export default function BookTextView({ previewText, fileId, page, ro, size, onSi
   }
   return (
     <div className="book-text-view">
-      <div className="book-text-tools" role="group" aria-label={ro ? 'Dimensiunea textului' : 'Text size'}>
+      <div
+        className="book-text-tools"
+        role="group"
+        aria-label={pick(language, 'Dimensiunea textului', 'Text size', 'Taille du texte')}
+      >
         <button
           className="secondary-button"
           type="button"
           onClick={() => onSizeChange(Math.max(bookTextSize.min, size - bookTextSize.step))}
           disabled={size <= bookTextSize.min}
-          aria-label={ro ? 'Micșorează textul' : 'Decrease text size'}
+          aria-label={pick(language, 'Micșorează textul', 'Decrease text size', 'Réduire le texte')}
         >
           A−
         </button>
@@ -97,7 +103,7 @@ export default function BookTextView({ previewText, fileId, page, ro, size, onSi
           type="button"
           onClick={() => onSizeChange(Math.min(bookTextSize.max, size + bookTextSize.step))}
           disabled={size >= bookTextSize.max}
-          aria-label={ro ? 'Mărește textul' : 'Increase text size'}
+          aria-label={pick(language, 'Mărește textul', 'Increase text size', 'Agrandir le texte')}
         >
           A+
         </button>
@@ -109,16 +115,17 @@ export default function BookTextView({ previewText, fileId, page, ro, size, onSi
           void search(query);
         }}
         role="search"
-        aria-label={ro ? 'Caută în carte' : 'Search this book'}
+        aria-label={pick(language, 'Caută în carte', 'Search this book', 'Rechercher dans ce livre')}
       >
         <label>
           {previewText
-            ? ro
-              ? 'Caută în pagina previzualizată'
-              : 'Search the previewed page'
-            : ro
-              ? 'Caută în textul cărții'
-              : 'Search the book text'}
+            ? pick(
+                language,
+                'Caută în pagina previzualizată',
+                'Search the previewed page',
+                'Rechercher dans la page affichée',
+              )
+            : pick(language, 'Caută în textul cărții', 'Search the book text', 'Rechercher dans le texte du livre')}
           <input
             type="search"
             minLength={2}
@@ -129,7 +136,7 @@ export default function BookTextView({ previewText, fileId, page, ro, size, onSi
           />
         </label>
         <button className="secondary-button" disabled={busy} type="submit">
-          {ro ? 'Caută' : 'Search'}
+          {pick(language, 'Caută', 'Search', 'Rechercher')}
         </button>
         {busy && (
           <button
@@ -140,19 +147,22 @@ export default function BookTextView({ previewText, fileId, page, ro, size, onSi
               setBusy(false);
             }}
           >
-            {ro ? 'Oprește căutarea' : 'Stop searching'}
+            {pick(language, 'Oprește căutarea', 'Stop searching', 'Arrêter la recherche')}
           </button>
         )}
       </form>
       {searchFailed && (
         <div role="alert">
           <p>
-            {ro
-              ? 'Căutarea nu poate fi încărcată momentan. Textul paginii rămâne disponibil.'
-              : 'Search could not be loaded. You can still read the current page.'}
+            {pick(
+              language,
+              'Căutarea nu poate fi încărcată momentan. Textul paginii rămâne disponibil.',
+              'Search could not be loaded. You can still read the current page.',
+              'La recherche n’a pas pu être chargée. Vous pouvez toujours lire la page actuelle.',
+            )}
           </p>
           <button type="button" className="secondary-button" onClick={() => void search(searched)}>
-            {ro ? 'Reîncearcă' : 'Try again'}
+            {pick(language, 'Reîncearcă', 'Try again', 'Réessayer')}
           </button>
         </div>
       )}
@@ -160,27 +170,44 @@ export default function BookTextView({ previewText, fileId, page, ro, size, onSi
         <div className="book-text-results">
           <p role="status">
             {result.status === 'preparing'
-              ? ro
-                ? `Se pregătește căutarea: ${result.scanned} din ${result.pages} pagini. ${result.total} pagini găsite până acum.`
-                : `Preparing search: ${result.scanned} of ${result.pages} pages. ${result.total} matching pages so far.`
+              ? pick(
+                  language,
+                  `Se pregătește căutarea: ${result.scanned} din ${result.pages} pagini. ${result.total} pagini găsite până acum.`,
+                  `Preparing search: ${result.scanned} of ${result.pages} pages. ${result.total} matching pages so far.`,
+                  `Préparation de la recherche\u00a0: ${result.scanned} pages sur ${result.pages}. ${result.total} pages correspondantes pour l’instant.`,
+                )
               : result.status === 'error'
-                ? ro
-                  ? 'Pregătirea căutării s-a întrerupt. Rezultatele sunt incomplete.'
-                  : 'Search preparation stopped. Results are incomplete.'
-                : ro
-                  ? `${result.total} pagini găsite.`
-                  : `${result.total} matching pages.`}
+                ? pick(
+                    language,
+                    'Pregătirea căutării s-a întrerupt. Rezultatele sunt incomplete.',
+                    'Search preparation stopped. Results are incomplete.',
+                    'Préparation de la recherche interrompue. Les résultats sont incomplets.',
+                  )
+                : pick(
+                    language,
+                    `${result.total} pagini găsite.`,
+                    `${result.total} matching pages.`,
+                    `${result.total} pages correspondantes.`,
+                  )}
           </p>
           {result.unavailable > 0 && (
             <p>
-              {ro
-                ? `Text indisponibil pentru ${result.unavailable} pagini; rezultatele sunt incomplete.`
-                : `Text unavailable for ${result.unavailable} pages; results are incomplete.`}
+              {pick(
+                language,
+                `Text indisponibil pentru ${result.unavailable} pagini; rezultatele sunt incomplete.`,
+                `Text unavailable for ${result.unavailable} pages; results are incomplete.`,
+                `Texte indisponible pour ${result.unavailable} pages\u00a0; les résultats sont incomplets.`,
+              )}
             </p>
           )}
           {!busy && (result.unavailable > 0 || result.status === 'error') && (
             <button type="button" className="secondary-button" onClick={() => void search(searched, 0, true)}>
-              {ro ? 'Reîncearcă paginile indisponibile' : 'Retry unavailable pages'}
+              {pick(
+                language,
+                'Reîncearcă paginile indisponibile',
+                'Retry unavailable pages',
+                'Réessayer les pages indisponibles',
+              )}
             </button>
           )}
           <ol>
@@ -196,7 +223,7 @@ export default function BookTextView({ previewText, fileId, page, ro, size, onSi
                   }}
                 >
                   <strong>
-                    {ro ? 'Pagina' : 'Page'} {item.page}
+                    {pick(language, 'Pagina', 'Page', 'Page')} {item.page}
                   </strong>{' '}
                   — {item.excerpt}
                 </button>
@@ -204,14 +231,14 @@ export default function BookTextView({ previewText, fileId, page, ro, size, onSi
             ))}
           </ol>
           {(result.offset > 0 || result.hasMore) && (
-            <nav aria-label={ro ? 'Paginile rezultatelor' : 'Search result pages'}>
+            <nav aria-label={pick(language, 'Paginile rezultatelor', 'Search result pages', 'Pages de résultats')}>
               <button
                 type="button"
                 className="secondary-button"
                 disabled={busy || result.offset === 0}
                 onClick={() => void search(searched, Math.max(0, result.offset - 20))}
               >
-                {ro ? 'Anterioarele' : 'Previous results'}
+                {pick(language, 'Anterioarele', 'Previous results', 'Résultats précédents')}
               </button>
               <button
                 type="button"
@@ -219,20 +246,20 @@ export default function BookTextView({ previewText, fileId, page, ro, size, onSi
                 disabled={busy || !result.hasMore}
                 onClick={() => void search(searched, result.offset + 20)}
               >
-                {ro ? 'Următoarele' : 'Next results'}
+                {pick(language, 'Următoarele', 'Next results', 'Résultats suivants')}
               </button>
             </nav>
           )}
         </div>
       )}
       {previewText?.page === page ? (
-        <TextPageContent data={previewText} ro={ro} size={size} query={searched} />
+        <TextPageContent data={previewText} language={language} size={size} query={searched} />
       ) : (
         <TextPage
           key={`${fileId}:${page}`}
           fileId={fileId}
           page={page}
-          ro={ro}
+          language={language}
           size={size}
           query={searched}
           onRead={onRead}
@@ -251,7 +278,7 @@ export default function BookTextView({ previewText, fileId, page, ro, size, onSi
 function TextPage({
   fileId,
   page,
-  ro,
+  language,
   size,
   query,
   onRead,
@@ -259,7 +286,7 @@ function TextPage({
 }: {
   fileId: string;
   page: number;
-  ro: boolean;
+  language: SiteLanguage;
   size: number;
   query: string;
   onRead: (page: number) => void;
@@ -292,9 +319,12 @@ function TextPage({
     return (
       <div role="alert">
         <p>
-          {ro
-            ? 'Textul nu poate fi încărcat momentan. Reîncearcă sau consultă pagina originală.'
-            : 'Text could not be loaded. Try again or use the original page.'}
+          {pick(
+            language,
+            'Textul nu poate fi încărcat momentan. Reîncearcă sau consultă pagina originală.',
+            'Text could not be loaded. Try again or use the original page.',
+            'Le texte n’a pas pu être chargé. Réessayez ou utilisez la page originale.',
+          )}
         </p>
         <button
           className="secondary-button"
@@ -304,44 +334,64 @@ function TextPage({
             setRetry(value => value + 1);
           }}
         >
-          {ro ? 'Reîncearcă textul' : 'Retry text'}
+          {pick(language, 'Reîncearcă textul', 'Retry text', 'Recharger le texte')}
         </button>
       </div>
     );
   if (!data)
     return (
       <p role="status">
-        {ro
-          ? 'Se pregătește textul paginii… Pentru scanări poate dura mai mult.'
-          : 'Preparing page text… Scanned pages may take longer.'}
+        {pick(
+          language,
+          'Se pregătește textul paginii… Pentru scanări poate dura mai mult.',
+          'Preparing page text… Scanned pages may take longer.',
+          'Préparation du texte de la page… Les pages numérisées peuvent prendre plus de temps.',
+        )}
       </p>
     );
-  return <TextPageContent data={data} ro={ro} size={size} query={query} />;
+  return <TextPageContent data={data} language={language} size={size} query={query} />;
 }
-function TextPageContent({ data, ro, size, query }: { data: BookPageText; ro: boolean; size: number; query: string }) {
+function TextPageContent({
+  data,
+  language,
+  size,
+  query,
+}: {
+  data: BookPageText;
+  language: SiteLanguage;
+  size: number;
+  query: string;
+}) {
   const page = data.page;
   const match = textMatch(data.text, query);
   return (
     <article className="book-text-page" aria-labelledby="book-text-heading">
       <h3 id="book-text-heading" tabIndex={-1}>
-        {ro ? 'Pagina' : 'Page'} {page}
+        {pick(language, 'Pagina', 'Page', 'Page')} {page}
       </h3>
       <p className="book-reader-note">
         {data.reviewed
-          ? ro
-            ? 'Text verificat de administrator.'
-            : 'Text reviewed by the administrator.'
+          ? pick(
+              language,
+              'Text verificat de administrator.',
+              'Text reviewed by the administrator.',
+              'Texte vérifié par l’administrateur.',
+            )
           : data.source === 'edited'
-            ? ro
-              ? 'Transcriere neverificată.'
-              : 'Unreviewed transcription.'
+            ? pick(language, 'Transcriere neverificată.', 'Unreviewed transcription.', 'Transcription non vérifiée.')
             : data.source === 'ocr'
-              ? ro
-                ? 'Text recunoscut automat din imagine, neverificat. Pot exista greșeli sau omisiuni.'
-                : 'Unreviewed text recognized from the image. Errors or omissions may remain.'
-              : ro
-                ? 'Text extras automat, neverificat. Ordinea de lectură poate necesita corectare.'
-                : 'Unreviewed extracted text. Reading order may need correction.'}
+              ? pick(
+                  language,
+                  'Text recunoscut automat din imagine, neverificat. Pot exista greșeli sau omisiuni.',
+                  'Unreviewed text recognized from the image. Errors or omissions may remain.',
+                  'Texte non vérifié, reconnu à partir de l’image. Il peut contenir des erreurs ou des omissions.',
+                )
+              : pick(
+                  language,
+                  'Text extras automat, neverificat. Ordinea de lectură poate necesita corectare.',
+                  'Unreviewed extracted text. Reading order may need correction.',
+                  'Texte extrait non vérifié. L’ordre de lecture peut nécessiter une correction.',
+                )}
       </p>
       {data.text ? (
         <div className="book-readable-text" lang={data.language} dir="auto" style={{ fontSize: `${size}rem` }}>
@@ -357,9 +407,12 @@ function TextPageContent({ data, ro, size, query }: { data: BookPageText; ro: bo
         </div>
       ) : (
         <p>
-          {ro
-            ? 'Nu s-a putut recunoaște text pe această pagină. Consultă originalul; pagina poate necesita transcriere sau descriere manuală.'
-            : 'No text could be recognized on this page. Use the original; a manual transcription or description may be needed.'}
+          {pick(
+            language,
+            'Nu s-a putut recunoaște text pe această pagină. Consultă originalul; pagina poate necesita transcriere sau descriere manuală.',
+            'No text could be recognized on this page. Use the original; a manual transcription or description may be needed.',
+            'Aucun texte n’a pu être reconnu sur cette page. Utilisez l’original\u00a0; une transcription ou une description manuelle peut être nécessaire.',
+          )}
         </p>
       )}
     </article>

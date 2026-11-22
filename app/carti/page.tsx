@@ -7,13 +7,18 @@ import { pageMetadata } from '@/lib/content-metadata';
 import { requestLanguage } from '@/lib/request-language';
 import { getChatGPTUser } from '../chatgpt-auth';
 import BooksView from './books-view';
+import { pick } from '@/lib/site-language';
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const language = await requestLanguage();
-  const ro = language === 'ro';
   return pageMetadata({
-    title: ro ? 'Cărți — Poetio' : 'Books — Poetio',
-    description: ro ? 'Colecția de cărți Poetio.' : 'The Poetio book collection.',
+    title: pick(language, 'Cărți — Poetio', 'Books — Poetio', 'Livres — Poetio'),
+    description: pick(
+      language,
+      'Colecția de cărți Poetio.',
+      'The Poetio book collection.',
+      'La collection de livres Poetio.',
+    ),
     path: '/carti',
     language,
   });

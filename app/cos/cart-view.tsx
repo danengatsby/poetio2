@@ -1,15 +1,14 @@
 'use client';
-import type { PoemLanguage } from '@/lib/poem-types';
+import type { SiteLanguage } from '@/lib/poem-types';
 import { MAX_ITEM_QUANTITY } from '@/lib/shop';
 import { cartCount, clearCart, useCart, writeCart } from '@/lib/cart';
-import { withSiteLanguage } from '@/lib/site-language';
+import { pick, withSiteLanguage } from '@/lib/site-language';
 import ShopFrame, { useShopLanguage } from '../shop-frame';
 import { ShopLine, ShopTotals } from '../shop-lines';
 import { useInBrowser, useQuote } from '../use-quote';
 
-export default function CartView({ initialLanguage }: { initialLanguage: PoemLanguage }) {
+export default function CartView({ initialLanguage }: { initialLanguage: SiteLanguage }) {
   const [language, changeLanguage] = useShopLanguage(initialLanguage);
-  const ro = language === 'ro';
   const items = useCart();
   const inBrowser = useInBrowser();
   const state = useQuote(items);
@@ -23,13 +22,13 @@ export default function CartView({ initialLanguage }: { initialLanguage: PoemLan
   }
 
   let content;
-  if (!inBrowser) content = <p>{ro ? 'Se încarcă coșul…' : 'Loading your cart…'}</p>;
+  if (!inBrowser) content = <p>{pick(language, 'Se încarcă coșul…', 'Loading your cart…', 'Chargement du panier…')}</p>;
   else if (!items.length)
     content = (
       <div className="shop-empty shop-panel">
-        <p>{ro ? 'Coșul tău este gol.' : 'Your cart is empty.'}</p>
+        <p>{pick(language, 'Coșul tău este gol.', 'Your cart is empty.', 'Votre panier est vide.')}</p>
         <a className="shop-button" href={withSiteLanguage('/carti', language)}>
-          {ro ? 'Vezi cărțile' : 'Browse the books'}
+          {pick(language, 'Vezi cărțile', 'Browse the books', 'Voir les livres')}
         </a>
       </div>
     );
@@ -40,16 +39,17 @@ export default function CartView({ initialLanguage }: { initialLanguage: PoemLan
           {state.message}
         </p>
         <button type="button" className="shop-link-button" onClick={clearCart}>
-          {ro ? 'Golește coșul' : 'Empty the cart'}
+          {pick(language, 'Golește coșul', 'Empty the cart', 'Vider le panier')}
         </button>
       </div>
     );
-  else if (state.status === 'loading') content = <p>{ro ? 'Se verifică prețurile…' : 'Checking prices…'}</p>;
+  else if (state.status === 'loading')
+    content = <p>{pick(language, 'Se verifică prețurile…', 'Checking prices…', 'Vérification des prix…')}</p>;
   else {
     const { quote, shop } = state;
     content = (
       <div className="shop-layout">
-        <section aria-label={ro ? 'Produse' : 'Items'}>
+        <section aria-label={pick(language, 'Produse', 'Items', 'Articles')}>
           <ul className="shop-lines">
             {quote.lines.map(line => {
               const index = items.findIndex(item => item.book_id === line.book_id && item.cover === line.cover);
@@ -61,7 +61,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: PoemLan
                 <ShopLine key={`${line.book_id}:${line.cover}`} line={line} language={language}>
                   <div className="shop-line-actions">
                     <label>
-                      {ro ? 'Cantitate: ' : 'Quantity: '}
+                      {pick(language, 'Cantitate: ', 'Quantity: ', 'Quantité\u00a0: ')}
                       <select
                         value={items[index]?.quantity ?? line.quantity}
                         onChange={event => setQuantity(index, Number(event.target.value))}
@@ -74,7 +74,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: PoemLan
                       </select>
                     </label>
                     <button type="button" className="shop-link-button" onClick={() => remove(index)}>
-                      {ro ? 'Șterge' : 'Delete'}
+                      {pick(language, 'Șterge', 'Delete', 'Supprimer')}
                       <span className="sr-only">: {line.title}</span>
                     </button>
                   </div>
@@ -83,18 +83,25 @@ export default function CartView({ initialLanguage }: { initialLanguage: PoemLan
             })}
           </ul>
         </section>
-        <aside className="shop-panel shop-summary" aria-label={ro ? 'Sumar' : 'Summary'}>
+        <aside className="shop-panel shop-summary" aria-label={pick(language, 'Sumar', 'Summary', 'Récapitulatif')}>
           <ShopTotals quote={quote} language={language} />
           {!shop.ready && (
-            <p className="shop-alert">{ro ? 'Comenzile online se deschid în curând.' : 'Online orders open soon.'}</p>
+            <p className="shop-alert">
+              {pick(
+                language,
+                'Comenzile online se deschid în curând.',
+                'Online orders open soon.',
+                'Les commandes en ligne ouvrent bientôt.',
+              )}
+            </p>
           )}
           {quote.ok ? (
             <a className="shop-button" href={withSiteLanguage('/comanda', language)}>
-              {ro ? 'Finalizează comanda' : 'Proceed to checkout'}
+              {pick(language, 'Finalizează comanda', 'Proceed to checkout', 'Passer la commande')}
             </a>
           ) : (
             <button type="button" className="shop-button" disabled>
-              {ro ? 'Finalizează comanda' : 'Proceed to checkout'}
+              {pick(language, 'Finalizează comanda', 'Proceed to checkout', 'Passer la commande')}
             </button>
           )}
         </aside>
@@ -107,10 +114,10 @@ export default function CartView({ initialLanguage }: { initialLanguage: PoemLan
       language={language}
       onLanguageChange={changeLanguage}
       cartCurrent
-      back={{ href: withSiteLanguage('/carti', language), label: ro ? 'Cărți' : 'Books' }}
+      back={{ href: withSiteLanguage('/carti', language), label: pick(language, 'Cărți', 'Books', 'Livres') }}
     >
       <h1 className="shop-title">
-        {ro ? 'Coșul de cumpărături' : 'Shopping cart'}
+        {pick(language, 'Coșul de cumpărături', 'Shopping cart', 'Panier')}
         {inBrowser && count > 0 && ` (${count})`}
       </h1>
       {content}

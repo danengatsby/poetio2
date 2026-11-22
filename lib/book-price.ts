@@ -1,4 +1,6 @@
 // A book's optional price per cover, stored as "<amount> <currency>", e.g. "10.00 USD".
+import { pick } from './site-language';
+import type { SiteLanguage } from './poem-types';
 export const BOOK_PRICE_CURRENCIES = ['RON', 'EUR', 'USD', 'GBP'] as const;
 export type BookPriceCurrency = (typeof BOOK_PRICE_CURRENCIES)[number];
 
@@ -30,21 +32,21 @@ export function bookPriceParts(value: string | null | undefined) {
 }
 
 /** "10,00 USD" in Romanian, "$10.00" in English; null without a valid price. */
-export function formatBookPrice(value: string | null | undefined, language: 'ro' | 'en-US') {
+export function formatBookPrice(value: string | null | undefined, language: SiteLanguage) {
   const stored = normalizeBookPrice(value);
   if (!stored) return null;
   const [amount, currency] = stored.split(' ');
-  return new Intl.NumberFormat(language === 'ro' ? 'ro-RO' : 'en-US', { style: 'currency', currency }).format(
+  return new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR'), { style: 'currency', currency }).format(
     Number(amount),
   );
 }
 
 /** The formatted price split for display with raised cents: "$", "10", "00", "". */
-export function bookPriceDisplay(value: string | null | undefined, language: 'ro' | 'en-US') {
+export function bookPriceDisplay(value: string | null | undefined, language: SiteLanguage) {
   const stored = normalizeBookPrice(value);
   if (!stored) return null;
   const [amount, currency] = stored.split(' ');
-  const parts = new Intl.NumberFormat(language === 'ro' ? 'ro-RO' : 'en-US', {
+  const parts = new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR'), {
     style: 'currency',
     currency,
   }).formatToParts(Number(amount));

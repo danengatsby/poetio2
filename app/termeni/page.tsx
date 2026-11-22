@@ -4,12 +4,20 @@ import { getShopSettings } from '@/db/shop';
 import { publicShop } from '@/lib/shop';
 import { requestLanguage } from '@/lib/request-language';
 import TermsView from './terms-view';
+import { pick } from '@/lib/site-language';
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const ro = (await requestLanguage()) === 'ro';
-  return { title: ro ? 'Termeni și condiții — Poetio' : 'Terms and conditions — Poetio' };
+  const language = await requestLanguage();
+  return {
+    title: pick(
+      language,
+      'Termeni și condiții — Poetio',
+      'Terms and conditions — Poetio',
+      'Conditions générales de vente — Poetio',
+    ),
+  };
 }
 
 export default async function TermsPage() {

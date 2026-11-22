@@ -1,20 +1,33 @@
-import type { PoemLanguage } from './poem-types';
+import type { SiteLanguage } from './poem-types';
 
 export const SITE_LANGUAGE_COOKIE = 'poetio-language';
 export const SITE_LANGUAGE_HEADER = 'x-poetio-language';
+export const SITE_LANGUAGES: SiteLanguage[] = ['ro', 'en-US', 'fr'];
 
-export function siteLanguage(value?: string | null, preference?: string | null): PoemLanguage {
-  if (value === 'ro' || value === 'en-US') return value;
-  return preference === 'en-US' ? 'en-US' : 'ro';
+const isSiteLanguage = (value: unknown): value is SiteLanguage => value === 'ro' || value === 'en-US' || value === 'fr';
+
+export function siteLanguage(value?: string | null, preference?: string | null): SiteLanguage {
+  if (isSiteLanguage(value)) return value;
+  return isSiteLanguage(preference) ? preference : 'ro';
 }
 
-export function withSiteLanguage(href: string, language: PoemLanguage) {
+/** The Romanian, American English or French text, for the site's language. */
+export function pick<T>(language: SiteLanguage, ro: T, en: T, fr: T): T {
+  return language === 'ro' ? ro : language === 'fr' ? fr : en;
+}
+
+/** Locale for dates and numbers. */
+export const siteLocale = (language: SiteLanguage) => pick(language, 'ro', 'en-US', 'fr-FR');
+/** Open Graph locale. */
+export const ogLocale = (language: SiteLanguage) => pick(language, 'ro_RO', 'en_US', 'fr_FR');
+
+export function withSiteLanguage(href: string, language: SiteLanguage) {
   const url = new URL(href, 'https://poetio.invalid');
   url.searchParams.set('lang', language);
   return url.pathname + url.search + url.hash;
 }
 
-export function rememberSiteLanguage(language: PoemLanguage) {
+export function rememberSiteLanguage(language: SiteLanguage) {
   document.documentElement.lang = language;
   try {
     document.cookie = `${SITE_LANGUAGE_COOKIE}=${language}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
@@ -104,5 +117,42 @@ export const siteCopy = {
     count: (n: number) => `${n} ${n === 1 ? 'poem' : 'poems'}`,
     lineCount: (n: number) => `${n} ${n === 1 ? 'line' : 'lines'}`,
     readBy: (title: string, author: string) => `Read ${title} by ${author}`,
+  },
+  fr: {
+    skip: 'Aller aux poèmes',
+    home: 'Poetio — Accueil',
+    note: 'Une collection indépendante de poésie',
+    navigation: 'Navigation principale',
+    administration: 'Administration',
+    poems: 'Poèmes',
+    author: 'Auteur',
+    tagline: 'Des mots pour les instants suspendus',
+    edition: 'Une petite collection · N°\u00a001',
+    takeTime: 'Prenez votre temps',
+    collection: 'La collection',
+    slowly: 'Certaines choses se lisent lentement.',
+    poetry: 'Poésie',
+    empty: 'Le prochain poème attend encore d’être écrit.',
+    addFirst: 'Ajouter le premier poème',
+    closing: 'Laissez un peu de place',
+    closingFor: 'pour',
+    unwritten: 'ce qui reste à écrire.',
+    footer: 'Un instant de répit.',
+    back: 'Retour en haut',
+    close: 'Fermer le poème',
+    previous: '← Précédent',
+    next: 'Poème suivant →',
+    poemLanguage: 'Langue du poème',
+    originalRomanian: 'Original en roumain',
+    originalEnglish: 'Original en anglais',
+    missing: 'La version française n’a pas encore été ajoutée.',
+    readOriginal: 'Lire l’original',
+    addTranslation: 'Ajouter la version française dans l’administration',
+    unavailableTitle: 'Les poèmes reviendront.',
+    unavailable: 'La collection n’a pas pu être chargée. Réessayez dans un instant.',
+    retry: 'Réessayer',
+    count: (n: number) => `${n} ${n <= 1 ? 'poème' : 'poèmes'}`,
+    lineCount: (n: number) => `${n} vers`,
+    readBy: (title: string, author: string) => `Lire «\u00a0${title}\u00a0», de ${author}`,
   },
 };

@@ -17,6 +17,10 @@ export const poemFieldLabels = {
   audio_ro_id: 'Înregistrare RO',
   audio_en_id: 'Înregistrare EN',
   translation_provenance: 'Revizuirea traducerii',
+  fr_title: 'Titlul în franceză',
+  fr_theme: 'Tema în franceză',
+  fr_content: 'Textul în franceză',
+  fr_provenance: 'Revizuirea versiunii în franceză',
 } satisfies Record<keyof PoemInput, string>;
 export type PoemField = keyof typeof poemFieldLabels;
 

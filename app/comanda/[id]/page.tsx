@@ -5,13 +5,14 @@ import { getCustomerOrder, getShopSettings } from '@/db/shop';
 import { deliveryWindow, publicShop } from '@/lib/shop';
 import { requestLanguage } from '@/lib/request-language';
 import OrderView from './order-view';
+import { pick } from '@/lib/site-language';
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const ro = (await requestLanguage()) === 'ro';
+  const language = await requestLanguage();
   return {
-    title: ro ? 'Comanda ta — Poetio' : 'Your order — Poetio',
+    title: pick(language, 'Comanda ta — Poetio', 'Your order — Poetio', 'Votre commande — Poetio'),
     robots: { index: false, follow: false },
     // The link carries the order key; keep it out of other sites' logs.
     referrer: 'no-referrer',
@@ -34,7 +35,11 @@ export default async function OrderPage({ params, searchParams }: Props) {
       initialLanguage={await requestLanguage()}
       order={order}
       shop={publicShop(settings)}
-      delivery={{ ro: deliveryWindow(placed, settings, 'ro'), 'en-US': deliveryWindow(placed, settings, 'en-US') }}
+      delivery={{
+        ro: deliveryWindow(placed, settings, 'ro'),
+        'en-US': deliveryWindow(placed, settings, 'en-US'),
+        fr: deliveryWindow(placed, settings, 'fr'),
+      }}
     />
   );
 }

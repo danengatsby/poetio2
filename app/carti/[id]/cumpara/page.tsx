@@ -12,6 +12,7 @@ import { bookCovers, bookSalePath, saleCover, saleVariants } from '@/lib/book-sa
 import { withoutPurchaseLinks } from '@/lib/book-types';
 import { deliveryWindow, publicShop } from '@/lib/shop';
 import BookSale from '../../book-sale';
+import { pick } from '@/lib/site-language';
 export const dynamic = 'force-dynamic';
 type Props = {
   params: Promise<{ id: string }>;
@@ -47,13 +48,17 @@ const coverImage = (book: Awaited<ReturnType<typeof read>>['book'], cover: 1 | 2
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const { book, language, cover } = await read(props);
-  const ro = language === 'ro';
   return contentMetadata({
     title: book.title,
     author: book.author,
     description: excerpt(
       book.description,
-      ro ? `${book.title} — comandă cartea pe Poetio.` : `${book.title} — order the book on Poetio.`,
+      pick(
+        language,
+        `${book.title} — comandă cartea pe Poetio.`,
+        `${book.title} — order the book on Poetio.`,
+        `${book.title} — commandez le livre sur Poetio.`,
+      ),
     ),
     path: bookSalePath(book.id),
     image: coverImage(book, cover),
@@ -69,7 +74,11 @@ export default async function BookSalePage(props: Props) {
   const [settings, stock] = await Promise.all([getShopSettings(db), getBookShop(db, book.id)]);
   const shop = publicShop(settings);
   const now = new Date();
-  const delivery = { ro: deliveryWindow(now, settings, 'ro'), 'en-US': deliveryWindow(now, settings, 'en-US') };
+  const delivery = {
+    ro: deliveryWindow(now, settings, 'ro'),
+    'en-US': deliveryWindow(now, settings, 'en-US'),
+    fr: deliveryWindow(now, settings, 'fr'),
+  };
   const offers = shop.ready
     ? saleVariants(book).filter(variant => variant.price.endsWith(` ${settings.currency}`))
     : [];

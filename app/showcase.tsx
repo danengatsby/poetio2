@@ -2,8 +2,8 @@
 // GET navigation keeps filters in the URL and loads full poems only on their individual pages.
 import { contentPath } from '@/lib/content-metadata';
 import { collectionHref, POEM_PAGE_SIZE, type PoemCollection } from '@/lib/poem-collection';
-import type { PoemLanguage } from '@/lib/poem-types';
-import { rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
+import type { SiteLanguage } from '@/lib/poem-types';
+import { pick, rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
 import { commentCountLabel } from '@/lib/poem-comments';
 import SiteLogo from './site-logo';
 import PoemCover from './poem-cover';
@@ -16,11 +16,10 @@ const number = (n: number) => String(n).padStart(2, '0');
 export default function Showcase({ collection, canAdmin }: { collection: PoemCollection; canAdmin: boolean }) {
   const { poems, filters, page, pages, total } = collection;
   const language = filters.language,
-    ro = language === 'ro',
     copy = siteCopy[language];
   const filtered = Boolean(filters.q || filters.theme || filters.translation !== 'all');
   const reset = collectionHref({ ...filters, q: '', theme: '', translation: 'all' });
-  function changeLanguage(value: PoemLanguage) {
+  function changeLanguage(value: SiteLanguage) {
     rememberSiteLanguage(value);
     window.location.assign(collectionHref({ ...filters, language: value }, page));
   }
@@ -54,47 +53,55 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
             action="/#collection"
             method="get"
             role="search"
-            aria-label={ro ? 'Caută în colecție' : 'Search the collection'}
+            aria-label={pick(language, 'Caută în colecție', 'Search the collection', 'Rechercher dans la collection')}
           >
             <input type="hidden" name="lang" value={language} />
             <label>
-              {ro ? 'Caută în titlu și text' : 'Search titles and text'}
+              {pick(
+                language,
+                'Caută în titlu și text',
+                'Search titles and text',
+                'Rechercher dans les titres et les textes',
+              )}
               <input type="search" name="q" defaultValue={filters.q} maxLength={120} />
             </label>
             <label>
-              {ro ? 'Temă' : 'Theme'}
+              {pick(language, 'Temă', 'Theme', 'Thème')}
               <input
                 name="theme"
                 defaultValue={filters.theme}
                 maxLength={80}
-                placeholder={ro ? 'ex. natură' : 'e.g. nature'}
+                placeholder={pick(language, 'ex. natură', 'e.g. nature', 'ex. nature')}
               />
             </label>
             <label>
-              {ro ? 'Traducere' : 'Translation'}
+              {pick(language, 'Traducere', 'Translation', 'Traduction')}
               <select name="translation" defaultValue={filters.translation}>
-                <option value="all">{ro ? 'Toate poemele' : 'All poems'}</option>
-                <option value="with">{ro ? 'Cu traducere' : 'With a translation'}</option>
-                <option value="without">{ro ? 'Fără traducere' : 'Without a translation'}</option>
+                <option value="all">{pick(language, 'Toate poemele', 'All poems', 'Tous les poèmes')}</option>
+                <option value="with">{pick(language, 'Cu traducere', 'With a translation', 'Avec traduction')}</option>
+                <option value="without">
+                  {pick(language, 'Fără traducere', 'Without a translation', 'Sans traduction')}
+                </option>
               </select>
             </label>
             <button type="submit" className="primary-button">
-              {ro ? 'Caută' : 'Search'}
+              {pick(language, 'Caută', 'Search', 'Rechercher')}
             </button>
             {filtered && (
               <a className="collection-reset" href={reset}>
-                {ro ? 'Șterge filtrele' : 'Clear filters'}
+                {pick(language, 'Șterge filtrele', 'Clear filters', 'Effacer les filtres')}
               </a>
             )}
           </form>
           <p className="collection-results" role="status">
             {total
-              ? ro
-                ? `${(page - 1) * POEM_PAGE_SIZE + 1}–${(page - 1) * POEM_PAGE_SIZE + poems.length} din ${total} de poeme`
-                : `${(page - 1) * POEM_PAGE_SIZE + 1}–${(page - 1) * POEM_PAGE_SIZE + poems.length} of ${total} poems`
-              : ro
-                ? '0 poeme'
-                : '0 poems'}
+              ? pick(
+                  language,
+                  `${(page - 1) * POEM_PAGE_SIZE + 1}–${(page - 1) * POEM_PAGE_SIZE + poems.length} din ${total} de poeme`,
+                  `${(page - 1) * POEM_PAGE_SIZE + 1}–${(page - 1) * POEM_PAGE_SIZE + poems.length} of ${total} poems`,
+                  `${(page - 1) * POEM_PAGE_SIZE + 1}–${(page - 1) * POEM_PAGE_SIZE + poems.length} sur ${total} poèmes`,
+                )
+              : pick(language, '0 poeme', '0 poems', '0 poème')}
           </p>
           {poems.length ? (
             <div className="poem-grid">
@@ -136,9 +143,12 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
             <div className="collection-empty">
               <p>
                 {filtered
-                  ? ro
-                    ? 'Niciun poem nu corespunde filtrelor. Încearcă alte cuvinte sau șterge filtrele.'
-                    : 'No poems match these filters. Try other words or clear the filters.'
+                  ? pick(
+                      language,
+                      'Niciun poem nu corespunde filtrelor. Încearcă alte cuvinte sau șterge filtrele.',
+                      'No poems match these filters. Try other words or clear the filters.',
+                      'Aucun poème ne correspond à ces filtres. Essayez d’autres mots ou effacez les filtres.',
+                    )
                   : copy.empty}
               </p>
               {canAdmin && !filtered && (
@@ -149,16 +159,21 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
             </div>
           )}
           {pages > 1 && (
-            <nav className="collection-pagination" aria-label={ro ? 'Paginile colecției' : 'Collection pages'}>
+            <nav
+              className="collection-pagination"
+              aria-label={pick(language, 'Paginile colecției', 'Collection pages', 'Pages de la collection')}
+            >
               {page > 1 && (
                 <a className="secondary-button" rel="prev" href={collectionHref(filters, page - 1)}>
-                  {ro ? '← Pagina anterioară' : '← Previous page'}
+                  {pick(language, '← Pagina anterioară', '← Previous page', '← Page précédente')}
                 </a>
               )}
-              <span aria-current="page">{ro ? `Pagina ${page} din ${pages}` : `Page ${page} of ${pages}`}</span>
+              <span aria-current="page">
+                {pick(language, `Pagina ${page} din ${pages}`, `Page ${page} of ${pages}`, `Page ${page} sur ${pages}`)}
+              </span>
               {page < pages && (
                 <a className="secondary-button" rel="next" href={collectionHref(filters, page + 1)}>
-                  {ro ? 'Pagina următoare →' : 'Next page →'}
+                  {pick(language, 'Pagina următoare →', 'Next page →', 'Page suivante →')}
                 </a>
               )}
             </nav>

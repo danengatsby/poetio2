@@ -1,9 +1,9 @@
 'use client';
 // Document navigation also updates localized metadata.
-import type { Poem, PoemLanguage } from '@/lib/poem-types';
+import type { Poem, SiteLanguage } from '@/lib/poem-types';
 import { videoPosterPath, type Video } from '@/lib/video-types';
 import { contentPath } from '@/lib/content-metadata';
-import { rememberSiteLanguage, withSiteLanguage } from '@/lib/site-language';
+import { pick, rememberSiteLanguage, withSiteLanguage } from '@/lib/site-language';
 import SiteHeader from './site-header';
 import PoemReading from './poem-reading';
 import { ReaderComments } from './poem-comments';
@@ -21,19 +21,18 @@ export default function ContentDetail({
 }: {
   poem?: Poem;
   video?: Video;
-  language: PoemLanguage;
+  language: SiteLanguage;
   backHref?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [manualLink, setManualLink] = useState('');
-  const ro = language === 'ro',
-    item = poem ?? video!;
+  const item = poem ?? video!;
   const kind = poem ? 'poem' : 'video';
   const path = contentPath(kind, item.id);
   const collectionPath = poem
     ? (backHref ?? withSiteLanguage('/#collection', language))
     : withSiteLanguage('/video', language);
-  function changeLanguage(locale: PoemLanguage) {
+  function changeLanguage(locale: SiteLanguage) {
     rememberSiteLanguage(locale);
     const query = new URLSearchParams({ lang: locale });
     if (poem && backHref) query.set('returnTo', withSiteLanguage(backHref, locale));
@@ -53,12 +52,12 @@ export default function ContentDetail({
   const share = (
     <div className="content-share">
       <button type="button" className="secondary-button" onClick={() => void copy()}>
-        {ro ? 'Copiază linkul' : 'Copy link'}
+        {pick(language, 'Copiază linkul', 'Copy link', 'Copier le lien')}
       </button>
-      <span role="status">{copied ? (ro ? 'Link copiat.' : 'Link copied.') : ''}</span>
+      <span role="status">{copied ? pick(language, 'Link copiat.', 'Link copied.', 'Lien copié.') : ''}</span>
       {manualLink && (
         <label>
-          {ro ? 'Copiază manual linkul' : 'Copy the link manually'}
+          {pick(language, 'Copiază manual linkul', 'Copy the link manually', 'Copiez le lien manuellement')}
           <input readOnly type="url" value={manualLink} onFocus={event => event.currentTarget.select()} />
         </label>
       )}
@@ -67,12 +66,12 @@ export default function ContentDetail({
   return (
     <>
       <a className="skip-link" href="#main">
-        {ro ? 'Mergi la conținut' : 'Skip to content'}
+        {pick(language, 'Mergi la conținut', 'Skip to content', 'Aller au contenu')}
       </a>
       <SiteHeader language={language} onLanguageChange={changeLanguage} videoPage={!!video} poemPage={!!poem} />
       <main id="main" className="content-detail shell" lang={language}>
         <a className="content-back" href={collectionPath}>
-          ← {ro ? 'Înapoi la colecție' : 'Back to collection'}
+          ← {pick(language, 'Înapoi la colecție', 'Back to collection', 'Retour à la collection')}
         </a>
         {poem ? (
           <PoemReading poem={poem} language={language}>
@@ -91,7 +90,16 @@ export default function ContentDetail({
         <ReaderComments
           endpoint={`/api/${poem ? 'poems' : 'videos'}/${item.id}/comments`}
           language={language}
-          intro={video ? (ro ? 'Ce ți-a transmis acest video?' : 'What did this video bring to mind?') : undefined}
+          intro={
+            video
+              ? pick(
+                  language,
+                  'Ce ți-a transmis acest video?',
+                  'What did this video bring to mind?',
+                  'Qu’est-ce que cette vidéo vous a évoqué\u00a0?',
+                )
+              : undefined
+          }
         />
       </main>
       <footer className="site-footer shell">
@@ -99,8 +107,10 @@ export default function ContentDetail({
           Poetio✳
         </a>
         <p>
-          <a href={collectionPath}>{ro ? 'Înapoi la colecție' : 'Back to collection'}</a> ·{' '}
-          <LegalLinks language={language} />
+          <a href={collectionPath}>
+            {pick(language, 'Înapoi la colecție', 'Back to collection', 'Retour à la collection')}
+          </a>{' '}
+          · <LegalLinks language={language} />
         </p>
       </footer>
     </>

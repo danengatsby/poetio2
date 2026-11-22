@@ -11,6 +11,7 @@ mkdirSync(join(root, 'lib'));
 for (const name of [
   'comment-draft',
   'poem-comments',
+  'site-language',
   'book-text-recovery',
   'book-text',
   'poem-search',

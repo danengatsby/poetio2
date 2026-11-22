@@ -1,19 +1,18 @@
 'use client';
-import type { PoemLanguage } from '@/lib/poem-types';
-import { withSiteLanguage } from '@/lib/site-language';
+import type { SiteLanguage } from '@/lib/poem-types';
+import { pick, withSiteLanguage } from '@/lib/site-language';
 import { addressLine, type PublicShop } from '@/lib/shop';
 import { VISIT_IP_RETENTION_DAYS } from '@/lib/visits';
 import ShopFrame, { useShopLanguage } from '../shop-frame';
 
 // The privacy notice (GDPR art. 13). It describes what the site actually stores; keep it in step
 // with lib/visits.ts (retention), the nginx log rotation (14 days) and the backup retention.
-const UPDATED = { ro: '22 noiembrie 2026', en: '22 November 2026' };
+const UPDATED = { ro: '22 noiembrie 2026', en: '22 November 2026', fr: '22 novembre 2026' };
 const LOG_DAYS = 14;
 const BACKUP_DAYS = 30;
 
-export default function PrivacyView({ initialLanguage, shop }: { initialLanguage: PoemLanguage; shop: PublicShop }) {
+export default function PrivacyView({ initialLanguage, shop }: { initialLanguage: SiteLanguage; shop: PublicShop }) {
   const [language, changeLanguage] = useShopLanguage(initialLanguage);
-  const ro = language === 'ro';
   const controller = [shop.seller_name || 'Poetio', addressLine(shop.seller_address)].filter(Boolean).join(', ');
   const email = shop.contact_email ? <a href={`mailto:${shop.contact_email}`}>{shop.contact_email}</a> : null;
   const phone = shop.contact_phone || '';
@@ -27,8 +26,10 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
   return (
     <ShopFrame language={language} onLanguageChange={changeLanguage}>
       <article className="shop-document">
-        <h1 className="shop-title">{ro ? 'Nota de confidențialitate' : 'Privacy notice'}</h1>
-        {ro ? (
+        <h1 className="shop-title">
+          {pick(language, 'Nota de confidențialitate', 'Privacy notice', 'Politique de confidentialité')}
+        </h1>
+        {language === 'ro' ? (
           <>
             <p>
               Ce date personale prelucrează Poetio (poetio.cloud), de ce, cât timp le păstrăm și ce drepturi ai. Ultima
@@ -106,6 +107,92 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
             </p>
             <p>
               Condițiile de vânzare sunt în <a href={terms}>termeni și condiții</a>.
+            </p>
+          </>
+        ) : language === 'fr' ? (
+          <>
+            <p>
+              Quelles données personnelles Poetio (poetio.cloud) traite, pourquoi, combien de temps nous les conservons
+              et quels sont vos droits. Dernière mise à jour&nbsp;: {UPDATED.fr}.
+            </p>
+            <h2 id="operator">Responsable du traitement</h2>
+            <p>
+              Le responsable du traitement est <strong>{controller}</strong>.{email && <> Écrivez-nous à {email}</>}
+              {phone && (
+                <>
+                  {email ? ' ou appelez le ' : ' Appelez le '}
+                  {phone}
+                </>
+              )}
+              {(email || phone) && '.'}
+            </p>
+            <h2 id="date">Quelles données et pourquoi</h2>
+            <ul>
+              <li>
+                <strong>Commandes de livres.</strong> Vos nom, adresse de livraison, téléphone, e-mail et remarques,
+                pour livrer les livres, établir les documents de paiement et vous écrire au sujet de la commande. La
+                base légale est le contrat (art. 6, paragraphe 1, point b du RGPD) et nos obligations comptables (point
+                c). Nous les conservons le temps nécessaire à la commande, puis aussi longtemps que l’exige la
+                législation comptable et fiscale.
+              </li>
+              <li>
+                <strong>Commentaires.</strong> Le nom que vous saisissez et le texte du commentaire. Ils ne deviennent
+                publics qu’après validation. La base légale est votre consentement (point a)&nbsp;; nous les supprimons
+                dès que vous le demandez.
+              </li>
+              <li id="vizite">
+                <strong>Statistiques de visite.</strong> Pour chaque page ouverte, nous conservons l’adresse IP, la
+                page, l’heure, le navigateur et la localité approximative déduite de l’IP, afin de savoir ce qui est lu
+                et de protéger le site contre les abus. La base légale est notre intérêt légitime (point f). Aucun
+                cookie n’est utilisé pour cela. L’adresse IP et les données du navigateur sont supprimées après{' '}
+                {VISIT_IP_RETENTION_DAYS}&nbsp;jours&nbsp;; seuls restent le nombre de visites, les pages et les
+                localités.
+              </li>
+              <li>
+                <strong>Journaux du serveur.</strong> Adresse IP, adresse demandée, heure et navigateur, pour la
+                sécurité et le dépannage (intérêt légitime, point f). Supprimés automatiquement après {LOG_DAYS}
+                &nbsp;jours.
+              </li>
+              <li>
+                <strong>Sauvegardes.</strong> Elles contiennent les données ci-dessus, sont chiffrées et sont supprimées
+                automatiquement après {BACKUP_DAYS}&nbsp;jours au plus.
+              </li>
+            </ul>
+            <p>Nous ne prenons aucune décision automatisée vous concernant et ne faisons pas de profilage.</p>
+            <h2 id="destinatari">Qui d’autre reçoit les données</h2>
+            <ul>
+              <li>Le transporteur reçoit votre nom, votre adresse et votre téléphone pour livrer le colis.</li>
+              <li>Le serveur du site est loué à Amazon Web Services, dans l’Union européenne (Francfort).</li>
+              <li>
+                Google envoie les e-mails de confirmation de commande (Gmail) et conserve une copie chiffrée de la
+                sauvegarde (Google Drive), qu’il ne peut pas lire. Google peut traiter des données hors de l’Espace
+                économique européen, avec les garanties exigées par le RGPD (cadre de protection des données
+                UE–États-Unis).
+              </li>
+            </ul>
+            <p>
+              Nous ne vendons pas de données, ne faisons pas de publicité et n’utilisons pas de services d’analyse ou de
+              publicité d’autres entreprises. La localité est déterminée à partir d’une base de données conservée sur le
+              serveur (DB-IP), sans transmettre votre adresse IP à qui que ce soit.
+            </p>
+            <h2 id="browser">Ce que conserve votre navigateur</h2>
+            <p>
+              Le site n’utilise aucun cookie de suivi ou de publicité. Pour fonctionner, il conserve dans votre
+              navigateur la langue choisie (le cookie <code>poetio-language</code>, un an, envoyé au serveur uniquement
+              pour afficher cette langue), le thème clair ou sombre, les préférences de lecture, votre page dans un
+              livre, le panier et les brouillons de commentaires. Ces données ne nous parviennent qu’avec une commande
+              ou un commentaire que vous envoyez. Vous pouvez les effacer à tout moment dans les réglages du navigateur.
+            </p>
+            <h2 id="drepturi">Vos droits</h2>
+            <p>
+              Vous pouvez demander l’accès à vos données, leur rectification, leur effacement ou la limitation de leur
+              traitement, les recevoir dans un format portable et vous opposer au traitement fondé sur notre intérêt
+              légitime. Vous pouvez retirer à tout moment votre consentement pour les commentaires. Écrivez-nous
+              {email && <> à {email}</>}&nbsp;; nous répondons sous un mois. Vous pouvez aussi introduire une
+              réclamation auprès de l’autorité roumaine de protection des données ({authority}).
+            </p>
+            <p>
+              Les conditions de vente figurent dans les <a href={terms}>conditions générales de vente</a>.
             </p>
           </>
         ) : (

@@ -4,8 +4,8 @@ import SiteLogo from '../site-logo';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Book, BookWithCommentCount } from '@/lib/book-types';
-import type { PoemLanguage } from '@/lib/poem-types';
-import { rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
+import type { SiteLanguage } from '@/lib/poem-types';
+import { pick, rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
 import SiteHeader from '../site-header';
 import BookPresentation from './book-presentation';
 import BookCovers from './book-covers';
@@ -23,15 +23,14 @@ export default function BooksView({
 }: {
   books?: BookWithCommentCount[];
   book?: Book;
-  initialLanguage: PoemLanguage;
+  initialLanguage: SiteLanguage;
   canAdmin?: boolean;
   failed?: boolean;
 }) {
   const [language, setLanguage] = useState(initialLanguage);
   const router = useRouter();
-  const ro = language === 'ro',
-    copy = siteCopy[language];
-  function changeLanguage(value: PoemLanguage) {
+  const copy = siteCopy[language];
+  function changeLanguage(value: SiteLanguage) {
     setLanguage(value);
     rememberSiteLanguage(value);
     router.refresh();
@@ -46,7 +45,7 @@ export default function BooksView({
         {book ? (
           <>
             <a className="book-back" href={withSiteLanguage('/carti', language)}>
-              ← {ro ? 'Toate cărțile' : 'All books'}
+              ← {pick(language, 'Toate cărțile', 'All books', 'Tous les livres')}
             </a>
             <BookPresentation book={book} language={language} />
             <div className="book-comments">
@@ -54,11 +53,12 @@ export default function BooksView({
                 key={book.id}
                 endpoint={`/api/books/${book.id}/comments`}
                 language={language}
-                intro={
-                  ro
-                    ? 'Ce ți-a transmis această carte? Lasă câteva gânduri.'
-                    : 'What did this book bring to mind? Share a few thoughts.'
-                }
+                intro={pick(
+                  language,
+                  'Ce ți-a transmis această carte? Lasă câteva gânduri.',
+                  'What did this book bring to mind? Share a few thoughts.',
+                  'Qu’est-ce que ce livre vous a évoqué\u00a0? Partagez quelques pensées.',
+                )}
               />
             </div>
           </>
@@ -67,17 +67,26 @@ export default function BooksView({
             <SiteLogo />
             <div className="section-heading">
               <div>
-                <p className="eyebrow">{ro ? 'Pagini de descoperit' : 'Pages to discover'}</p>
+                <p className="eyebrow">
+                  {pick(language, 'Pagini de descoperit', 'Pages to discover', 'Des pages à découvrir')}
+                </p>
                 <h1>
-                  {ro ? 'Cărți' : 'Books'}
+                  {pick(language, 'Cărți', 'Books', 'Livres')}
                   <span className="count">({String(books.length).padStart(2, '0')})</span>
                 </h1>
               </div>
-              <p>{ro ? 'Un răgaz pentru lectură.' : 'A moment to read.'}</p>
+              <p>{pick(language, 'Un răgaz pentru lectură.', 'A moment to read.', 'Un moment pour lire.')}</p>
             </div>
             {failed ? (
               <div className="collection-empty" role="alert">
-                <p>{ro ? 'Cărțile nu pot fi încărcate momentan.' : 'Books could not be loaded right now.'}</p>
+                <p>
+                  {pick(
+                    language,
+                    'Cărțile nu pot fi încărcate momentan.',
+                    'Books could not be loaded right now.',
+                    'Les livres n’ont pas pu être chargés pour le moment.',
+                  )}
+                </p>
                 <a className="secondary-button" href={withSiteLanguage('/carti', language)}>
                   {copy.retry}
                 </a>
@@ -96,7 +105,10 @@ export default function BooksView({
                         {item.title}
                       </a>
                     </h2>
-                    <p>{item.description || (ro ? 'Deschide pentru a citi.' : 'Open to read.')}</p>
+                    <p>
+                      {item.description ||
+                        pick(language, 'Deschide pentru a citi.', 'Open to read.', 'Ouvrir pour lire.')}
+                    </p>
                     <div className="card-bottom">
                       <span>
                         {item.author || 'Poetio'}
@@ -105,9 +117,9 @@ export default function BooksView({
                       <a
                         className="book-read-link"
                         href={withSiteLanguage(`/carti/${item.id}`, language)}
-                        aria-label={`${ro ? 'Citește' : 'Read'}: ${item.title}`}
+                        aria-label={`${pick(language, 'Citește', 'Read', 'Lire')}: ${item.title}`}
                       >
-                        {ro ? 'Citește' : 'Read'} ↗
+                        {pick(language, 'Citește', 'Read', 'Lire')} ↗
                       </a>
                     </div>
                   </article>
@@ -115,10 +127,17 @@ export default function BooksView({
               </div>
             ) : (
               <div className="collection-empty">
-                <p>{ro ? 'Prima carte va apărea aici în curând.' : 'The first book will appear here soon.'}</p>
+                <p>
+                  {pick(
+                    language,
+                    'Prima carte va apărea aici în curând.',
+                    'The first book will appear here soon.',
+                    'Le premier livre apparaîtra bientôt ici.',
+                  )}
+                </p>
                 {canAdmin && (
                   <a className="primary-button" href="/admin/carti">
-                    {ro ? 'Adaugă prima carte' : 'Add the first book'}
+                    {pick(language, 'Adaugă prima carte', 'Add the first book', 'Ajouter le premier livre')}
                   </a>
                 )}
               </div>

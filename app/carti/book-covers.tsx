@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- Uploaded derivatives and local previews use the same image display. */
 import type { Book } from '@/lib/book-types';
 import { bookSalePath, saleVariants, type CoverNumber } from '@/lib/book-sale';
-import { withSiteLanguage } from '@/lib/site-language';
-import type { PoemLanguage } from '@/lib/poem-types';
+import { pick, withSiteLanguage } from '@/lib/site-language';
+import type { SiteLanguage } from '@/lib/poem-types';
 import { responsiveImage } from '@/lib/responsive-images';
 
 export type CoverBook = Pick<Book, 'id' | 'title' | 'author' | 'image_id' | 'image_2_id' | 'price_1' | 'price_2'>;
@@ -15,7 +15,7 @@ export default function BookCovers({
   newTab = false,
 }: {
   book: CoverBook;
-  language: PoemLanguage;
+  language: SiteLanguage;
   previewSources?: (string | undefined)[];
   compact?: boolean;
   /** Covers open the book's sale page; off only for a book that is not saved yet. */
@@ -23,13 +23,17 @@ export default function BookCovers({
   /** The editor's preview opens the sale page in a new tab, keeping unsaved changes. */
   newTab?: boolean;
 }) {
-  const ro = language === 'ro';
   const sale = saleLinks && Boolean(book.id);
   const buyable = saleVariants(book).length > 0;
   const saleHref = (cover?: CoverNumber) => withSiteLanguage(bookSalePath(book.id, cover), language);
   const target = newTab ? ({ target: '_blank', rel: 'noopener' } as const) : {};
   const saleLabel = (cover: string) =>
-    ro ? `Detalii și cumpărare: ${book.title} — ${cover}` : `Details and purchase: ${book.title} — ${cover}`;
+    pick(
+      language,
+      `Detalii și cumpărare: ${book.title} — ${cover}`,
+      `Details and purchase: ${book.title} — ${cover}`,
+      `Détails et achat\u00a0: ${book.title} — ${cover}`,
+    );
   const covers = [
     { number: 1, id: book.image_id, src: previewSources[0] },
     { number: 2, id: book.image_2_id, src: previewSources[1] },
@@ -48,7 +52,7 @@ export default function BookCovers({
           <a
             className="book-cover-option book-cover-link"
             href={saleHref()}
-            aria-label={saleLabel(ro ? 'copertă' : 'cover')}
+            aria-label={saleLabel(pick(language, 'copertă', 'cover', 'couverture'))}
             {...target}
           >
             {placeholder}
@@ -64,10 +68,10 @@ export default function BookCovers({
       className={`book-covers${compact ? ' book-covers-compact' : ''}`}
       data-count={covers.length}
       role="group"
-      aria-label={ro ? 'Coperți și achiziție' : 'Covers and purchase'}
+      aria-label={pick(language, 'Coperți și achiziție', 'Covers and purchase', 'Couvertures et achat')}
     >
       {covers.map(cover => {
-        const label = `${ro ? 'Coperta' : 'Cover'} ${cover.number}`;
+        const label = `${pick(language, 'Coperta', 'Cover', 'Couverture')} ${cover.number}`;
         const content = (
           <>
             <img
@@ -84,7 +88,9 @@ export default function BookCovers({
               <span>{label}</span>
               {sale && (
                 <span className="book-cover-buy">
-                  {buyable ? (ro ? 'Cumpără' : 'Buy') : ro ? 'Detalii' : 'Details'}
+                  {buyable
+                    ? pick(language, 'Cumpără', 'Buy', 'Acheter')
+                    : pick(language, 'Detalii', 'Details', 'Détails')}
                 </span>
               )}
             </span>

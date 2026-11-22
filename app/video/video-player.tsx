@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import type { PoemLanguage } from '@/lib/poem-types';
+import type { SiteLanguage } from '@/lib/poem-types';
 import { pilotSubtitles } from '@/lib/video-types';
+import { pick } from '@/lib/site-language';
 
 export default function VideoPlayer({
   src,
@@ -12,7 +13,7 @@ export default function VideoPlayer({
 }: {
   src: string;
   title: string;
-  language?: PoemLanguage;
+  language?: SiteLanguage;
   showStatus?: boolean;
   poster?: string;
 }) {
@@ -56,7 +57,7 @@ export default function VideoPlayer({
           <track
             kind="subtitles"
             srcLang="ro"
-            label={language === 'ro' ? 'Română' : 'Romanian'}
+            label={pick(language, 'Română', 'Romanian', 'Roumain')}
             src={pilotSubtitles.path}
           />
         )}
@@ -74,27 +75,36 @@ export default function VideoPlayer({
             }
           }}
         >
-          {language === 'ro' ? 'Subtitrări în română' : 'Romanian subtitles'}
+          {pick(language, 'Subtitrări în română', 'Romanian subtitles', 'Sous-titres en roumain')}
         </button>
       )}
       {showStatus && !failed && (
         <p role="status">
           {ready
-            ? language === 'ro'
-              ? 'Fișier încărcat. Pornește redarea pentru a verifica imaginea și sunetul.'
-              : 'File loaded. Play it to check the picture and sound.'
-            : language === 'ro'
-              ? 'Se verifică încărcarea videoului…'
-              : 'Checking video loading…'}
+            ? pick(
+                language,
+                'Fișier încărcat. Pornește redarea pentru a verifica imaginea și sunetul.',
+                'File loaded. Play it to check the picture and sound.',
+                'Fichier chargé. Lancez la lecture pour vérifier l’image et le son.',
+              )
+            : pick(
+                language,
+                'Se verifică încărcarea videoului…',
+                'Checking video loading…',
+                'Vérification du chargement de la vidéo…',
+              )}
         </p>
       )}
       {failed && (
         <p role="alert">
-          {language === 'ro'
-            ? 'Videoul nu poate fi redat în acest browser. Încearcă alt browser sau descarcă fișierul.'
-            : 'This video cannot be played in this browser. Try another browser or download the file.'}{' '}
+          {pick(
+            language,
+            'Videoul nu poate fi redat în acest browser. Încearcă alt browser sau descarcă fișierul.',
+            'This video cannot be played in this browser. Try another browser or download the file.',
+            'Cette vidéo ne peut pas être lue dans ce navigateur. Essayez un autre navigateur ou téléchargez le fichier.',
+          )}{' '}
           <a href={src} download>
-            {language === 'ro' ? 'Descarcă video' : 'Download video'}
+            {pick(language, 'Descarcă video', 'Download video', 'Télécharger la vidéo')}
           </a>
         </p>
       )}

@@ -44,21 +44,42 @@ async function digest(value: string) {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('');
 }
+/** The French version, tracked like the translation but with its own provenance (fr_provenance). */
+export function frenchKey(poem: PoemInput) {
+  return JSON.stringify([
+    poem.fr_title?.trim() || '',
+    poem.fr_theme?.trim() || '',
+    poem.fr_content?.replace(/\r\n?/g, '\n') || '',
+  ]);
+}
+/** Which version of a poem: its one translation (`translated_*`) or the French one (`fr_*`). */
+export type TranslationTarget = 'translated' | 'fr';
 export async function translationProvenance(
   poem: PoemInput,
   origin: TranslationProvenance['origin'],
+  target: TranslationTarget = 'translated',
 ): Promise<TranslationProvenance> {
-  const [sourceHash, textHash] = await Promise.all([digest(sourceKey(poem)), digest(translatedKey(poem))]);
+  const [sourceHash, textHash] = await Promise.all([
+    digest(sourceKey(poem)),
+    digest(target === 'fr' ? frenchKey(poem) : translatedKey(poem)),
+  ]);
   return { version: 1, origin, sourceHash, textHash };
 }
-export async function translationStatus(poem: PoemInput): Promise<TranslationStatus> {
-  const title = Boolean(poem.translated_title?.trim()),
-    content = Boolean(poem.translated_content?.trim());
-  if (!title && !content && !poem.translated_theme?.trim()) return 'missing';
+export async function translationStatus(
+  poem: PoemInput,
+  target: TranslationTarget = 'translated',
+): Promise<TranslationStatus> {
+  const [titleValue, themeValue, contentValue, provenance] =
+    target === 'fr'
+      ? [poem.fr_title, poem.fr_theme, poem.fr_content, poem.fr_provenance]
+      : [poem.translated_title, poem.translated_theme, poem.translated_content, poem.translation_provenance];
+  const title = Boolean(titleValue?.trim()),
+    content = Boolean(contentValue?.trim());
+  if (!title && !content && !themeValue?.trim()) return 'missing';
   if (!title || !content) return 'incomplete';
-  const stored = parseTranslationProvenance(poem.translation_provenance);
+  const stored = parseTranslationProvenance(provenance);
   if (!stored) return 'unreviewed';
-  const current = await translationProvenance(poem, stored.origin);
+  const current = await translationProvenance(poem, stored.origin, target);
   if (stored.sourceHash !== current.sourceHash) return 'stale';
   if (stored.textHash !== current.textHash) return 'edited';
   return 'ready';

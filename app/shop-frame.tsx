@@ -3,17 +3,17 @@
 import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShoppingCart } from 'lucide-react';
-import type { PoemLanguage } from '@/lib/poem-types';
+import type { SiteLanguage } from '@/lib/poem-types';
 import { cartCount, useCart } from '@/lib/cart';
-import { rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
+import { pick, rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
 import SiteHeader from './site-header';
 import './shop.css';
 import LegalLinks from './legal-links';
 
-export function useShopLanguage(initial: PoemLanguage) {
+export function useShopLanguage(initial: SiteLanguage) {
   const router = useRouter();
   const [language, setLanguage] = useState(initial);
-  function change(value: PoemLanguage) {
+  function change(value: SiteLanguage) {
     setLanguage(value);
     rememberSiteLanguage(value);
     router.refresh();
@@ -22,14 +22,16 @@ export function useShopLanguage(initial: PoemLanguage) {
 }
 
 /** "Coș (2)", linking to the cart. The count is read in the browser only. */
-export function CartLink({ language, current = false }: { language: PoemLanguage; current?: boolean }) {
+export function CartLink({ language, current = false }: { language: SiteLanguage; current?: boolean }) {
   const count = cartCount(useCart());
-  const ro = language === 'ro';
   return (
     <a className="shop-cart-link" href={withSiteLanguage('/cos', language)} aria-current={current ? 'page' : undefined}>
       <ShoppingCart size={20} aria-hidden="true" />
-      <span>{ro ? 'Coș' : 'Cart'}</span>
-      <span className="shop-cart-count" aria-label={ro ? `${count} produse` : `${count} items`}>
+      <span>{pick(language, 'Coș', 'Cart', 'Panier')}</span>
+      <span
+        className="shop-cart-count"
+        aria-label={pick(language, `${count} produse`, `${count} items`, `${count} article${count > 1 ? 's' : ''}`)}
+      >
         {count}
       </span>
     </a>
@@ -44,8 +46,8 @@ export default function ShopFrame({
   cartCurrent = false,
   back,
 }: {
-  language: PoemLanguage;
-  onLanguageChange: (language: PoemLanguage) => void;
+  language: SiteLanguage;
+  onLanguageChange: (language: SiteLanguage) => void;
   children: ReactNode;
   cart?: boolean;
   cartCurrent?: boolean;
@@ -55,7 +57,7 @@ export default function ShopFrame({
   return (
     <>
       <a className="skip-link" href="#main">
-        {language === 'ro' ? 'Mergi la conținut' : 'Skip to content'}
+        {pick(language, 'Mergi la conținut', 'Skip to content', 'Aller au contenu')}
       </a>
       <SiteHeader language={language} onLanguageChange={onLanguageChange} booksPage />
       <main id="main" className="shop shell" lang={language}>

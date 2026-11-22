@@ -1,9 +1,10 @@
 'use client';
 import type { Book } from '@/lib/book-types';
 import type { BookPageText } from '@/lib/book-text';
-import type { PoemLanguage } from '@/lib/poem-types';
+import type { SiteLanguage } from '@/lib/poem-types';
 import BookReader from './book-reader';
 import BookCovers, { type CoverBook } from './book-covers';
+import { pick } from '@/lib/site-language';
 
 export default function BookPresentation({
   book,
@@ -16,7 +17,7 @@ export default function BookPresentation({
   previewText,
 }: {
   book: CoverBook & Pick<Book, 'description' | 'file_id'>;
-  language: PoemLanguage;
+  language: SiteLanguage;
   coverSrc?: string;
   cover2Src?: string;
   fileId?: string;
@@ -25,7 +26,6 @@ export default function BookPresentation({
   savedBook?: boolean;
   previewText?: BookPageText;
 }) {
-  const ro = language === 'ro';
   return (
     <>
       <article className="book-detail">
@@ -37,8 +37,8 @@ export default function BookPresentation({
           newTab={preview}
         />
         <div>
-          <p className="eyebrow">{ro ? 'Biblioteca Poetio' : 'Poetio library'}</p>
-          <h1>{book.title || (ro ? 'Fără titlu' : 'Untitled')}</h1>
+          <p className="eyebrow">{pick(language, 'Biblioteca Poetio', 'Poetio library', 'Bibliothèque Poetio')}</p>
+          <h1>{book.title || pick(language, 'Fără titlu', 'Untitled', 'Sans titre')}</h1>
           {book.author && <p className="reader-author">{book.author}</p>}
           <p className="book-description">{book.description}</p>
         </div>
@@ -53,9 +53,12 @@ export default function BookPresentation({
         />
       ) : (
         <p role="status">
-          {ro
-            ? 'Pregătește PDF-ul privat în editor pentru a verifica paginile și textul în cititor.'
-            : 'Prepare the private PDF in the editor to check pages and text in the reader.'}
+          {pick(
+            language,
+            'Pregătește PDF-ul privat în editor pentru a verifica paginile și textul în cititor.',
+            'Prepare the private PDF in the editor to check pages and text in the reader.',
+            'Préparez le PDF privé dans l’éditeur pour vérifier les pages et le texte dans la liseuse.',
+          )}
         </p>
       )}
     </>

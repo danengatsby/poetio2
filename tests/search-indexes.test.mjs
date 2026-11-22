@@ -331,6 +331,9 @@ test('NFC index rebuild preserves existing originals and covers subsequent impor
   await migratePoemSearchNfc(path);
   await migratePoemSearchNfc(path);
   assert.deepEqual(originals(), before);
+  // The application code below expects the latest schema (0024 added the French columns).
+  for (const name of migrations.filter(name => name > '0021'))
+    sqlite.exec(readFileSync(new URL('../drizzle/' + name, import.meta.url), 'utf8'));
   const db = openDatabase(path);
   t.after(() => db.close());
   for (const q of [

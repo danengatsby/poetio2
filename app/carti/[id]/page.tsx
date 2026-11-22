@@ -7,6 +7,7 @@ import { validImageId } from '@/db/images';
 import { requestLanguage } from '@/lib/request-language';
 import { contentMetadata, contentPath, excerpt } from '@/lib/content-metadata';
 import BooksView from '../books-view';
+import { pick } from '@/lib/site-language';
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }> };
 
@@ -28,7 +29,12 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     author: book.author,
     description: excerpt(
       book.description,
-      language === 'en-US' ? `${book.title} — Read on Poetio.` : `${book.title} — Citește pe Poetio.`,
+      pick(
+        language,
+        `${book.title} — Citește pe Poetio.`,
+        `${book.title} — Read on Poetio.`,
+        `${book.title} — À lire sur Poetio.`,
+      ),
     ),
     path: contentPath('book', book.id),
     image:

@@ -7,12 +7,18 @@ import { pageMetadata } from '@/lib/content-metadata';
 import { requestLanguage } from '@/lib/request-language';
 import { getChatGPTUser } from '../chatgpt-auth';
 import VideoGallery from './video-gallery';
+import { pick } from '@/lib/site-language';
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const language = await requestLanguage();
   return pageMetadata({
-    title: 'Video — Poetio',
-    description: language === 'ro' ? 'Colecția video Poetio.' : 'The Poetio video collection.',
+    title: pick(language, 'Video — Poetio', 'Video — Poetio', 'Vidéos — Poetio'),
+    description: pick(
+      language,
+      'Colecția video Poetio.',
+      'The Poetio video collection.',
+      'La collection vidéo Poetio.',
+    ),
     path: '/video',
     language,
   });

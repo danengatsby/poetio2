@@ -1,4 +1,4 @@
-import type { PoemLanguage } from '@/lib/poem-types';
+import type { SiteLanguage } from '@/lib/poem-types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { biographySource, danEnacheBiography } from '@/lib/dan-enache';
@@ -19,10 +19,17 @@ const copy = {
     read: 'Explore the poems',
     source: 'Author biography on PoetrySoup',
   },
+  fr: {
+    about: 'À propos de Poetio',
+    biography: 'Esquisse biographique',
+    portrait: 'Portrait de Dan Enache',
+    read: 'Découvrir les poèmes',
+    source: 'Biographie de l’auteur sur PoetrySoup',
+  },
 };
 
 type AboutPoetioProps = {
-  language: PoemLanguage;
+  language: SiteLanguage;
   portrait: { src: string; width: number; height: number };
 };
 

@@ -1,7 +1,8 @@
 'use client';
 import type { Video } from '@/lib/video-types';
-import type { PoemLanguage } from '@/lib/poem-types';
+import type { SiteLanguage } from '@/lib/poem-types';
 import VideoPlayer from './video-player';
+import { pick } from '@/lib/site-language';
 export default function VideoReading({
   video,
   src,
@@ -13,14 +14,14 @@ export default function VideoReading({
   video: Pick<Video, 'title' | 'author' | 'description'>;
   src?: string;
   poster?: string;
-  language: PoemLanguage;
+  language: SiteLanguage;
   children?: React.ReactNode;
   mediaStatus?: boolean;
 }) {
   return (
     <article>
-      <p className="eyebrow">Video</p>
-      <h1>{video.title || (language === 'ro' ? 'Fără titlu' : 'Untitled')}</h1>
+      <p className="eyebrow">{pick(language, 'Video', 'Video', 'Vidéo')}</p>
+      <h1>{video.title || pick(language, 'Fără titlu', 'Untitled', 'Sans titre')}</h1>
       {video.author && <p className="reader-author">{video.author}</p>}
       {children}
       {src ? (
@@ -34,7 +35,12 @@ export default function VideoReading({
         />
       ) : (
         <p role="status">
-          {language === 'ro' ? 'Alege un fișier video pentru a verifica redarea.' : 'Choose a video to check playback.'}
+          {pick(
+            language,
+            'Alege un fișier video pentru a verifica redarea.',
+            'Choose a video to check playback.',
+            'Choisissez une vidéo pour vérifier la lecture.',
+          )}
         </p>
       )}
       <p className="video-description">{video.description}</p>

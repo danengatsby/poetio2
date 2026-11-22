@@ -7,6 +7,7 @@ import { collectionReturnHref } from '@/lib/poem-collection';
 import { poemImage } from '@/lib/poem-images';
 import { contentMetadata, contentPath, excerpt, safeJsonLd, siteOrigin } from '@/lib/content-metadata';
 import ContentDetail from '../../content-detail';
+import { pick } from '@/lib/site-language';
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ lang?: string; returnTo?: string }> };
 async function read(props: Props) {
@@ -25,7 +26,7 @@ async function read(props: Props) {
 export async function generateMetadata(props: Props) {
   const { poem, language } = await read(props);
   const version = poemVersion(poem, language) ?? poem;
-  const path = contentPath('poem', poem.id) + (language === 'en-US' ? '?lang=en-US' : '');
+  const path = contentPath('poem', poem.id) + pick(language, '', '?lang=en-US', '?lang=fr');
   const metadata = contentMetadata({
     title: version.title,
     author: poem.author,
@@ -43,6 +44,7 @@ export async function generateMetadata(props: Props) {
       languages: {
         ...(poemVersion(poem, 'ro') ? { ro: siteOrigin + contentPath('poem', poem.id) } : {}),
         ...(poemVersion(poem, 'en-US') ? { 'en-US': siteOrigin + contentPath('poem', poem.id) + '?lang=en-US' } : {}),
+        ...(poemVersion(poem, 'fr') ? { fr: siteOrigin + contentPath('poem', poem.id) + '?lang=fr' } : {}),
       },
     },
   };
@@ -61,7 +63,7 @@ export default async function PoemPage(props: Props) {
             name: version.title,
             author: { '@type': 'Person', name: poem.author },
             inLanguage: poemVersion(poem, language) ? language : poem.source_language,
-            url: siteOrigin + contentPath('poem', poem.id) + (language === 'en-US' ? '?lang=en-US' : ''),
+            url: siteOrigin + contentPath('poem', poem.id) + pick(language, '', '?lang=en-US', '?lang=fr'),
             datePublished: new Date(poem.created_at).toISOString(),
             dateModified: new Date(poem.updated_at).toISOString(),
           }),

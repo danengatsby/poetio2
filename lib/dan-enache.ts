@@ -1,4 +1,4 @@
-import type { PoemLanguage } from './poem-types';
+import type { SiteLanguage } from './poem-types';
 
 export const biographySource = 'https://www.poetrysoup.com/poems_poets/poems_by_poet.aspx?ID=170815';
 
@@ -7,9 +7,9 @@ type Biography = {
   sections: { id: string; title: string; paragraphs: string[] }[];
 };
 
-// Full text supplied by the author, with a complete Romanian translation.
+// Full text supplied by the author, with complete Romanian and French translations.
 // The supplied encoding typo "Ia?i" is rendered as "Iași" in both languages.
-export const danEnacheBiography: Record<PoemLanguage, Biography> = {
+export const danEnacheBiography: Record<SiteLanguage, Biography> = {
   ro: {
     profile: [
       { label: 'Nume', value: 'Dan Enache' },
@@ -100,6 +100,53 @@ export const danEnacheBiography: Record<PoemLanguage, Biography> = {
         title: 'Conclusion',
         paragraphs: [
           'Dan Enache remains a luminary in Romanian poetry, his work a shimmering tapestry of magic, melancholy, mysticism, oniric dreams, and philosophical depth. His unique poetic-philosophical style evokes emotion and stirs the soul, ensuring that his voice will continue to echo in the annals of literary history, inviting future generations to journey alongside him in the exploration of infinite inner landscapes.',
+        ],
+      },
+    ],
+  },
+  fr: {
+    profile: [
+      { label: 'Nom', value: 'Dan Enache' },
+      { label: 'Nationalité', value: 'Roumaine' },
+      { label: 'Profession', value: 'Poète, mystique, philosophe, écrivain romantique, poète ésotérique et onirique' },
+    ],
+    sections: [
+      {
+        id: 'early-life',
+        title: 'Enfance et formation',
+        paragraphs: [
+          'Né dans la contrée éthérée de la Moldavie, dans la ville mystique de Iași, Dan Enache a grandi parmi les collines ondoyantes et les monastères anciens, des paysages empreints d’une beauté obsédante et d’une sérénité mystique. Cette communion précoce avec des panoramas naturels intemporels et un riche héritage culturel a déployé les ailes de son imagination et a profondément marqué sa sensibilité poétique. L’attrait d’Enache pour le mystique, l’ésotérique et l’onirique s’est éveillé pendant ces années de formation, au fil de ses errances dans des paysages imprégnés de folklore et de légende.',
+          'La formation d’Enache a mêlé scolarité traditionnelle et exploration autodidacte. Il a étudié les technologies de l’information à l’Université Politehnica de Bucarest, s’immergeant dans la logique structurée et la créativité de l’informatique. C’est pourtant son dialogue solitaire et profond avec la nature et les textes métaphysiques qui a véritablement façonné son parcours intellectuel et spirituel.',
+        ],
+      },
+      {
+        id: 'poetic-career',
+        title: 'Parcours poétique',
+        paragraphs: [
+          'Dan Enache s’est imposé comme une voix poétique singulière de la littérature roumaine, son œuvre se distinguant par un entrelacs subtil de mysticisme, de mélancolie, de questionnement philosophique et d’ésotérisme onirique. Son style unique unit le poétique et le philosophique dans une danse harmonieuse, donnant des vers à la fois stimulants pour l’intellect et riches en résonance émotionnelle. Sa poésie, souvent ample et fluide, dépasse le quotidien pour s’aventurer dans les royaumes de l’éthéré et de l’ésotérique. La technique narrative d’Enache épouse le flux de la conscience et saisit la nature fuyante et passagère de l’expérience humaine.',
+          'Le premier recueil d’Enache, « BEYOND THE REAL », a fait découvrir aux lecteurs son style poético-philosophique unique — un mélange de romantisme, de réflexions mystiques, de méditations existentielles et d’éléments oniriques. Cette œuvre a donné le ton de ses recueils suivants, où sa voix a mûri en une alliance harmonieuse du magique et du philosophique, du mélancolique et du mystique.',
+        ],
+      },
+      {
+        id: 'themes',
+        title: 'Thèmes et influence',
+        paragraphs: [
+          'La poésie d’Enache est traversée de thèmes récurrents : l’exploration intérieure, la quête de vérité et la tension entre l’individualité et les normes sociales. Son œuvre invite le lecteur à regarder au-delà de la façade extérieure de la réalité, à une introspection profonde et à un retour à soi. Le lien entre la lumière et l’ombre, le contraste entre l’illusion et la réalité, le jeu du silence et du son sont des motifs toujours présents dans son écriture.',
+          'Les fondements philosophiques de l’œuvre d’Enache apparaissent dans sa manière d’aborder les dilemmes existentiels modernes, l’ennui de la vie contemporaine et la quête de sens dans un univers apparemment indifférent. Il entrelace de façon unique ces thèmes graves avec une aura de mysticisme, de romantisme et d’ésotérisme onirique, ce qui rend sa poésie à la fois stimulante pour l’esprit et émouvante.',
+        ],
+      },
+      {
+        id: 'legacy',
+        title: 'Héritage',
+        paragraphs: [
+          'Dan Enache continue de captiver et d’inspirer les lecteurs par ses vers d’une beauté obsédante, empreints de rêve. Ses contributions à la littérature roumaine ont ouvert un espace où le mystique et le philosophique se rejoignent, offrant une exploration profonde et singulière de la condition humaine. L’œuvre d’Enache témoigne du pouvoir de la poésie de dépasser le visible et nous invite à une communion plus intime avec les royaumes invisibles, ressentis, rêvés et imaginés de l’existence.',
+        ],
+      },
+      {
+        id: 'conclusion',
+        title: 'Conclusion',
+        paragraphs: [
+          'Dan Enache demeure une figure lumineuse de la poésie roumaine, son œuvre étant une tapisserie chatoyante de magie, de mélancolie, de mysticisme, de rêves oniriques et de profondeur philosophique. Son style poético-philosophique unique éveille l’émotion et remue l’âme, afin que sa voix continue de résonner dans les annales de l’histoire littéraire et invite les générations futures à l’accompagner dans l’exploration d’infinis paysages intérieurs.',
         ],
       },
     ],

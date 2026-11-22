@@ -3,12 +3,16 @@ import { validImageId } from '@/db/images';
 import { MAX_ITEM_QUANTITY } from '@/lib/shop';
 import { requestLanguage } from '@/lib/request-language';
 import CheckoutView from './checkout-view';
+import { pick } from '@/lib/site-language';
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const ro = (await requestLanguage()) === 'ro';
-  return { title: ro ? 'Finalizează comanda — Poetio' : 'Checkout — Poetio', robots: { index: false } };
+  const language = await requestLanguage();
+  return {
+    title: pick(language, 'Finalizează comanda — Poetio', 'Checkout — Poetio', 'Commande — Poetio'),
+    robots: { index: false },
+  };
 }
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };

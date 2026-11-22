@@ -6,6 +6,7 @@ import { videoPosterPath } from '@/lib/video-types';
 import { requestLanguage } from '@/lib/request-language';
 import { contentMetadata, contentPath, excerpt, safeJsonLd, siteOrigin } from '@/lib/content-metadata';
 import ContentDetail from '../../content-detail';
+import { pick } from '@/lib/site-language';
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ lang?: string }> };
 // Link previews show the film's own still where this runtime can render one.
@@ -28,9 +29,9 @@ export async function generateMetadata(props: Props) {
     author: video.author,
     description: excerpt(
       video.description,
-      `${video.title} — ${language === 'ro' ? 'Video din colecția Poetio.' : 'Video from the Poetio collection.'}`,
+      `${video.title} — ${pick(language, 'Video din colecția Poetio.', 'Video from the Poetio collection.', 'Vidéo de la collection Poetio.')}`,
     ),
-    path: contentPath('video', video.id) + (language === 'en-US' ? '?lang=en-US' : ''),
+    path: contentPath('video', video.id) + pick(language, '', '?lang=en-US', '?lang=fr'),
     image: previewImage(video.file_id),
     language,
     updated: video.updated_at,

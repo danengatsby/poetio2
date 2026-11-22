@@ -26,6 +26,9 @@ export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot
           translated_title: 180,
           translated_theme: 80,
           translated_content: 30000,
+          fr_title: 180,
+          fr_theme: 80,
+          fr_content: 30000,
         }
       : { title: 180, author: 120, description: 5000 };
   for (const [key, limit] of Object.entries(limits)) {
@@ -51,6 +54,10 @@ export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot
     if (data.translation_provenance != null && !provenance)
       throw new AppError(400, 'Asocierea traducerii este nevalidă.');
     result.translation_provenance = provenance;
+    const french = parseTranslationProvenance(data.fr_provenance);
+    if (data.fr_provenance != null && !french)
+      throw new AppError(400, 'Asocierea versiunii în franceză este nevalidă.');
+    result.fr_provenance = french;
   }
   result.pendingFiles = data.pendingFiles === true;
   if (kind === 'poem' && data.pendingPoemFiles !== undefined) {

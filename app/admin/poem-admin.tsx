@@ -48,6 +48,10 @@ const blank = (): Draft => ({
   translated_theme: '',
   translated_content: '',
   translation_provenance: null,
+  fr_title: '',
+  fr_theme: '',
+  fr_content: '',
+  fr_provenance: null,
   image_id: null,
   audio_ro_id: null,
   audio_en_id: null,
@@ -65,6 +69,10 @@ const fromPoem = (poem: Poem): Draft => ({
   translated_theme: poem.translated_theme || '',
   translated_content: poem.translated_content || '',
   translation_provenance: poem.translation_provenance ?? null,
+  fr_title: poem.fr_title || '',
+  fr_theme: poem.fr_theme || '',
+  fr_content: poem.fr_content || '',
+  fr_provenance: poem.fr_provenance ?? null,
   image_id: poem.image_id,
   audio_ro_id: poem.audio_ro_id,
   audio_en_id: poem.audio_en_id,
@@ -192,6 +200,19 @@ export default function Admin({
       'Asocierea traducerii nu poate fi verificată în acest browser. Reîncarcă pagina sau salvează fără traducere.',
   }[translationState];
   const saveOriginalOnly = translateOnSave && !translationReady;
+  // The French version (fr_*), shown when the site is in French.
+  const frenchState = useTranslationStatus(draft, 'fr');
+  const frenchBlocked = frenchState !== 'ready' && frenchState !== 'missing';
+  const frenchMessage = {
+    checking: 'Se verifică asocierea versiunii în franceză…',
+    missing: 'Nu există o versiune în franceză; site-ul în franceză arată originalul.',
+    incomplete: 'Completează titlul și textul în franceză, apoi confirmă revizuirea, sau golește câmpurile.',
+    unreviewed: 'Versiunea în franceză nu este confirmată pentru originalul actual. Verific-o și confirmă revizuirea.',
+    stale: 'Originalul s-a schimbat. Verifică versiunea în franceză și confirmă din nou, sau golește câmpurile.',
+    edited: 'Versiunea în franceză a fost modificată. Confirmă revizuirea pentru originalul actual.',
+    ready: 'Versiunea în franceză este asociată originalului actual.',
+    error: 'Asocierea versiunii în franceză nu poate fi verificată în acest browser. Reîncarcă pagina.',
+  }[frenchState];
 
   function reportError(error: unknown, fallback: string) {
     setError(error instanceof Error ? error.message : fallback);
@@ -404,9 +425,28 @@ export default function Admin({
       setBusy(false);
     }
   }
+  async function confirmFrench() {
+    if (!draft || locked || !draft.fr_title?.trim() || !draft.fr_content?.trim()) return;
+    setBusy(true);
+    setError('');
+    setSuccess('');
+    try {
+      const provenance = await translationProvenance(draft, 'manual', 'fr');
+      setDraft({ ...draft, fr_provenance: provenance });
+      setSuccess('Revizuirea versiunii în franceză este confirmată. Poemul nu a fost încă publicat.');
+    } catch {
+      setError('Revizuirea nu poate fi înregistrată în acest browser. Reîncarcă pagina.');
+    } finally {
+      setBusy(false);
+    }
+  }
   async function save(event: React.FormEvent, originalOnly = false) {
     event.preventDefault();
     if (!draft || locked) return;
+    if (frenchBlocked) {
+      setError(frenchMessage);
+      return;
+    }
     if (missingMedia.length) {
       setError('Alege ce fișiere păstrezi înainte de publicare.');
       return;
@@ -1014,6 +1054,63 @@ export default function Admin({
                         onClick={() => void confirmTranslation()}
                       >
                         Confirm: traducerea corespunde originalului actual
+                      </button>
+                    )}
+                  </section>
+                  <section className="translation-editor" aria-labelledby="french-editor-title">
+                    <h3 id="french-editor-title">Varianta în franceză</h3>
+                    <p className="field-help">
+                      Apare când cititorul alege FR. Fără ea, site-ul în franceză arată originalul. După orice
+                      modificare a originalului sau a textului în franceză, confirmă din nou revizuirea.
+                    </p>
+                    <label>
+                      Titlul în franceză
+                      <input
+                        lang="fr"
+                        value={draft.fr_title || ''}
+                        onChange={event => update('fr_title', event.target.value)}
+                        maxLength={180}
+                        placeholder="Titre en français"
+                      />
+                    </label>
+                    <label>
+                      Tema în franceză <span className="optional-label">(opțional)</span>
+                      <input
+                        lang="fr"
+                        value={draft.fr_theme || ''}
+                        onChange={event => update('fr_theme', event.target.value)}
+                        maxLength={80}
+                        placeholder="Thème en français"
+                      />
+                    </label>
+                    <label>
+                      Textul în franceză
+                      <textarea
+                        lang="fr"
+                        value={draft.fr_content || ''}
+                        onChange={event => update('fr_content', event.target.value)}
+                        maxLength={30000}
+                        rows={12}
+                        placeholder="La version française du poème, vers et strophes compris."
+                      />
+                    </label>
+                    <p className="field-help" role="status">
+                      {frenchMessage}
+                    </p>
+                    {frenchState !== 'ready' && frenchState !== 'missing' && (
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        disabled={
+                          locked ||
+                          !draft.title.trim() ||
+                          !draft.content.trim() ||
+                          !draft.fr_title?.trim() ||
+                          !draft.fr_content?.trim()
+                        }
+                        onClick={() => void confirmFrench()}
+                      >
+                        Confirm: versiunea în franceză corespunde originalului actual
                       </button>
                     )}
                   </section>

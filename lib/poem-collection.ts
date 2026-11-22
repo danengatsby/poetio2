@@ -1,4 +1,4 @@
-import type { PoemLanguage } from './poem-types';
+import type { PoemLanguage, SiteLanguage } from './poem-types';
 import { siteLanguage } from './site-language';
 
 export const POEM_PAGE_SIZE = 12;
@@ -8,7 +8,7 @@ export type CollectionFilters = {
   q: string;
   theme: string;
   translation: 'all' | 'with' | 'without';
-  language: PoemLanguage;
+  language: SiteLanguage;
 };
 export type PoemCard = {
   id: string;
@@ -17,7 +17,7 @@ export type PoemCard = {
   theme: string;
   excerpt: string;
   image_id: string | null;
-  language: PoemLanguage;
+  language: SiteLanguage;
   source_language: PoemLanguage;
   has_translation: boolean;
   comment_count: number;
@@ -30,7 +30,7 @@ export type PoemCollection = {
   pages: number;
 };
 
-export function collectionQuery(params: CollectionParams, fallback: PoemLanguage = 'ro') {
+export function collectionQuery(params: CollectionParams, fallback: SiteLanguage = 'ro') {
   const value = (key: string) => {
     const item = params[key];
     return Array.isArray(item) ? (item[0] ?? '') : (item ?? '');
@@ -55,7 +55,7 @@ export function collectionHref(filters: CollectionFilters, page = 1) {
   return '/?' + query.toString() + '#collection';
 }
 
-export function collectionReturnHref(value: string | undefined, language: PoemLanguage) {
+export function collectionReturnHref(value: string | undefined, language: SiteLanguage) {
   const fallback = collectionHref({ q: '', theme: '', translation: 'all', language });
   if (!value || value.length > 2048) return fallback;
   try {

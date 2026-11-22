@@ -4,12 +4,13 @@ import { getShopSettings } from '@/db/shop';
 import { publicShop } from '@/lib/shop';
 import { requestLanguage } from '@/lib/request-language';
 import PrivacyView from './privacy-view';
+import { pick } from '@/lib/site-language';
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const ro = (await requestLanguage()) === 'ro';
-  return { title: ro ? 'Confidențialitate — Poetio' : 'Privacy — Poetio' };
+  const language = await requestLanguage();
+  return { title: pick(language, 'Confidențialitate — Poetio', 'Privacy — Poetio', 'Confidentialité — Poetio') };
 }
 
 export default async function PrivacyPage() {

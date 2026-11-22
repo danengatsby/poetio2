@@ -1,7 +1,12 @@
-export function commentCountLabel(count: number, language: 'ro' | 'en-US') {
-  return language === 'ro'
-    ? `${count} ${count === 1 ? 'comentariu' : 'comentarii'}`
-    : `${count} ${count === 1 ? 'comment' : 'comments'}`;
+import { pick } from './site-language';
+import type { SiteLanguage } from './poem-types';
+export function commentCountLabel(count: number, language: SiteLanguage) {
+  return pick(
+    language,
+    `${count} ${count === 1 ? 'comentariu' : 'comentarii'}`,
+    `${count} ${count === 1 ? 'comment' : 'comments'}`,
+    `${count} ${count > 1 ? 'commentaires' : 'commentaire'}`,
+  );
 }
 
 export const COMMENT_NAME_LIMIT = 80;

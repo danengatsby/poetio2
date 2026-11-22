@@ -1,9 +1,9 @@
 'use client';
 import { useMemo, useState, type FormEvent } from 'react';
-import type { PoemLanguage } from '@/lib/poem-types';
+import type { SiteLanguage } from '@/lib/poem-types';
 import { clearCart, useCart, type CartItem } from '@/lib/cart';
 import { paymentLabel, type PaymentMethod } from '@/lib/shop';
-import { withSiteLanguage } from '@/lib/site-language';
+import { pick, withSiteLanguage } from '@/lib/site-language';
 import ShopFrame, { useShopLanguage } from '../shop-frame';
 import { ShopLine, ShopTotals } from '../shop-lines';
 import { useInBrowser, useQuote } from '../use-quote';
@@ -15,11 +15,10 @@ export default function CheckoutView({
   initialLanguage,
   direct,
 }: {
-  initialLanguage: PoemLanguage;
+  initialLanguage: SiteLanguage;
   direct: CartItem | null;
 }) {
   const [language, changeLanguage] = useShopLanguage(initialLanguage);
-  const ro = language === 'ro';
   const cart = useCart();
   const directKey = JSON.stringify(direct);
   const items = useMemo(() => (directKey !== 'null' ? [JSON.parse(directKey) as CartItem] : cart), [directKey, cart]);
@@ -60,10 +59,19 @@ export default function CheckoutView({
       if (!response.ok)
         throw new Error(
           response.status === 429 && !data.error
-            ? ro
-              ? 'Prea multe încercări. Așteaptă un minut și trimite din nou.'
-              : 'Too many attempts. Wait a minute and try again.'
-            : data.error || (ro ? 'Comanda nu a putut fi trimisă.' : 'The order could not be sent.'),
+            ? pick(
+                language,
+                'Prea multe încercări. Așteaptă un minut și trimite din nou.',
+                'Too many attempts. Wait a minute and try again.',
+                'Trop de tentatives. Attendez une minute et réessayez.',
+              )
+            : data.error ||
+                pick(
+                  language,
+                  'Comanda nu a putut fi trimisă.',
+                  'The order could not be sent.',
+                  'La commande n’a pas pu être envoyée.',
+                ),
         );
       if (!direct) clearCart();
       window.location.assign(withSiteLanguage(`/comanda/${data.order.id}?cheie=${data.order.key}`, language));
@@ -81,7 +89,7 @@ export default function CheckoutView({
     <label className={`shop-field${options.wide ? ' shop-field-wide' : ''}`}>
       <span>
         {label}
-        {options.required === false && ` (${ro ? 'opțional' : 'optional'})`}
+        {options.required === false && ` (${pick(language, 'opțional', 'optional', 'facultatif')})`}
       </span>
       <input
         name={name}
@@ -97,13 +105,13 @@ export default function CheckoutView({
   );
 
   let content;
-  if (!inBrowser) content = <p>{ro ? 'Se încarcă…' : 'Loading…'}</p>;
+  if (!inBrowser) content = <p>{pick(language, 'Se încarcă…', 'Loading…', 'Chargement…')}</p>;
   else if (!items.length)
     content = (
       <div className="shop-empty shop-panel">
-        <p>{ro ? 'Coșul tău este gol.' : 'Your cart is empty.'}</p>
+        <p>{pick(language, 'Coșul tău este gol.', 'Your cart is empty.', 'Votre panier est vide.')}</p>
         <a className="shop-button" href={withSiteLanguage('/carti', language)}>
-          {ro ? 'Vezi cărțile' : 'Browse the books'}
+          {pick(language, 'Vezi cărțile', 'Browse the books', 'Voir les livres')}
         </a>
       </div>
     );
@@ -113,10 +121,18 @@ export default function CheckoutView({
         {state.message}
       </p>
     );
-  else if (state.status === 'loading') content = <p>{ro ? 'Se verifică prețurile…' : 'Checking prices…'}</p>;
+  else if (state.status === 'loading')
+    content = <p>{pick(language, 'Se verifică prețurile…', 'Checking prices…', 'Vérification des prix…')}</p>;
   else if (!state.shop.ready)
     content = (
-      <p className="shop-alert">{ro ? 'Comenzile online se deschid în curând.' : 'Online orders open soon.'}</p>
+      <p className="shop-alert">
+        {pick(
+          language,
+          'Comenzile online se deschid în curând.',
+          'Online orders open soon.',
+          'Les commandes en ligne ouvrent bientôt.',
+        )}
+      </p>
     );
   else {
     const { quote } = state;
@@ -124,35 +140,55 @@ export default function CheckoutView({
       <form className="shop-layout" onSubmit={event => void submit(event)}>
         <div className="shop-form">
           <fieldset>
-            <legend>{ro ? '1. Adresa de livrare' : '1. Delivery address'}</legend>
-            {field('name', ro ? 'Nume și prenume' : 'Full name', { autoComplete: 'name', wide: true, max: 120 })}
-            {field('phone', ro ? 'Telefon' : 'Phone', {
+            <legend>{pick(language, '1. Adresa de livrare', '1. Delivery address', '1. Adresse de livraison')}</legend>
+            {field('name', pick(language, 'Nume și prenume', 'Full name', 'Nom et prénom'), {
+              autoComplete: 'name',
+              wide: true,
+              max: 120,
+            })}
+            {field('phone', pick(language, 'Telefon', 'Phone', 'Téléphone'), {
               type: 'tel',
               autoComplete: 'tel',
               max: 30,
-              hint: ro ? 'Pentru curier.' : 'For the courier.',
+              hint: pick(language, 'Pentru curier.', 'For the courier.', 'Pour le livreur.'),
             })}
             {field('email', 'Email', {
               type: 'email',
               autoComplete: 'email',
               max: 200,
-              hint: ro ? 'Pentru confirmarea comenzii.' : 'For the order confirmation.',
+              hint: pick(
+                language,
+                'Pentru confirmarea comenzii.',
+                'For the order confirmation.',
+                'Pour la confirmation de commande.',
+              ),
             })}
-            {field('address', ro ? 'Adresa (stradă, număr, bloc, scară, apartament)' : 'Street address', {
-              autoComplete: 'street-address',
-              wide: true,
-              max: 300,
+            {field(
+              'address',
+              pick(language, 'Adresa (stradă, număr, bloc, scară, apartament)', 'Street address', 'Adresse'),
+              {
+                autoComplete: 'street-address',
+                wide: true,
+                max: 300,
+              },
+            )}
+            {field('city', pick(language, 'Localitatea', 'City', 'Localité'), {
+              autoComplete: 'address-level2',
+              max: 100,
             })}
-            {field('city', ro ? 'Localitatea' : 'City', { autoComplete: 'address-level2', max: 100 })}
-            {field('county', ro ? 'Județul / sectorul' : 'County', { autoComplete: 'address-level1', max: 100 })}
-            {field('postal_code', ro ? 'Cod poștal' : 'Postal code', {
+            {field('county', pick(language, 'Județul / sectorul', 'County', 'Département (județ)'), {
+              autoComplete: 'address-level1',
+              max: 100,
+            })}
+            {field('postal_code', pick(language, 'Cod poștal', 'Postal code', 'Code postal'), {
               autoComplete: 'postal-code',
               required: false,
               max: 12,
             })}
             <label className="shop-field shop-field-wide">
               <span>
-                {ro ? 'Observații pentru vânzător' : 'Note for the seller'} ({ro ? 'opțional' : 'optional'})
+                {pick(language, 'Observații pentru vânzător', 'Note for the seller', 'Note pour le vendeur')} (
+                {pick(language, 'opțional', 'optional', 'facultatif')})
               </span>
               <textarea name="note" maxLength={1000} value={values.note} onChange={update('note')} />
             </label>
@@ -162,7 +198,7 @@ export default function CheckoutView({
             </label>
           </fieldset>
           <fieldset>
-            <legend>{ro ? '2. Metoda de plată' : '2. Payment method'}</legend>
+            <legend>{pick(language, '2. Metoda de plată', '2. Payment method', '2. Mode de paiement')}</legend>
             {state.shop.payment_methods.map(item => (
               <label key={item} className="shop-choice">
                 <input
@@ -176,19 +212,25 @@ export default function CheckoutView({
                   {paymentLabel(item, language)}
                   <small>
                     {item === 'cod'
-                      ? ro
-                        ? 'Plătești curierului când primești coletul.'
-                        : 'Pay the courier when the parcel arrives.'
-                      : ro
-                        ? 'Primești datele contului după plasarea comenzii; expediem după ce plata ajunge.'
-                        : 'You get the account details after ordering; we ship once the payment arrives.'}
+                      ? pick(
+                          language,
+                          'Plătești curierului când primești coletul.',
+                          'Pay the courier when the parcel arrives.',
+                          'Vous payez le livreur à la réception du colis.',
+                        )
+                      : pick(
+                          language,
+                          'Primești datele contului după plasarea comenzii; expediem după ce plata ajunge.',
+                          'You get the account details after ordering; we ship once the payment arrives.',
+                          'Vous recevez les coordonnées bancaires après la commande\u00a0; nous expédions dès réception du paiement.',
+                        )}
                   </small>
                 </span>
               </label>
             ))}
           </fieldset>
           <fieldset>
-            <legend>{ro ? '3. Verifică produsele' : '3. Review items'}</legend>
+            <legend>{pick(language, '3. Verifică produsele', '3. Review items', '3. Vérifiez les articles')}</legend>
             <ul className="shop-lines shop-field-wide">
               {quote.lines.map(line => (
                 <ShopLine key={`${line.book_id}:${line.cover}`} line={line} language={language} heading="h3" />
@@ -196,21 +238,29 @@ export default function CheckoutView({
             </ul>
             {!direct && (
               <a className="shop-field-wide" href={withSiteLanguage('/cos', language)}>
-                {ro ? 'Modifică coșul' : 'Change the cart'}
+                {pick(language, 'Modifică coșul', 'Change the cart', 'Modifier le panier')}
               </a>
             )}
           </fieldset>
         </div>
-        <aside className="shop-panel shop-summary" aria-label={ro ? 'Sumarul comenzii' : 'Order summary'}>
+        <aside
+          className="shop-panel shop-summary"
+          aria-label={pick(language, 'Sumarul comenzii', 'Order summary', 'Récapitulatif de la commande')}
+        >
           <ShopTotals quote={quote} language={language} />
           <label className="shop-choice">
             <input type="checkbox" required checked={accepted} onChange={event => setAccepted(event.target.checked)} />
             <span>
-              {ro ? 'Am citit și accept ' : 'I have read and accept the '}
+              {pick(language, 'Am citit și accept ', 'I have read and accept the ', 'J’ai lu et j’accepte les ')}
               <a href={withSiteLanguage('/termeni', language)} target="_blank" rel="noopener">
-                {ro ? 'termenii și condițiile' : 'terms and conditions'}
+                {pick(language, 'termenii și condițiile', 'terms and conditions', 'conditions générales de vente')}
               </a>
-              {ro ? ', inclusiv dreptul de retragere în 14 zile.' : ', including the 14-day right of withdrawal.'}
+              {pick(
+                language,
+                ', inclusiv dreptul de retragere în 14 zile.',
+                ', including the 14-day right of withdrawal.',
+                ', y compris le droit de rétractation de 14\u00a0jours.',
+              )}
             </span>
           </label>
           {error && (
@@ -220,19 +270,23 @@ export default function CheckoutView({
           )}
           <button type="submit" className="shop-button shop-button-orange" disabled={sending || !quote.ok}>
             {sending
-              ? ro
-                ? 'Se trimite…'
-                : 'Sending…'
-              : ro
-                ? 'Comandă cu obligație de plată'
-                : 'Order with obligation to pay'}
+              ? pick(language, 'Se trimite…', 'Sending…', 'Envoi…')
+              : pick(
+                  language,
+                  'Comandă cu obligație de plată',
+                  'Order with obligation to pay',
+                  'Commande avec obligation de paiement',
+                )}
           </button>
           <p className="shop-note">
-            {ro
-              ? 'Comanda te obligă la plată. Datele tale sunt folosite doar pentru livrarea cărților ('
-              : 'Placing the order means you agree to pay. Your details are used only to deliver the books ('}
+            {pick(
+              language,
+              'Comanda te obligă la plată. Datele tale sunt folosite doar pentru livrarea cărților (',
+              'Placing the order means you agree to pay. Your details are used only to deliver the books (',
+              'Passer la commande vous engage à payer. Vos données servent uniquement à livrer les livres (',
+            )}
             <a href={withSiteLanguage('/confidentialitate', language)} target="_blank" rel="noopener">
-              {ro ? 'confidențialitate' : 'privacy'}
+              {pick(language, 'confidențialitate', 'privacy', 'confidentialité')}
             </a>
             ).
           </p>
@@ -248,10 +302,13 @@ export default function CheckoutView({
       back={
         direct
           ? undefined
-          : { href: withSiteLanguage('/cos', language), label: ro ? 'Înapoi la coș' : 'Back to the cart' }
+          : {
+              href: withSiteLanguage('/cos', language),
+              label: pick(language, 'Înapoi la coș', 'Back to the cart', 'Retour au panier'),
+            }
       }
     >
-      <h1 className="shop-title">{ro ? 'Finalizează comanda' : 'Checkout'}</h1>
+      <h1 className="shop-title">{pick(language, 'Finalizează comanda', 'Checkout', 'Commande')}</h1>
       {content}
     </ShopFrame>
   );

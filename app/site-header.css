@@ -122,7 +122,12 @@
   .public-header .site-options {
     font-size: 0.8125rem;
   }
+  /* Three languages and "Options" must fit beside the wordmark on a 320px screen. */
+  .public-header .site-options summary {
+    padding-inline: 0.15rem;
+  }
   .public-header .site-language-menu button {
+    min-width: 40px;
     padding: 0.4rem 0.2rem;
   }
 }

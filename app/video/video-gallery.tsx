@@ -7,8 +7,8 @@ import { useCallback, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { videoPosterPath, type VideoWithCommentCount } from '@/lib/video-types';
-import type { PoemLanguage } from '@/lib/poem-types';
-import { rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
+import type { SiteLanguage } from '@/lib/poem-types';
+import { pick, rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
 import SiteHeader from '../site-header';
 import VideoPlayer from './video-player';
 import VideoCover from './video-cover';
@@ -24,7 +24,7 @@ export default function VideoGallery({
   failed = false,
 }: {
   videos: VideoWithCommentCount[];
-  initialLanguage: PoemLanguage;
+  initialLanguage: SiteLanguage;
   canAdmin: boolean;
   failed?: boolean;
 }) {
@@ -35,7 +35,6 @@ export default function VideoGallery({
   const trigger = useRef<HTMLButtonElement | null>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const reader = useRef<HTMLDivElement>(null);
-  const ro = language === 'ro';
   const copy = siteCopy[language];
   const current = active === null ? null : videos[active];
   const currentId = current?.id;
@@ -48,7 +47,7 @@ export default function VideoGallery({
   );
   const countLabel = (video: VideoWithCommentCount) =>
     commentCountLabel(commentCounts[video.id] ?? video.comment_count, language);
-  function changeLanguage(value: PoemLanguage) {
+  function changeLanguage(value: SiteLanguage) {
     setLanguage(value);
     rememberSiteLanguage(value);
     router.refresh();
@@ -61,7 +60,7 @@ export default function VideoGallery({
   return (
     <>
       <a className="skip-link" href="#main">
-        {ro ? 'Mergi la videouri' : 'Skip to videos'}
+        {pick(language, 'Mergi la videouri', 'Skip to videos', 'Aller aux vidéos')}
       </a>
       <SiteHeader language={language} onLanguageChange={changeLanguage} videoPage />
       <main id="main" className="video-main shell" lang={language}>
@@ -70,16 +69,32 @@ export default function VideoGallery({
         </div>
         <div className="section-heading">
           <div>
-            <p className="eyebrow">{ro ? 'Povești în mișcare' : 'Stories in motion'}</p>
+            <p className="eyebrow">
+              {pick(language, 'Povești în mișcare', 'Stories in motion', 'Histoires en mouvement')}
+            </p>
             <h1>
               Video<span className="count">({String(videos.length).padStart(2, '0')})</span>
             </h1>
           </div>
-          <p>{ro ? 'Un răgaz pentru imagini și cuvinte.' : 'A moment for images and words.'}</p>
+          <p>
+            {pick(
+              language,
+              'Un răgaz pentru imagini și cuvinte.',
+              'A moment for images and words.',
+              'Un moment pour les images et les mots.',
+            )}
+          </p>
         </div>
         {failed ? (
           <div className="collection-empty" role="alert">
-            <p>{ro ? 'Videourile nu pot fi încărcate momentan.' : 'Videos could not be loaded right now.'}</p>
+            <p>
+              {pick(
+                language,
+                'Videourile nu pot fi încărcate momentan.',
+                'Videos could not be loaded right now.',
+                'Les vidéos n’ont pas pu être chargées pour le moment.',
+              )}
+            </p>
             <a className="secondary-button" href={withSiteLanguage('/video', language)}>
               {copy.retry}
             </a>
@@ -94,15 +109,18 @@ export default function VideoGallery({
                     trigger.current = event.currentTarget;
                     setActive(index);
                   }}
-                  aria-label={`${ro ? 'Redă' : 'Play'}: ${video.title} · ${countLabel(video)}`}
+                  aria-label={`${pick(language, 'Redă', 'Play', 'Lire')}: ${video.title} · ${countLabel(video)}`}
                 >
                   <VideoCover key={video.file_id} fileId={video.file_id} />
                   <span className="card-meta">
                     <span>{String(index + 1).padStart(2, '0')}</span>
-                    <span>Video</span>
+                    <span>{pick(language, 'Video', 'Video', 'Vidéo')}</span>
                   </span>
                   <h2>{video.title}</h2>
-                  <p>{video.description || (ro ? 'Deschide pentru a viziona.' : 'Open to watch.')}</p>
+                  <p>
+                    {video.description ||
+                      pick(language, 'Deschide pentru a viziona.', 'Open to watch.', 'Ouvrir pour regarder.')}
+                  </p>
                   <span className="card-bottom">
                     <span>
                       {video.author || 'Poetio'}
@@ -112,17 +130,24 @@ export default function VideoGallery({
                   </span>
                 </button>
                 <a className="content-page-link" href={withSiteLanguage(contentPath('video', video.id), language)}>
-                  {ro ? 'Pagina videoului ↗' : 'Video page ↗'}
+                  {pick(language, 'Pagina videoului ↗', 'Video page ↗', 'Page de la vidéo ↗')}
                 </a>
               </div>
             ))}
           </div>
         ) : (
           <div className="collection-empty">
-            <p>{ro ? 'Primul video va apărea aici în curând.' : 'The first video will appear here soon.'}</p>
+            <p>
+              {pick(
+                language,
+                'Primul video va apărea aici în curând.',
+                'The first video will appear here soon.',
+                'La première vidéo apparaîtra bientôt ici.',
+              )}
+            </p>
             {canAdmin && (
               <a className="primary-button" href="/admin/video">
-                {ro ? 'Adaugă primul video' : 'Add the first video'}
+                {pick(language, 'Adaugă primul video', 'Add the first video', 'Ajouter la première vidéo')}
               </a>
             )}
           </div>
@@ -164,7 +189,10 @@ export default function VideoGallery({
                 <span className="reader-brand">
                   Poetio<span aria-hidden="true">✳</span>
                 </span>
-                <DialogClose className="reader-close" aria-label={ro ? 'Închide videoul' : 'Close video'}>
+                <DialogClose
+                  className="reader-close"
+                  aria-label={pick(language, 'Închide videoul', 'Close video', 'Fermer la vidéo')}
+                >
                   ×
                 </DialogClose>
               </div>
@@ -181,22 +209,29 @@ export default function VideoGallery({
                   language={language}
                 />
                 <DialogDescription className="video-description">
-                  {current.description || (ro ? 'Video din colecția Poetio.' : 'A video from the Poetio collection.')}
+                  {current.description ||
+                    pick(
+                      language,
+                      'Video din colecția Poetio.',
+                      'A video from the Poetio collection.',
+                      'Une vidéo de la collection Poetio.',
+                    )}
                 </DialogDescription>
               </article>
               <a className="content-page-link" href={withSiteLanguage(contentPath('video', current.id), language)}>
-                {ro ? 'Deschide pagina videoului ↗' : 'Open video page ↗'}
+                {pick(language, 'Deschide pagina videoului ↗', 'Open video page ↗', 'Ouvrir la page de la vidéo ↗')}
               </a>
               <ReaderComments
                 key={current.id}
                 endpoint={`/api/videos/${current.id}/comments`}
                 language={language}
                 onCountChange={updateCommentCount}
-                intro={
-                  ro
-                    ? 'Ce ți-a transmis acest video? Lasă câteva gânduri.'
-                    : 'What did this video bring to mind? Share a few thoughts.'
-                }
+                intro={pick(
+                  language,
+                  'Ce ți-a transmis acest video? Lasă câteva gânduri.',
+                  'What did this video bring to mind? Share a few thoughts.',
+                  'Qu’est-ce que cette vidéo vous a évoqué\u00a0? Partagez quelques pensées.',
+                )}
               />
               <div className="reader-navigation">
                 <button disabled={active === 0} onClick={() => navigate(-1)}>
@@ -206,7 +241,7 @@ export default function VideoGallery({
                   {(active ?? 0) + 1} / {videos.length}
                 </span>
                 <button disabled={active === videos.length - 1} onClick={() => navigate(1)}>
-                  {ro ? 'Următorul →' : 'Next video →'}
+                  {pick(language, 'Următorul →', 'Next video →', 'Vidéo suivante →')}
                 </button>
               </div>
             </>

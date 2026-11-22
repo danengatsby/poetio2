@@ -1,19 +1,20 @@
 'use client';
-import type { PoemLanguage } from '@/lib/poem-types';
-import { withSiteLanguage } from '@/lib/site-language';
+import type { SiteLanguage } from '@/lib/poem-types';
+import { pick, withSiteLanguage } from '@/lib/site-language';
 import { addressLine, amountCents, formatMoney, paymentLabel, type PublicShop } from '@/lib/shop';
 import ShopFrame, { useShopLanguage } from '../shop-frame';
 
 // Terms of sale required for a distance contract (OUG 34/2014, Legea 365/2002, OUG 140/2021),
 // filled in from the seller's settings in /admin/magazin.
 
-function SellerContact({ shop, ro }: { shop: PublicShop; ro: boolean }) {
+function SellerContact({ shop, language }: { shop: PublicShop; language: SiteLanguage }) {
   return (
     <>
       {shop.seller_address && (
         <>
           <br />
-          {ro ? 'Adresa' : 'Address'}: {addressLine(shop.seller_address)}
+          {pick(language, 'Adresa: ', 'Address: ', 'Adresse\u00a0: ')}
+          {addressLine(shop.seller_address)}
         </>
       )}
       {shop.seller_details && (
@@ -25,13 +26,14 @@ function SellerContact({ shop, ro }: { shop: PublicShop; ro: boolean }) {
       {shop.contact_email && (
         <>
           <br />
-          Email: <a href={`mailto:${shop.contact_email}`}>{shop.contact_email}</a>
+          {pick(language, 'Email: ', 'Email: ', 'E-mail\u00a0: ')}
+          <a href={`mailto:${shop.contact_email}`}>{shop.contact_email}</a>
         </>
       )}
       {shop.contact_phone && (
         <>
           <br />
-          {ro ? 'Telefon' : 'Phone'}:{' '}
+          {pick(language, 'Telefon: ', 'Phone: ', 'Téléphone\u00a0: ')}
           <a href={`tel:${shop.contact_phone.replace(/[^\d+]/g, '')}`}>{shop.contact_phone}</a>
         </>
       )}
@@ -40,39 +42,57 @@ function SellerContact({ shop, ro }: { shop: PublicShop; ro: boolean }) {
 }
 
 /** The model withdrawal form of OUG 34/2014 (annex 1, part B), addressed to this seller. */
-function WithdrawalForm({ shop, ro }: { shop: PublicShop; ro: boolean }) {
+function WithdrawalForm({ shop, language }: { shop: PublicShop; language: SiteLanguage }) {
   const to = [shop.seller_name || 'Poetio', addressLine(shop.seller_address), shop.contact_email]
     .filter(Boolean)
     .join(', ');
-  const lines = ro
-    ? [
-        `Către: ${to}`,
-        'Vă informez prin prezenta cu privire la retragerea mea din contractul referitor la vânzarea următoarelor produse: …',
-        'Comandate la data: … / primite la data: …',
-        'Numărul comenzii: …',
-        'Numele consumatorului: …',
-        'Adresa consumatorului: …',
-        'Semnătura consumatorului (doar dacă formularul este trimis pe hârtie): …',
-        'Data: …',
-      ]
-    : [
-        `To: ${to}`,
-        'I hereby give notice that I withdraw from my contract of sale of the following goods: …',
-        'Ordered on: … / received on: …',
-        'Order number: …',
-        'Name of consumer: …',
-        'Address of consumer: …',
-        'Signature of consumer (only if this form is notified on paper): …',
-        'Date: …',
-      ];
-  const subject = ro ? 'Retragere din contract' : 'Withdrawal from contract';
+  const lines = pick(
+    language,
+    [
+      `Către: ${to}`,
+      'Vă informez prin prezenta cu privire la retragerea mea din contractul referitor la vânzarea următoarelor produse: …',
+      'Comandate la data: … / primite la data: …',
+      'Numărul comenzii: …',
+      'Numele consumatorului: …',
+      'Adresa consumatorului: …',
+      'Semnătura consumatorului (doar dacă formularul este trimis pe hârtie): …',
+      'Data: …',
+    ],
+    [
+      `To: ${to}`,
+      'I hereby give notice that I withdraw from my contract of sale of the following goods: …',
+      'Ordered on: … / received on: …',
+      'Order number: …',
+      'Name of consumer: …',
+      'Address of consumer: …',
+      'Signature of consumer (only if this form is notified on paper): …',
+      'Date: …',
+    ],
+    // France's model form (Code de la consommation, annexe à l’article R221-1), adapted to books.
+    [
+      `À l’attention de\u00a0: ${to}`,
+      'Je vous notifie par la présente ma rétractation du contrat portant sur la vente des biens ci-dessous\u00a0: …',
+      'Commandés le\u00a0: … / reçus le\u00a0: …',
+      'Numéro de commande\u00a0: …',
+      'Nom du consommateur\u00a0: …',
+      'Adresse du consommateur\u00a0: …',
+      'Signature du consommateur (uniquement en cas de notification du présent formulaire sur papier)\u00a0: …',
+      'Date\u00a0: …',
+    ],
+  );
+  const subject = pick(language, 'Retragere din contract', 'Withdrawal from contract', 'Rétractation du contrat');
   return (
     <>
-      <h2 id="formular-retragere">{ro ? 'Formularul de retragere' : 'Withdrawal form'}</h2>
+      <h2 id="formular-retragere">
+        {pick(language, 'Formularul de retragere', 'Withdrawal form', 'Formulaire de rétractation')}
+      </h2>
       <p>
-        {ro
-          ? 'Completează și trimite acest formular doar dacă vrei să renunți la contract. Poți scrie și cu propriile cuvinte; formularul nu este obligatoriu.'
-          : 'Complete and return this form only if you wish to withdraw from the contract. You may also write in your own words; the form is optional.'}
+        {pick(
+          language,
+          'Completează și trimite acest formular doar dacă vrei să renunți la contract. Poți scrie și cu propriile cuvinte; formularul nu este obligatoriu.',
+          'Complete and return this form only if you wish to withdraw from the contract. You may also write in your own words; the form is optional.',
+          'Complétez et renvoyez ce formulaire uniquement si vous souhaitez vous rétracter du contrat. Vous pouvez aussi écrire avec vos propres mots\u00a0; le formulaire est facultatif.',
+        )}
       </p>
       <div className="shop-withdrawal-form">
         {lines.map(line => (
@@ -84,7 +104,12 @@ function WithdrawalForm({ shop, ro }: { shop: PublicShop; ro: boolean }) {
           <a
             href={`mailto:${shop.contact_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join('\n\n'))}`}
           >
-            {ro ? 'Trimite formularul prin email' : 'Send the form by email'}
+            {pick(
+              language,
+              'Trimite formularul prin email',
+              'Send the form by email',
+              'Envoyer le formulaire par e-mail',
+            )}
           </a>
         </p>
       )}
@@ -92,9 +117,8 @@ function WithdrawalForm({ shop, ro }: { shop: PublicShop; ro: boolean }) {
   );
 }
 
-export default function TermsView({ initialLanguage, shop }: { initialLanguage: PoemLanguage; shop: PublicShop }) {
+export default function TermsView({ initialLanguage, shop }: { initialLanguage: SiteLanguage; shop: PublicShop }) {
   const [language, changeLanguage] = useShopLanguage(initialLanguage);
-  const ro = language === 'ro';
   const seller = shop.seller_name || 'Poetio';
   const shipping = amountCents(shop.shipping_amount);
   const days = `${shop.delivery_min_days}–${shop.delivery_max_days}`;
@@ -110,13 +134,20 @@ export default function TermsView({ initialLanguage, shop }: { initialLanguage: 
   return (
     <ShopFrame language={language} onLanguageChange={changeLanguage}>
       <article className="shop-document">
-        <h1 className="shop-title">{ro ? 'Termeni și condiții de vânzare' : 'Terms and conditions of sale'}</h1>
-        {ro ? (
+        <h1 className="shop-title">
+          {pick(
+            language,
+            'Termeni și condiții de vânzare',
+            'Terms and conditions of sale',
+            'Conditions générales de vente',
+          )}
+        </h1>
+        {language === 'ro' ? (
           <>
             <h2 id="vanzator">Vânzătorul</h2>
             <p>
               Cărțile comandate pe Poetio sunt vândute și expediate de <strong>{seller}</strong>.
-              <SellerContact shop={shop} ro />
+              <SellerContact shop={shop} language={language} />
             </p>
             <h2 id="comanda">Comanda și contractul</h2>
             <p>
@@ -162,7 +193,7 @@ export default function TermsView({ initialLanguage, shop }: { initialLanguage: 
               indici. Putem amâna restituirea până primim cărțile înapoi sau până ne trimiți dovada că le-ai expediat,
               oricare dintre acestea are loc mai întâi.
             </p>
-            <WithdrawalForm shop={shop} ro />
+            <WithdrawalForm shop={shop} language={language} />
             <h2 id="garantie">Garanția legală de conformitate</h2>
             <p>
               Cărțile beneficiază de garanția legală de conformitate (OUG 140/2021) timp de 2 ani de la livrare. Dacă
@@ -186,12 +217,92 @@ export default function TermsView({ initialLanguage, shop }: { initialLanguage: 
               române.
             </p>
           </>
+        ) : language === 'fr' ? (
+          <>
+            <h2 id="vanzator">Le vendeur</h2>
+            <p>
+              Les livres commandés sur Poetio sont vendus et expédiés par <strong>{seller}</strong>.
+              <SellerContact shop={shop} language={language} />
+            </p>
+            <h2 id="comanda">La commande et le contrat</h2>
+            <p>
+              Commandez depuis le panier ou avec le bouton «&nbsp;Acheter maintenant&nbsp;». Avant l’envoi, vous voyez
+              les livres, le prix total avec la livraison et le mode de paiement. Après avoir cliqué sur «&nbsp;Commande
+              avec obligation de paiement&nbsp;», vous recevez le numéro de commande, un lien pour en suivre l’état à
+              tout moment et un e-mail de confirmation. Le contrat est conclu lorsque le vendeur confirme la
+              commande&nbsp;; si un livre ne peut plus être livré, nous vous prévenons et vous ne payez rien.
+            </p>
+            <h2 id="preturi">Prix et paiement</h2>
+            <p>
+              Les prix sont indiqués en {shop.currency} sur la page de chaque livre et sont des prix définitifs.
+              Livraison&nbsp;:{' '}
+              {shipping === null
+                ? 'indiquée lors de la commande'
+                : shipping
+                  ? formatMoney(shipping, shop.currency, 'fr')
+                  : 'gratuite'}
+              , facturée une seule fois par commande. {methods && <>Modes de paiement&nbsp;: {methods}.</>}
+            </p>
+            <h2 id="livrare">Livraison</h2>
+            <p>
+              Nous livrons par transporteur, en Roumanie, généralement sous {days} jours ouvrés à compter de la commande
+              (à compter de la réception du paiement, pour le virement bancaire). Si nous ne pouvons pas livrer dans ce
+              délai, nous vous prévenons&nbsp;; vous pouvez annuler la commande et nous vous remboursons immédiatement
+              tout ce que vous avez payé. Le risque de perte ou d’endommagement des livres vous est transféré à la
+              réception du colis.
+            </p>
+            <h2 id="retur">Droit de rétractation et retours</h2>
+            <p>
+              Vous pouvez renoncer à l’achat dans un délai de 14&nbsp;jours à compter du jour où vous (ou une personne
+              que vous désignez, autre que le transporteur) recevez les livres, sans avoir à justifier de motif (OUG
+              34/2014). Pour vous rétracter, informez le vendeur avant l’expiration de ce délai par une déclaration
+              dénuée d’ambiguïté, par exemple un e-mail{email && <> à {email}</>}, en indiquant le numéro de commande.
+              Vous pouvez utiliser le <a href="#formular-retragere">formulaire de rétractation</a>, mais ce n’est pas
+              obligatoire.
+            </p>
+            <p>
+              Renvoyez ensuite les livres à l’adresse du vendeur au plus tard 14&nbsp;jours après votre notification.
+              Les frais de retour sont à votre charge. Votre responsabilité n’est engagée qu’en cas de dépréciation des
+              livres résultant de manipulations autres que celles nécessaires pour les examiner.
+            </p>
+            <p>
+              Nous vous remboursons toutes les sommes versées, y compris les frais de livraison standard, au plus tard
+              14&nbsp;jours après votre notification, par le même moyen de paiement&nbsp;; pour le paiement à la
+              livraison, par virement sur le compte que vous nous indiquez. Nous pouvons différer le remboursement
+              jusqu’à la réception des livres ou jusqu’à ce que vous ayez fourni une preuve de leur expédition, la date
+              retenue étant celle du premier de ces faits.
+            </p>
+            <WithdrawalForm shop={shop} language={language} />
+            <h2 id="garantie">Garantie légale de conformité</h2>
+            <p>
+              Les livres bénéficient de la garantie légale de conformité (OUG 140/2021) pendant 2&nbsp;ans à compter de
+              la livraison. Si vous recevez un livre abîmé, incomplet ou différent de celui commandé,
+              écrivez-nous&nbsp;: nous le remplaçons ou, si ce n’est pas possible, nous vous remboursons, sans frais
+              pour vous.
+            </p>
+            <h2 id="date">Données personnelles</h2>
+            <p>
+              Vos nom, adresse, téléphone et e-mail servent uniquement à livrer les livres, à la facturation et aux
+              échanges concernant votre commande. Ils ne sont jamais vendus ni utilisés à des fins publicitaires. Ce que
+              nous conservons, combien de temps et vos droits&nbsp;: <a href={privacy}>politique de confidentialité</a>.
+            </p>
+            <h2 id="reclamatii">Réclamations et litiges</h2>
+            <p>
+              En cas de problème, écrivez-nous d’abord&nbsp;; nous répondons au plus vite. Vous pouvez aussi vous
+              adresser à l’autorité roumaine de protection des consommateurs (
+              <a href="https://anpc.ro" rel="noopener noreferrer">
+                anpc.ro
+              </a>
+              ) ou recourir au règlement extrajudiciaire des litiges (SAL)&nbsp;: {sal}. Le contrat est soumis au droit
+              roumain.
+            </p>
+          </>
         ) : (
           <>
             <h2 id="vanzator">Seller</h2>
             <p>
               Books ordered on Poetio are sold and shipped by <strong>{seller}</strong>.
-              <SellerContact shop={shop} ro={false} />
+              <SellerContact shop={shop} language={language} />
             </p>
             <h2 id="comanda">Orders and the contract</h2>
             <p>
@@ -232,7 +343,7 @@ export default function TermsView({ initialLanguage, shop }: { initialLanguage: 
               payment method; for cash on delivery, by transfer to the account you give us. We may wait until we have
               the books back or you have shown that you sent them, whichever is earlier.
             </p>
-            <WithdrawalForm shop={shop} ro={false} />
+            <WithdrawalForm shop={shop} language={language} />
             <h2 id="garantie">Legal guarantee of conformity</h2>
             <p>
               The books carry the legal guarantee of conformity (OUG 140/2021) for 2 years from delivery. If a book

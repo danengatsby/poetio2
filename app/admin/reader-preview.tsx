@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useId, useRef, useState } from 'react';
-import type { PoemLanguage } from '@/lib/poem-types';
+import type { SiteLanguage } from '@/lib/poem-types';
 import LanguageSelector from '../language-selector';
 import '../content-detail.css';
 import './reader-preview.css';
@@ -10,12 +10,12 @@ export default function ReaderPreview({
   disabled = false,
   note,
 }: {
-  children: (language: PoemLanguage) => React.ReactNode;
+  children: (language: SiteLanguage) => React.ReactNode;
   disabled?: boolean;
   note?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false),
-    [language, setLanguage] = useState<PoemLanguage>('ro');
+    [language, setLanguage] = useState<SiteLanguage>('ro');
   const dialog = useRef<HTMLDialogElement>(null),
     heading = useId();
   useEffect(() => {

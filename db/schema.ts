@@ -36,6 +36,11 @@ export const poems = sqliteTable(
     translatedTheme: text('translated_theme'),
     translatedContent: text('translated_content'),
     translationProvenance: text('translation_provenance'),
+    // The French version, shown when the site is in French (in addition to translated_*).
+    frTitle: text('fr_title'),
+    frTheme: text('fr_theme'),
+    frContent: text('fr_content'),
+    frProvenance: text('fr_provenance'),
     imageId: text('image_id').references(() => poemImages.id),
     audioRoId: text('audio_ro_id').references(() => poemAudio.id),
     audioEnId: text('audio_en_id').references(() => poemAudio.id),
@@ -279,6 +284,9 @@ export const poemSearch = sqliteTable('poem_search', {
   translatedTitle: text('translated_title').notNull(),
   translatedTheme: text('translated_theme').notNull(),
   translatedContent: text('translated_content').notNull(),
+  frTitle: text('fr_title').notNull().default(''),
+  frTheme: text('fr_theme').notNull().default(''),
+  frContent: text('fr_content').notNull().default(''),
 });
 
 export const bookSearchPages = sqliteTable(
