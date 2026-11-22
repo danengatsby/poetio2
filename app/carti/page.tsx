@@ -3,16 +3,20 @@ import { getPoemDb } from '@/db/binding';
 import { withoutPurchaseLinks, type BookWithCommentCount } from '@/lib/book-types';
 import { listBooks } from '@/db/books';
 import { isOwnerEmail } from '@/lib/access';
+import { pageMetadata } from '@/lib/content-metadata';
 import { requestLanguage } from '@/lib/request-language';
 import { getChatGPTUser } from '../chatgpt-auth';
 import BooksView from './books-view';
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
-  const ro = (await requestLanguage()) === 'ro';
-  return {
+  const language = await requestLanguage();
+  const ro = language === 'ro';
+  return pageMetadata({
     title: ro ? 'Cărți — Poetio' : 'Books — Poetio',
     description: ro ? 'Colecția de cărți Poetio.' : 'The Poetio book collection.',
-  };
+    path: '/carti',
+    language,
+  });
 }
 export default async function BooksPage() {
   const language = await requestLanguage();

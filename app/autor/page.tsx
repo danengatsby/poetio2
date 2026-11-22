@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/content-metadata';
 import { requestLanguage } from '@/lib/request-language';
 import AuthorProfile from './author-profile';
 
@@ -6,13 +7,16 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const language = await requestLanguage();
-  return {
+  return pageMetadata({
     title: language === 'ro' ? 'Dan Enache — Autor | Poetio' : 'Dan Enache — Author | Poetio',
     description:
       language === 'ro'
         ? 'Despre Poetio: fotografia și biografia completă a poetului Dan Enache.'
         : 'About Poetio: the portrait and complete biography of poet Dan Enache.',
-  };
+    path: '/autor',
+    language,
+    image: { url: '/assets/dan-enache.jpg', width: 960, height: 960 },
+  });
 }
 
 export default async function AuthorPage() {

@@ -3,16 +3,19 @@ import { getPoemDb } from '@/db/binding';
 import type { VideoWithCommentCount } from '@/lib/video-types';
 import { listVideos } from '@/db/videos';
 import { isOwnerEmail } from '@/lib/access';
+import { pageMetadata } from '@/lib/content-metadata';
 import { requestLanguage } from '@/lib/request-language';
 import { getChatGPTUser } from '../chatgpt-auth';
 import VideoGallery from './video-gallery';
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const language = await requestLanguage();
-  return {
+  return pageMetadata({
     title: 'Video — Poetio',
     description: language === 'ro' ? 'Colecția video Poetio.' : 'The Poetio video collection.',
-  };
+    path: '/video',
+    language,
+  });
 }
 export default async function VideoPage() {
   const language = await requestLanguage();

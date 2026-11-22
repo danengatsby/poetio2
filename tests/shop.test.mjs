@@ -141,6 +141,76 @@ test('orders refuse incomplete details, bots and unavailable payment methods', a
   assert.equal((await shop.getBookShop(db, BOOK)).stock, 3);
 });
 
+test('orders are limited per email or phone and for the whole shop', async t => {
+  const db = await store(t);
+  await shop.saveBookShop(db, BOOK, { stock: null, language: 'ro' });
+  const items = [{ book_id: BOOK, cover: 1, quantity: 1 }];
+  const { perContactPerDay, perHour, perDay } = rules.ORDER_LIMITS;
+  for (let i = 0; i < perContactPerDay; i++) await shop.createOrder(db, { ...customer, items });
+  // The same email in other letters, or the same phone written differently, is the same contact.
+  await assert.rejects(shop.createOrder(db, { ...customer, items, email: 'ANA@example.com', phone: '0799 000 000' }), {
+    status: 429,
+    message: /ultimele 24 de ore.*autor@example\.com/,
+  });
+  await assert.rejects(shop.createOrder(db, { ...customer, items, email: 'alt@example.com', phone: '0040712345678' }), {
+    status: 429,
+  });
+  // A refused order writes nothing.
+  assert.equal((await shop.listOrders(db, 'all', 0)).orders.length, perContactPerDay);
+  // Orders older than 24 hours no longer count.
+  await db
+    .prepare('UPDATE orders SET created_at = created_at - ?')
+    .bind(25 * 3_600_000)
+    .run();
+  await shop.createOrder(db, { ...customer, items });
+
+  // The shop as a whole: so many orders an hour, and so many in 24 hours.
+  const fill = async (count, age) => {
+    for (let i = 0; i < count; i++)
+      await db
+        .prepare(
+          `INSERT INTO orders (id, number, access_key, customer_name, email, phone, address, city, county, postal_code,
+             payment_method, currency, subtotal_cents, shipping_cents, total_cents, created_at, updated_at)
+           SELECT ?, MAX(number) + 1, 'k', 'X', ?, ?, 'a', 'c', 'j', '', 'cod', 'RON', 1, 0, 1, ?, ?  FROM orders`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          `x${i}-${age}@example.com`,
+          `07${String(age).padStart(3, '0')}${String(i).padStart(5, '0')}`,
+          Date.now() - age,
+          Date.now() - age,
+        )
+        .run();
+  };
+  const other = { ...customer, email: 'nou@example.com', phone: '0733 111 222', items };
+  await fill(perHour - 1, 60_000);
+  await assert.rejects(shop.createOrder(db, other), { status: 429, message: /prea multe comenzi/ });
+  await db
+    .prepare('UPDATE orders SET created_at = created_at - ? WHERE created_at > ?')
+    .bind(2 * 3_600_000, Date.now() - 3_600_000)
+    .run();
+  await shop.createOrder(db, other);
+  await fill(perDay - perHour - 1, 3 * 3_600_000);
+  await assert.rejects(shop.createOrder(db, { ...other, email: 'al-treilea@example.com', phone: '0744 333 444' }), {
+    status: 429,
+    message: /prea multe comenzi/,
+  });
+});
+
+test('the per-address limit counts only recent events and forgets old keys', async () => {
+  const limit = (await tsImport('../lib/rate-limit.ts', import.meta.url)).createRateLimit(2, 1000, 3);
+  limit.record('1.1.1.1', 0);
+  limit.record('1.1.1.1', 500);
+  assert.equal(limit.allows('1.1.1.1', 900), false);
+  assert.equal(limit.allows('1.1.1.1', 1200), true);
+  assert.equal(limit.allows('2.2.2.2', 900), true);
+  // Without an address (a request that did not come through nginx) nothing is limited.
+  limit.record('', 900);
+  assert.equal(limit.allows('', 900), true);
+  for (const key of ['a', 'b', 'c']) limit.record(key, 1000);
+  assert.equal(limit.allows('1.1.1.1', 1100), true);
+});
+
 test('status changes follow the order flow and a cancellation returns the copies once', async t => {
   const db = await store(t);
   const order = await shop.createOrder(db, { ...customer, items: [{ book_id: BOOK, cover: 1, quantity: 2 }] });

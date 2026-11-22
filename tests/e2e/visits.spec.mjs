@@ -12,7 +12,10 @@ const reported = page =>
 test('a reader’s pages appear in /admin/vizite with IP and place; the owner’s own reading does not', async ({
   browser,
 }) => {
-  const reader = await browser.newContext({ extraHTTPHeaders: { 'x-real-ip': READER_IP } });
+  // A visitor's own CF-Connecting-IP / CF-IPCountry are ignored on the VPS: only nginx's X-Real-IP counts.
+  const reader = await browser.newContext({
+    extraHTTPHeaders: { 'x-real-ip': READER_IP, 'cf-connecting-ip': OWNER_IP, 'cf-ipcountry': 'XX' },
+  });
   const page = await reader.newPage();
   let report = reported(page);
   await page.goto('/');

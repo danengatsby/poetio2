@@ -8,6 +8,7 @@ import {
   DEFAULT_SHOP_SETTINGS,
   MAX_ITEM_QUANTITY,
   NEXT_STATUSES,
+  ORDER_LIMITS,
   ORDER_STATUSES,
   amountCents,
   isCurrency,
@@ -300,6 +301,39 @@ export async function quote(db: Database, value: unknown, settings?: ShopSetting
   };
 }
 
+const HOUR = 3_600_000;
+// Phone numbers typed as +40 712 345 678, 0712345678 or 0040712345678 are the same number.
+const phoneKey = (phone: string) => phone.replace(/\D/g, '').slice(-9);
+
+/** Refuses an order when its contact details or the whole shop have placed too many recently (ORDER_LIMITS). */
+async function checkOrderLimits(
+  db: Database,
+  customer: { email: string; phone: string },
+  settings: ShopSettings,
+  now: number,
+) {
+  const recent = (
+    await db
+      .prepare('SELECT email, phone, created_at FROM orders WHERE created_at > ?')
+      .bind(now - 24 * HOUR)
+      .all<{ email: string; phone: string; created_at: number }>()
+  ).results;
+  const contact = settings.contact_email ? ` sau scrie-ne la ${settings.contact_email}` : '';
+  const email = customer.email.toLowerCase(),
+    phone = phoneKey(customer.phone);
+  const sameContact = recent.filter(order => order.email.toLowerCase() === email || phoneKey(order.phone) === phone);
+  if (sameContact.length >= ORDER_LIMITS.perContactPerDay)
+    throw new AppError(
+      429,
+      `Cu acest email sau telefon s-au trimis deja ${sameContact.length} comenzi în ultimele 24 de ore. Pentru o comandă nouă, revino mâine${contact}.`,
+    );
+  if (
+    recent.length >= ORDER_LIMITS.perDay ||
+    recent.filter(order => order.created_at > now - HOUR).length >= ORDER_LIMITS.perHour
+  )
+    throw new AppError(429, `Magazinul primește acum prea multe comenzi. Încearcă din nou peste o oră${contact}.`);
+}
+
 const randomKey = () =>
   Array.from(crypto.getRandomValues(new Uint8Array(24)), byte => byte.toString(16).padStart(2, '0')).join('');
 
@@ -331,6 +365,7 @@ export async function createOrder(db: Database, value: unknown) {
   const method = data.payment_method as PaymentMethod;
   if (!paymentMethods(settings).includes(method)) throw new AppError(400, 'Alege o metodă de plată disponibilă.');
   if (data.accept_terms !== true) throw new AppError(400, 'Pentru a comanda, acceptă termenii și condițiile.');
+  await checkOrderLimits(db, customer, settings, Date.now());
   const offer = await quote(db, data.items, settings);
   if (!offer.ok)
     throw new AppError(409, 'Prețul sau stocul unui produs s-a schimbat. Verifică din nou coșul înainte de a comanda.');

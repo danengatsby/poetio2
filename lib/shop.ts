@@ -5,6 +5,17 @@ export type PaymentMethod = 'cod' | 'transfer';
 export const ORDER_STATUSES = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export const MAX_ITEM_QUANTITY = 10;
+// Each order emails the seller and the address typed in, and holds stock until the owner
+// cancels it, so orders cannot be placed in bulk. Cancelled orders still count.
+export const ORDER_LIMITS = {
+  /** Same email address or same phone number, in 24 hours. */
+  perContactPerDay: 3,
+  /** From one IP address, in an hour. */
+  perAddressPerHour: 5,
+  /** The whole shop, in an hour and in 24 hours. */
+  perHour: 20,
+  perDay: 50,
+};
 
 export type ShopSettings = {
   seller_name: string;

@@ -48,3 +48,29 @@ test('copies a link that holds only the poem and its language', async ({ page, c
   await expect(page.getByRole('status').filter({ hasText: 'Link copied.' })).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`${baseURL}/poeme/${id}?lang=en-US`);
 });
+
+test('collection pages have a canonical address and a sharing preview; favicon.ico exists', async ({
+  page,
+  request,
+}) => {
+  for (const [path, canonical, image] of [
+    ['/', 'https://poetio.cloud/', '/assets/poetio-balloons.png'],
+    ['/?lang=en-US', 'https://poetio.cloud/?lang=en-US', '/assets/poetio-balloons.png'],
+    ['/carti', 'https://poetio.cloud/carti', '/assets/poetio-balloons.png'],
+    ['/video', 'https://poetio.cloud/video', '/assets/poetio-balloons.png'],
+    ['/autor', 'https://poetio.cloud/autor', '/assets/dan-enache.jpg'],
+  ]) {
+    await page.goto(path);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', canonical);
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', canonical);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', 'https://poetio.cloud' + image);
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', /Poetio/);
+    await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+  }
+  const icon = await request.get('/favicon.ico');
+  expect(icon.status()).toBe(200);
+  expect(icon.headers()['content-type']).toMatch(/icon/);
+  await page.goto('/');
+  await expect(page.locator('link[rel="icon"][href="/favicon.ico"]')).toHaveCount(1);
+  await expect(page.locator('link[rel="icon"][href="/favicon.svg"]')).toHaveCount(1);
+});

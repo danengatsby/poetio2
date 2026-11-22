@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { siteIntro } from '@/lib/content-metadata';
 import { requestLanguage } from '@/lib/request-language';
 import ThemeProvider from './theme-provider';
 import VisitTracker from './visit-tracker';
@@ -8,13 +9,15 @@ import './admin.css';
 import './theme.css';
 import './language.css';
 export async function generateMetadata(): Promise<Metadata> {
-  const ro = (await requestLanguage()) === 'ro';
   return {
-    title: ro ? 'Poetio — Un răgaz pentru tine' : 'Poetio — A place to pause',
-    description: ro
-      ? 'O colecție de poeme despre lumină, amintiri și lucrurile mărunte pe care aproape le trecem cu vederea. Intră și rămâi pentru un poem.'
-      : 'A collection of poems about light, memory, and the small things we almost miss. Step inside and stay for a poem.',
-    icons: { icon: '/favicon.svg', shortcut: '/favicon.svg' },
+    ...siteIntro[await requestLanguage()],
+    // favicon.ico for crawlers and older browsers; the SVG wherever it is supported.
+    icons: {
+      icon: [
+        { url: '/favicon.ico', sizes: '48x48' },
+        { url: '/favicon.svg', type: 'image/svg+xml' },
+      ],
+    },
   };
 }
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

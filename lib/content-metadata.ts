@@ -57,4 +57,50 @@ export function contentMetadata({
     robots: { index: true, follow: true },
   };
 }
+/** The site's own name and introduction: the home page and the default for every page. */
+export const siteIntro = {
+  ro: {
+    title: 'Poetio — Un răgaz pentru tine',
+    description:
+      'O colecție de poeme despre lumină, amintiri și lucrurile mărunte pe care aproape le trecem cu vederea. Intră și rămâi pentru un poem.',
+  },
+  'en-US': {
+    title: 'Poetio — A place to pause',
+    description:
+      'A collection of poems about light, memory, and the small things we almost miss. Step inside and stay for a poem.',
+  },
+} as const;
+
+/** Canonical address, language versions and sharing preview of a collection page (/, /carti, /video, /autor). */
+export function pageMetadata({
+  title,
+  description,
+  path,
+  language,
+  image = { url: '/assets/poetio-balloons.png', width: 2048, height: 683 },
+}: {
+  title: string;
+  description: string;
+  path: string;
+  language: string;
+  image?: { url: string; width: number; height: number };
+}): Metadata {
+  const url = (lang: string) => siteOrigin + path + (lang === 'en-US' ? '?lang=en-US' : '');
+  return {
+    title,
+    description,
+    alternates: { canonical: url(language), languages: { ro: url('ro'), 'en-US': url('en-US') } },
+    openGraph: {
+      title,
+      description,
+      url: url(language),
+      siteName: 'Poetio',
+      locale: language === 'en-US' ? 'en_US' : 'ro_RO',
+      type: 'website',
+      images: [{ ...image, url: siteOrigin + image.url, alt: title }],
+    },
+    twitter: { card: 'summary_large_image', title, description, images: [siteOrigin + image.url] },
+  };
+}
+
 export const safeJsonLd = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');

@@ -36,6 +36,8 @@ export const env = {
     return getOperations();
   },
   ADMIN_AUTH_MODE: 'basic',
+  // nginx sets X-Real-IP to the connecting address (deploy/poetio-proxy.conf).
+  CLIENT_IP_HEADER: 'x-real-ip',
   IMAGE_DECODER: imageDecoder,
   get MEDIA_VALIDATOR() {
     return (mediaValidator ??= getOperations().observe('media', openMediaValidator(dataDirectory())));

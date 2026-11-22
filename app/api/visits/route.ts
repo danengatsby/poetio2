@@ -1,4 +1,5 @@
 import { getPoemDb } from '@/db/binding';
+import { behindCloudflare, clientIp } from '@/db/client-ip';
 import { getGeoLocator } from '@/db/geo-binding';
 import { recordVisit } from '@/db/visits';
 import { AppError, apiError, isOwnerEmail, readJson, requireSameOrigin } from '@/lib/access';
@@ -13,6 +14,7 @@ function place(request: CloudflareRequest, ip: string): PlaceFields | null {
   if (cf?.country) return { country: cf.country, region: cf.region ?? '', city: cf.city ?? '' };
   const located = ip ? getGeoLocator()?.lookup(ip) : null;
   if (located) return located;
+  if (!behindCloudflare()) return null;
   const country = request.headers.get('cf-ipcountry');
   return country && /^[A-Z]{2}$/.test(country) ? { country, region: '', city: '' } : null;
 }
@@ -26,8 +28,7 @@ export async function POST(request: Request) {
     const body = ((await readJson(request, 2_048)) ?? {}) as Record<string, unknown>;
     // The owner's own reading, signed in to the administration, is not counted.
     if (!isOwnerEmail(request.headers.get('oai-authenticated-user-email'))) {
-      // nginx sets X-Real-IP to the connecting address; Cloudflare sets CF-Connecting-IP.
-      const ip = (request.headers.get('cf-connecting-ip') || request.headers.get('x-real-ip') || '').trim();
+      const ip = clientIp(request);
       await recordVisit(getPoemDb(), {
         path: body.path,
         referrer: body.referrer,

@@ -39,7 +39,7 @@ Meniul „Administrare” este vizibil și fără autentificare. Accesarea lui d
 - Baza de date: `/var/lib/poetio/poetio.sqlite3`, SQLite cu WAL și chei externe activate.
 - Imagini: `/var/lib/poetio/images/`; înregistrări audio: `/var/lib/poetio/audio/`. Fișierele sunt servite exclusiv prin API-ul aplicației.
 - Compilare publicată: `/var/www/Poetio/current/dist`; fiecare release are propria copie de dependențe. În mod obișnuit se instalează prin `npm ci`; excepția verificată pentru release-ul preferințelor este descrisă mai sus.
-- Configurație Nginx: `/etc/nginx/sites-available/poetio-cloud`, `/etc/nginx/conf.d/poetio-comments-rate.conf` și fișierele comune din `/etc/poetio/`. Zona `poetio_admin` este definită o singură dată, la începutul fișierului `poetio-cloud`.
+- Configurație Nginx: `/etc/nginx/sites-available/poetio-cloud`, `/etc/nginx/conf.d/poetio-comments-rate.conf`, `/etc/nginx/conf.d/poetio-http.conf` (din `deploy/poetio-http.conf`; definește `$poetio_cache_control`, folosit de `app.conf`, deci se instalează înaintea lui) și fișierele comune din `/etc/poetio/`. Zona `poetio_admin` este definită o singură dată, la începutul fișierului `poetio-cloud`.
 - Configurație opțională de execuție: `/etc/poetio/runtime.env`.
 
 `npm run build:vps` generează în `dist/` varianta pentru Node.js. După verificare, aceasta se copiază în directorul de publicare și se repornește `poetio.service`. Datele din `/var/lib/poetio` se păstrează la actualizare; exporturile inițiale nu se importă din nou peste datele active. Pentru backupul unei baze aflate în funcțiune se folosește mecanismul SQLite de backup, împreună cu o copie a directoarelor de imagini și audio; nu se copiază doar fișierul principal ignorând WAL.

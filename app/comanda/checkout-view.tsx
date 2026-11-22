@@ -59,7 +59,7 @@ export default function CheckoutView({
       const data = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(
-          response.status === 429
+          response.status === 429 && !data.error
             ? ro
               ? 'Prea multe încercări. Așteaptă un minut și trimite din nou.'
               : 'Too many attempts. Wait a minute and try again.'

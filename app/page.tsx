@@ -1,5 +1,7 @@
 import { getChatGPTUser } from './chatgpt-auth';
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import { pageMetadata, siteIntro } from '@/lib/content-metadata';
 import { siteCopy } from '@/lib/site-language';
 import { requestLanguage } from '@/lib/request-language';
 import { isOwnerEmail } from '@/lib/access';
@@ -8,6 +10,10 @@ import { listPoemCards } from '@/db/poem-collection';
 import { type CollectionParams, type PoemCollection } from '@/lib/poem-collection';
 import Showcase from './showcase';
 export const dynamic = 'force-dynamic';
+export async function generateMetadata(): Promise<Metadata> {
+  const language = await requestLanguage();
+  return pageMetadata({ ...siteIntro[language], path: '/', language });
+}
 export default async function Home({ searchParams }: { searchParams: Promise<CollectionParams> }) {
   const params = await searchParams;
   const language = await requestLanguage();
