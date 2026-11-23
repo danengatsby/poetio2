@@ -93,6 +93,23 @@ const copy = {
     slow: 'Has enviado demasiados comentarios. Espera un minuto y vuelve a intentarlo.',
     success: 'Hemos recibido tu comentario; aparecerá tras la aprobación del administrador.',
   },
+  it: {
+    title: 'Commenti',
+    intro: 'Che cosa ti ha suscitato questa poesia? Condividi qualche pensiero.',
+    name: 'Il tuo nome',
+    body: 'Il tuo commento',
+    note: 'Il tuo nome e il tuo commento saranno pubblici dopo l’approvazione dell’amministratore. Mantieni un tono rispettoso, per favore.',
+    send: 'Invia il commento',
+    sending: 'Invio in corso…',
+    loading: 'Caricamento dei commenti…',
+    empty: 'Sii il primo a lasciare un commento.',
+    more: 'Altri commenti',
+    retry: 'Riprova',
+    loadError: 'Al momento non è stato possibile caricare i commenti.',
+    sendError: 'Non è stato possibile pubblicare il tuo commento. Il tuo testo è stato conservato; riprova.',
+    slow: 'Hai inviato troppi commenti. Attendi un minuto e riprova.',
+    success: 'Abbiamo ricevuto il tuo commento; apparirà dopo l’approvazione dell’amministratore.',
+  },
 };
 
 export default function PoemComments({
@@ -288,6 +305,7 @@ function CommentForm({
                     'Le brouillon reste dans cet onglet malgré les changements de langue et les rechargements, pendant 24 heures au plus.',
                     'Der Entwurf bleibt bei Sprachwechsel und Neuladen in diesem Tab bis zu 24 Stunden erhalten.',
                     'El borrador se conserva en esta pestaña, aunque cambies de idioma o recargues, durante 24 horas como máximo.',
+                    'La bozza resta in questa scheda, anche se cambi lingua o ricarichi, per al massimo 24 ore.',
                   )
                 : pick(
                     language,
@@ -296,6 +314,7 @@ function CommentForm({
                     'Ce navigateur ne peut pas enregistrer le brouillon. Copiez votre texte avant de quitter cette page.',
                     'Dieser Browser kann den Entwurf nicht speichern. Kopieren Sie Ihren Text, bevor Sie die Seite verlassen.',
                     'Este navegador no puede guardar el borrador. Copia tu texto antes de salir de esta página.',
+                    'Questo browser non può salvare la bozza. Copia il tuo testo prima di lasciare questa pagina.',
                   )}
             </p>
             <button
@@ -312,6 +331,7 @@ function CommentForm({
                       'Effacer le nom et le commentaire non envoyé\u00a0?',
                       'Namen und nicht gesendeten Kommentar verwerfen?',
                       '¿Descartar el nombre y el comentario sin enviar?',
+                      'Eliminare il nome e il commento non inviato?',
                     ),
                   )
                 ) {
@@ -328,6 +348,7 @@ function CommentForm({
                 'Effacer le brouillon',
                 'Entwurf verwerfen',
                 'Descartar el borrador',
+                'Elimina la bozza',
               )}
             </button>
           </>

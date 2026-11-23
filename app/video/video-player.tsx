@@ -57,7 +57,7 @@ export default function VideoPlayer({
           <track
             kind="subtitles"
             srcLang="ro"
-            label={pick(language, 'Română', 'Romanian', 'Roumain', 'Rumänisch', 'Rumano')}
+            label={pick(language, 'Română', 'Romanian', 'Roumain', 'Rumänisch', 'Rumano', 'Rumeno')}
             src={pilotSubtitles.path}
           />
         )}
@@ -82,6 +82,7 @@ export default function VideoPlayer({
             'Sous-titres en roumain',
             'Rumänische Untertitel',
             'Subtítulos en rumano',
+            'Sottotitoli in rumeno',
           )}
         </button>
       )}
@@ -95,6 +96,7 @@ export default function VideoPlayer({
                 'Fichier chargé. Lancez la lecture pour vérifier l’image et le son.',
                 'Datei geladen. Spielen Sie sie ab, um Bild und Ton zu prüfen.',
                 'Archivo cargado. Reprodúcelo para comprobar la imagen y el sonido.',
+                'File caricato. Riproducilo per controllare immagine e suono.',
               )
             : pick(
                 language,
@@ -103,6 +105,7 @@ export default function VideoPlayer({
                 'Vérification du chargement de la vidéo…',
                 'Videoladen wird geprüft…',
                 'Comprobando la carga del vídeo…',
+                'Verifica del caricamento del video…',
               )}
         </p>
       )}
@@ -115,6 +118,7 @@ export default function VideoPlayer({
             'Cette vidéo ne peut pas être lue dans ce navigateur. Essayez un autre navigateur ou téléchargez le fichier.',
             'Dieses Video kann in diesem Browser nicht abgespielt werden. Versuchen Sie einen anderen Browser oder laden Sie die Datei herunter.',
             'Este vídeo no se puede reproducir en este navegador. Prueba otro navegador o descarga el archivo.',
+            'Questo video non può essere riprodotto in questo browser. Prova un altro browser o scarica il file.',
           )}{' '}
           <a href={src} download>
             {pick(
@@ -124,6 +128,7 @@ export default function VideoPlayer({
               'Télécharger la vidéo',
               'Video herunterladen',
               'Descargar el vídeo',
+              'Scarica il video',
             )}
           </a>
         </p>

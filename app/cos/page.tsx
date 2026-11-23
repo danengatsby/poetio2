@@ -15,6 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'Panier — Poetio',
       'Warenkorb — Poetio',
       'Carrito — Poetio',
+      'Carrello — Poetio',
     ),
     robots: { index: false },
   };

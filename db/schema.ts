@@ -49,6 +49,10 @@ export const poems = sqliteTable(
     esTheme: text('es_theme'),
     esContent: text('es_content'),
     esProvenance: text('es_provenance'),
+    itTitle: text('it_title'),
+    itTheme: text('it_theme'),
+    itContent: text('it_content'),
+    itProvenance: text('it_provenance'),
     imageId: text('image_id').references(() => poemImages.id),
     audioRoId: text('audio_ro_id').references(() => poemAudio.id),
     audioEnId: text('audio_en_id').references(() => poemAudio.id),
@@ -301,6 +305,9 @@ export const poemSearch = sqliteTable('poem_search', {
   esTitle: text('es_title').notNull().default(''),
   esTheme: text('es_theme').notNull().default(''),
   esContent: text('es_content').notNull().default(''),
+  itTitle: text('it_title').notNull().default(''),
+  itTheme: text('it_theme').notNull().default(''),
+  itContent: text('it_content').notNull().default(''),
 });
 
 export const bookSearchPages = sqliteTable(

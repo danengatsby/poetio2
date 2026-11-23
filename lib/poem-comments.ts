@@ -8,6 +8,7 @@ export function commentCountLabel(count: number, language: SiteLanguage) {
     `${count} ${count > 1 ? 'commentaires' : 'commentaire'}`,
     `${count} ${count === 1 ? 'Kommentar' : 'Kommentare'}`,
     `${count} ${count === 1 ? 'comentario' : 'comentarios'}`,
+    `${count} ${count === 1 ? 'commento' : 'commenti'}`,
   );
 }
 

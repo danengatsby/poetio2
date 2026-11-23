@@ -13,11 +13,12 @@ export default function LegalLinks({ language }: { language: SiteLanguage }) {
           'Conditions générales',
           'AGB',
           'Términos y condiciones',
+          'Termini e condizioni',
         )}
       </a>
       {' · '}
       <a href={withSiteLanguage('/confidentialitate', language)}>
-        {pick(language, 'Confidențialitate', 'Privacy', 'Confidentialité', 'Datenschutz', 'Privacidad')}
+        {pick(language, 'Confidențialitate', 'Privacy', 'Confidentialité', 'Datenschutz', 'Privacidad', 'Privacy')}
       </a>
     </span>
   );

@@ -43,6 +43,9 @@ export default function PoemPreview({
     es_title: draft.es_title ?? null,
     es_theme: draft.es_theme ?? null,
     es_content: draft.es_content ?? null,
+    it_title: draft.it_title ?? null,
+    it_theme: draft.it_theme ?? null,
+    it_content: draft.it_content ?? null,
     audio_ro_id: draft.audio_ro_id ?? null,
     audio_en_id: draft.audio_en_id ?? null,
   };
@@ -54,7 +57,7 @@ export default function PoemPreview({
           <p>
             {translationPending
               ? 'Se afișează traducerea completată acum în editor. Pentru traducerea automată, folosește mai întâi „Pregătește traducerea în schiță”, dacă este disponibilă.'
-              : 'Originalul, traducerea și versiunile în franceză, germană și spaniolă din editor pot fi comparate cu selectorul RO/EN/FR/DE/ES.'}
+              : 'Originalul, traducerea și versiunile în franceză, germană, spaniolă și italiană din editor pot fi comparate cu selectorul RO/EN/FR/DE/ES/IT.'}
           </p>
           <p>Fișierele audio selectate sunt redate local. Previzualizarea nu le încarcă pe server.</p>
         </>

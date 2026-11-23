@@ -67,6 +67,7 @@ export default function VideoGallery({
           'Aller aux vidéos',
           'Zu den Videos springen',
           'Ir a los vídeos',
+          'Vai ai video',
         )}
       </a>
       <SiteHeader language={language} onLanguageChange={changeLanguage} videoPage />
@@ -84,6 +85,7 @@ export default function VideoGallery({
                 'Histoires en mouvement',
                 'Geschichten in Bewegung',
                 'Historias en movimiento',
+                'Storie in movimento',
               )}
             </p>
             <h1>
@@ -98,6 +100,7 @@ export default function VideoGallery({
               'Un moment pour les images et les mots.',
               'Ein Moment für Bilder und Worte.',
               'Un momento para las imágenes y las palabras.',
+              'Un momento per le immagini e le parole.',
             )}
           </p>
         </div>
@@ -111,6 +114,7 @@ export default function VideoGallery({
                 'Les vidéos n’ont pas pu être chargées pour le moment.',
                 'Die Videos konnten gerade nicht geladen werden.',
                 'Ahora mismo no se pudieron cargar los vídeos.',
+                'Al momento non è stato possibile caricare i video.',
               )}
             </p>
             <a className="secondary-button" href={withSiteLanguage('/video', language)}>
@@ -127,12 +131,12 @@ export default function VideoGallery({
                     trigger.current = event.currentTarget;
                     setActive(index);
                   }}
-                  aria-label={`${pick(language, 'Redă', 'Play', 'Lire', 'Abspielen', 'Reproducir')}: ${video.title} · ${countLabel(video)}`}
+                  aria-label={`${pick(language, 'Redă', 'Play', 'Lire', 'Abspielen', 'Reproducir', 'Riproduci')}: ${video.title} · ${countLabel(video)}`}
                 >
                   <VideoCover key={video.file_id} fileId={video.file_id} />
                   <span className="card-meta">
                     <span>{String(index + 1).padStart(2, '0')}</span>
-                    <span>{pick(language, 'Video', 'Video', 'Vidéo', 'Video', 'Vídeo')}</span>
+                    <span>{pick(language, 'Video', 'Video', 'Vidéo', 'Video', 'Vídeo', 'Video')}</span>
                   </span>
                   <h2>{video.title}</h2>
                   <p>
@@ -144,6 +148,7 @@ export default function VideoGallery({
                         'Ouvrir pour regarder.',
                         'Zum Ansehen öffnen.',
                         'Abrir para ver.',
+                        'Apri per guardare.',
                       )}
                   </p>
                   <span className="card-bottom">
@@ -162,6 +167,7 @@ export default function VideoGallery({
                     'Page de la vidéo ↗',
                     'Videoseite ↗',
                     'Página del vídeo ↗',
+                    'Pagina del video ↗',
                   )}
                 </a>
               </div>
@@ -177,6 +183,7 @@ export default function VideoGallery({
                 'La première vidéo apparaîtra bientôt ici.',
                 'Das erste Video erscheint bald hier.',
                 'El primer vídeo aparecerá pronto aquí.',
+                'Il primo video apparirà presto qui.',
               )}
             </p>
             {canAdmin && (
@@ -188,6 +195,7 @@ export default function VideoGallery({
                   'Ajouter la première vidéo',
                   'Das erste Video hinzufügen',
                   'Añadir el primer vídeo',
+                  'Aggiungi il primo video',
                 )}
               </a>
             )}
@@ -239,6 +247,7 @@ export default function VideoGallery({
                     'Fermer la vidéo',
                     'Video schließen',
                     'Cerrar el vídeo',
+                    'Chiudi il video',
                   )}
                 >
                   ×
@@ -265,6 +274,7 @@ export default function VideoGallery({
                       'Une vidéo de la collection Poetio.',
                       'Ein Video aus der Poetio-Sammlung.',
                       'Un vídeo de la colección Poetio.',
+                      'Un video della collezione Poetio.',
                     )}
                 </DialogDescription>
               </article>
@@ -276,6 +286,7 @@ export default function VideoGallery({
                   'Ouvrir la page de la vidéo ↗',
                   'Videoseite öffnen ↗',
                   'Abrir la página del vídeo ↗',
+                  'Apri la pagina del video ↗',
                 )}
               </a>
               <ReaderComments
@@ -290,6 +301,7 @@ export default function VideoGallery({
                   'Qu’est-ce que cette vidéo vous a évoqué\u00a0? Partagez quelques pensées.',
                   'Woran hat Sie dieses Video erinnert? Teilen Sie ein paar Gedanken.',
                   '¿Qué te ha evocado este vídeo? Comparte algunas ideas.',
+                  'Che cosa ti ha suscitato questo video? Condividi qualche pensiero.',
                 )}
               />
               <div className="reader-navigation">
@@ -307,6 +319,7 @@ export default function VideoGallery({
                     'Vidéo suivante →',
                     'Nächstes Video →',
                     'Vídeo siguiente →',
+                    'Video successivo →',
                   )}
                 </button>
               </div>

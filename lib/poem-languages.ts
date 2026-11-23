@@ -26,6 +26,9 @@ export function poemVersion(
     | 'es_title'
     | 'es_theme'
     | 'es_content'
+    | 'it_title'
+    | 'it_theme'
+    | 'it_content'
   >,
   language: SiteLanguage,
 ) {

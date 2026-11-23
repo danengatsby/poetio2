@@ -17,9 +17,10 @@ export function problemText(line: QuoteLine, language: SiteLanguage) {
       'N’est plus en vente. Retirez-le du panier.',
       'Nicht mehr erhältlich. Entfernen Sie es aus dem Warenkorb.',
       'Ya no está a la venta. Quítalo del carrito.',
+      'Non più in vendita. Rimuovilo dal carrello.',
     );
   if (line.problem === 'sold_out')
-    return pick(language, 'Stoc epuizat.', 'Out of stock.', 'Épuisé.', 'Nicht vorrätig.', 'Agotado.');
+    return pick(language, 'Stoc epuizat.', 'Out of stock.', 'Épuisé.', 'Nicht vorrätig.', 'Agotado.', 'Esaurito.');
   if (line.problem === 'too_many')
     return pick(
       language,
@@ -28,6 +29,7 @@ export function problemText(line: QuoteLine, language: SiteLanguage) {
       `Seulement ${line.stock} en stock. Réduisez la quantité.`,
       `Nur ${line.stock} auf Lager. Verringern Sie die Menge.`,
       `Solo quedan ${line.stock} en existencias. Reduce la cantidad.`,
+      `Solo ${line.stock} disponibili. Riduci la quantità.`,
     );
   return '';
 }
@@ -55,7 +57,7 @@ export function ShopLine({
       <div>
         <Heading>
           <a href={withSiteLanguage(bookSalePath(line.book_id, line.cover), language)}>
-            {line.title || pick(language, 'Carte', 'Book', 'Livre', 'Buch', 'Libro')}
+            {line.title || pick(language, 'Carte', 'Book', 'Livre', 'Buch', 'Libro', 'Libro')}
           </a>
         </Heading>
         <p>
@@ -67,11 +69,12 @@ export function ShopLine({
             `Livre imprimé, couverture ${line.cover}`,
             `Gedrucktes Buch, Umschlag ${line.cover}`,
             `Libro impreso, portada ${line.cover}`,
+            `Libro stampato, copertina ${line.cover}`,
           )}
         </p>
         <p>
           {formatMoney(line.unit_cents, line.currency, language)}{' '}
-          {pick(language, 'bucata', 'each', 'l’unité', 'pro Stück', 'por unidad')}
+          {pick(language, 'bucata', 'each', 'l’unité', 'pro Stück', 'por unidad', 'cad.')}
         </p>
         {problem && <p className="shop-problem">{problem}</p>}
         {children}
@@ -103,20 +106,31 @@ export function ShopTotals({
             `Articles (${count} ${count > 1 ? 'livres' : 'livre'})`,
             `Artikel (${count} ${count === 1 ? 'Buch' : 'Bücher'})`,
             `Artículos (${count} ${count === 1 ? 'libro' : 'libros'})`,
+            `Articoli (${count} ${count === 1 ? 'libro' : 'libri'})`,
           )}
         </dt>
         <dd>{money(quote.subtotal_cents)}</dd>
       </div>
       <div>
-        <dt>{pick(language, 'Livrare', 'Delivery', 'Livraison', 'Versand', 'Envío')}</dt>
+        <dt>{pick(language, 'Livrare', 'Delivery', 'Livraison', 'Versand', 'Envío', 'Spedizione')}</dt>
         <dd>
           {quote.shipping_cents
             ? money(quote.shipping_cents)
-            : pick(language, 'Gratuită', 'Free', 'Gratuite', 'Kostenlos', 'Gratis')}
+            : pick(language, 'Gratuită', 'Free', 'Gratuite', 'Kostenlos', 'Gratis', 'Gratis')}
         </dd>
       </div>
       <div className="shop-total">
-        <dt>{pick(language, 'Total', 'Order total', 'Total de la commande', 'Gesamtbetrag', 'Total del pedido')}</dt>
+        <dt>
+          {pick(
+            language,
+            'Total',
+            'Order total',
+            'Total de la commande',
+            'Gesamtbetrag',
+            'Total del pedido',
+            'Totale dell’ordine',
+          )}
+        </dt>
         <dd>{money(quote.total_cents)}</dd>
       </div>
     </dl>

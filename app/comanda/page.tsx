@@ -17,6 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'Commande — Poetio',
       'Kasse — Poetio',
       'Finalizar pedido — Poetio',
+      'Cassa — Poetio',
     ),
     robots: { index: false },
   };

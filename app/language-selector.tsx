@@ -2,7 +2,7 @@
 
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type { SiteLanguage } from '@/lib/poem-types';
-import { pick } from '@/lib/site-language';
+import { pick, SITE_LANGUAGES } from '@/lib/site-language';
 
 export default function LanguageSelector({
   language,
@@ -18,7 +18,7 @@ export default function LanguageSelector({
       type="single"
       value={language}
       onValueChange={value => {
-        if (value === 'ro' || value === 'en-US' || value === 'fr' || value === 'de' || value === 'es') onChange(value);
+        if (SITE_LANGUAGES.includes(value as SiteLanguage)) onChange(value as SiteLanguage);
       }}
       className="site-language-menu"
       aria-label={pick(
@@ -28,6 +28,7 @@ export default function LanguageSelector({
         'Langue du site',
         'Sprache der Website',
         'Idioma del sitio',
+        'Lingua del sito',
       )}
     >
       <ToggleGroupItem value="ro" lang="ro" aria-label="Română" title="Română">
@@ -44,6 +45,9 @@ export default function LanguageSelector({
       </ToggleGroupItem>
       <ToggleGroupItem value="es" lang="es" aria-label="Español" title="Español">
         {compact ? 'ES' : 'Español'}
+      </ToggleGroupItem>
+      <ToggleGroupItem value="it" lang="it" aria-label="Italiano" title="Italiano">
+        {compact ? 'IT' : 'Italiano'}
       </ToggleGroupItem>
     </ToggleGroup>
   );

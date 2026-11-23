@@ -27,7 +27,7 @@ export function CartLink({ language, current = false }: { language: SiteLanguage
   return (
     <a className="shop-cart-link" href={withSiteLanguage('/cos', language)} aria-current={current ? 'page' : undefined}>
       <ShoppingCart size={20} aria-hidden="true" />
-      <span>{pick(language, 'Coș', 'Cart', 'Panier', 'Warenkorb', 'Carrito')}</span>
+      <span>{pick(language, 'Coș', 'Cart', 'Panier', 'Warenkorb', 'Carrito', 'Carrello')}</span>
       <span
         className="shop-cart-count"
         aria-label={pick(
@@ -37,6 +37,7 @@ export function CartLink({ language, current = false }: { language: SiteLanguage
           `${count} article${count > 1 ? 's' : ''}`,
           `${count} Artikel`,
           `${count} ${count === 1 ? 'artículo' : 'artículos'}`,
+          `${count} ${count === 1 ? 'articolo' : 'articoli'}`,
         )}
       >
         {count}
@@ -71,6 +72,7 @@ export default function ShopFrame({
           'Aller au contenu',
           'Zum Inhalt springen',
           'Ir al contenido',
+          'Vai al contenuto',
         )}
       </a>
       <SiteHeader language={language} onLanguageChange={onLanguageChange} booksPage />

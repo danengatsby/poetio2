@@ -7,7 +7,7 @@ type Biography = {
   sections: { id: string; title: string; paragraphs: string[] }[];
 };
 
-// Full text supplied by the author, with complete Romanian, French, German and Spanish translations.
+// Full text supplied by the author, with complete Romanian, French, German, Spanish and Italian translations.
 // The supplied encoding typo "Ia?i" is rendered as "Iași" in both languages.
 export const danEnacheBiography: Record<SiteLanguage, Biography> = {
   ro: {
@@ -244,6 +244,53 @@ export const danEnacheBiography: Record<SiteLanguage, Biography> = {
         title: 'Conclusión',
         paragraphs: [
           'Dan Enache sigue siendo una figura luminosa de la poesía rumana; su obra es un tapiz resplandeciente de magia, melancolía, misticismo, sueños oníricos y profundidad filosófica. Su estilo poético-filosófico único despierta emociones y conmueve el alma, de modo que su voz seguirá resonando en los anales de la historia literaria e invitará a las generaciones futuras a acompañarlo en la exploración de infinitos paisajes interiores.',
+        ],
+      },
+    ],
+  },
+  it: {
+    profile: [
+      { label: 'Nome', value: 'Dan Enache' },
+      { label: 'Nazionalità', value: 'Rumena' },
+      { label: 'Professione', value: 'Poeta, mistico, filosofo, scrittore romantico, poeta esoterico e onirico' },
+    ],
+    sections: [
+      {
+        id: 'early-life',
+        title: 'Infanzia e formazione',
+        paragraphs: [
+          'Nato nella regione eterea della Moldavia, nella mistica città di Iași, Dan Enache è cresciuto tra dolci colline e antichi monasteri, paesaggi intrisi di una bellezza struggente e di una serenità mistica. Questa precoce comunione con panorami naturali senza tempo e con un ricco patrimonio culturale ha dispiegato le ali della sua immaginazione e ha influenzato profondamente la sua sensibilità poetica. L’affinità di Enache per il mistico, l’esoterico e l’onirico si è accesa in quegli anni di formazione, mentre vagava per paesaggi impregnati di folclore e di leggenda.',
+          'La formazione di Enache ha unito l’istruzione tradizionale all’esplorazione da autodidatta. Ha studiato tecnologie dell’informazione all’Università Politehnica di Bucarest, immergendosi nella logica strutturata e nella creatività dell’informatica. Eppure è stato il suo dialogo solitario e profondo con la natura e con i testi metafisici a plasmare davvero il suo percorso intellettuale e spirituale.',
+        ],
+      },
+      {
+        id: 'poetic-career',
+        title: 'Percorso poetico',
+        paragraphs: [
+          'Dan Enache si è affermato come una voce poetica originale della letteratura rumena; la sua opera si distingue per un intreccio raffinato di misticismo, malinconia, indagine filosofica ed esoterismo onirico. Il suo stile unico fonde il poetico e il filosofico in una danza armoniosa, creando versi che stimolano l’intelletto e insieme commuovono. La sua poesia, spesso ampia e fluida, trascende il quotidiano e si addentra nei regni dell’etereo e dell’esoterico. La tecnica narrativa di Enache rispecchia il flusso di coscienza e coglie la natura sfuggente e transitoria dell’esperienza umana.',
+          'La prima raccolta di Enache, «BEYOND THE REAL», ha fatto conoscere ai lettori il suo stile poetico-filosofico unico: una fusione di romanticismo, riflessioni mistiche, meditazioni esistenziali ed elementi onirici. Quest’opera ha dato il tono alle raccolte successive, nelle quali la sua voce è maturata in un’armoniosa unione del magico e del filosofico, del malinconico e del mistico.',
+        ],
+      },
+      {
+        id: 'themes',
+        title: 'Temi e influenza',
+        paragraphs: [
+          'La poesia di Enache è attraversata da temi ricorrenti: l’esplorazione interiore, la ricerca della verità e la tensione tra individualità e norme sociali. La sua opera invita i lettori a guardare oltre la facciata esteriore della realtà, a un’introspezione profonda e a un ritorno a sé stessi. Il legame tra luce e ombra, il contrasto tra illusione e realtà e il gioco tra silenzio e suono sono motivi sempre presenti nella sua scrittura.',
+          'I fondamenti filosofici dell’opera di Enache emergono nel suo modo di affrontare i dilemmi esistenziali moderni, la noia della vita contemporanea e la ricerca di senso in un universo apparentemente indifferente. Intreccia in modo unico questi temi impegnativi con un’aura di misticismo, romanticismo ed esoterismo onirico, rendendo la sua poesia stimolante per la mente e insieme commovente.',
+        ],
+      },
+      {
+        id: 'legacy',
+        title: 'Eredità',
+        paragraphs: [
+          'Dan Enache continua ad affascinare e ispirare i lettori con i suoi versi di una bellezza struggente, sospesi nel sogno. I suoi contributi alla letteratura rumena hanno aperto uno spazio in cui il mistico e il filosofico si incontrano, offrendo un’esplorazione profonda e originale della condizione umana. L’opera di Enache testimonia il potere della poesia di andare oltre il visibile e ci invita a una comunione più intima con i regni invisibili, sentiti, sognati e immaginati dell’esistenza.',
+        ],
+      },
+      {
+        id: 'conclusion',
+        title: 'Conclusione',
+        paragraphs: [
+          'Dan Enache resta una figura luminosa della poesia rumena; la sua opera è un arazzo scintillante di magia, malinconia, misticismo, sogni onirici e profondità filosofica. Il suo stile poetico-filosofico unico suscita emozioni e scuote l’anima, così che la sua voce continuerà a risuonare negli annali della storia letteraria e inviterà le generazioni future ad accompagnarlo nell’esplorazione di infiniti paesaggi interiori.',
         ],
       },
     ],

@@ -35,6 +35,9 @@ export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot
           es_title: 180,
           es_theme: 80,
           es_content: 30000,
+          it_title: 180,
+          it_theme: 80,
+          it_content: 30000,
         }
       : { title: 180, author: 120, description: 5000 };
   for (const [key, limit] of Object.entries(limits)) {
@@ -60,7 +63,7 @@ export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot
     if (data.translation_provenance != null && !provenance)
       throw new AppError(400, 'Asocierea traducerii este nevalidă.');
     result.translation_provenance = provenance;
-    for (const language of ['fr', 'de', 'es'] as const) {
+    for (const language of ['fr', 'de', 'es', 'it'] as const) {
       const key = `${language}_provenance`;
       const version = parseTranslationProvenance(data[key]);
       if (data[key] != null && !version) throw new AppError(400, 'Asocierea unei versiuni traduse este nevalidă.');

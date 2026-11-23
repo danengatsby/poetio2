@@ -13,6 +13,7 @@ const UPDATED = {
   fr: '22 novembre 2026',
   de: '22. November 2026',
   es: '22 de noviembre de 2026',
+  it: '22 novembre 2026',
 };
 const LOG_DAYS = 14;
 const BACKUP_DAYS = 30;
@@ -40,6 +41,7 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
             'Politique de confidentialité',
             'Datenschutzerklärung',
             'Política de privacidad',
+            'Informativa sulla privacy',
           )}
         </h1>
         {language === 'ro' ? (
@@ -377,6 +379,89 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
             </p>
             <p>
               Las condiciones de venta están en los <a href={terms}>términos y condiciones</a>.
+            </p>
+          </>
+        ) : language === 'it' ? (
+          <>
+            <p>
+              Quali dati personali tratta Poetio (poetio.cloud), perché, per quanto tempo li conserviamo e quali sono i
+              tuoi diritti. Ultimo aggiornamento: {UPDATED.it}.
+            </p>
+            <h2 id="operator">Titolare del trattamento</h2>
+            <p>
+              Il titolare del trattamento dei dati è <strong>{controller}</strong>.{email && <> Scrivici a {email}</>}
+              {phone && (
+                <>
+                  {email ? ' o chiama il ' : ' Chiama il '}
+                  {phone}
+                </>
+              )}
+              {(email || phone) && '.'}
+            </p>
+            <h2 id="date">Quali dati usiamo e perché</h2>
+            <ul>
+              <li>
+                <strong>Ordini di libri.</strong> Il tuo nome, indirizzo di consegna, telefono, email e note, per
+                consegnare i libri, emettere i documenti di pagamento e scriverti riguardo all’ordine. La base giuridica
+                è il contratto (art. 6, paragrafo 1, lettera b del GDPR) e i nostri obblighi contabili (lettera c). Li
+                conserviamo per il tempo necessario all’ordine e poi per quanto richiesto dalla normativa contabile e
+                fiscale.
+              </li>
+              <li>
+                <strong>Commenti.</strong> Il nome che scrivi e il testo del commento. Diventano pubblici solo dopo
+                l’approvazione. La base giuridica è il tuo consenso (lettera a); li cancelliamo appena ce lo chiedi.
+              </li>
+              <li id="vizite">
+                <strong>Statistiche delle visite.</strong> Per ogni pagina aperta conserviamo l’indirizzo IP, la pagina,
+                l’ora, il browser e la località approssimativa ricavata dall’IP, per sapere che cosa viene letto e
+                proteggere il sito dagli abusi. La base giuridica è il nostro legittimo interesse (lettera f). Non
+                usiamo cookie per questo. L’indirizzo IP e i dati del browser vengono cancellati dopo{' '}
+                {VISIT_IP_RETENTION_DAYS} giorni; restano solo il numero di visite, le pagine e le località.
+              </li>
+              <li>
+                <strong>Registri del server.</strong> Indirizzo IP, indirizzo richiesto, ora e browser, per la sicurezza
+                e la risoluzione dei problemi (legittimo interesse, lettera f). Vengono cancellati automaticamente dopo{' '}
+                {LOG_DAYS} giorni.
+              </li>
+              <li>
+                <strong>Copie di sicurezza.</strong> Contengono i dati indicati sopra, sono cifrate e vengono cancellate
+                automaticamente dopo al massimo {BACKUP_DAYS} giorni.
+              </li>
+            </ul>
+            <p>Non prendiamo decisioni automatizzate che ti riguardano e non effettuiamo profilazione.</p>
+            <h2 id="destinatari">Chi altro riceve i dati</h2>
+            <ul>
+              <li>Il corriere riceve il tuo nome, indirizzo e telefono per consegnare il pacco.</li>
+              <li>Il server del sito è noleggiato da Amazon Web Services, nell’Unione europea (Francoforte).</li>
+              <li>
+                Google invia le email di conferma dell’ordine (Gmail) e conserva una copia cifrata della copia di
+                sicurezza (Google Drive), che non può leggere. Google può trattare dati anche al di fuori dello Spazio
+                economico europeo, con le garanzie richieste dal GDPR (quadro UE-USA sulla protezione dei dati).
+              </li>
+            </ul>
+            <p>
+              Non vendiamo dati, non mostriamo pubblicità e non usiamo servizi di analisi o di pubblicità di altre
+              aziende. La località viene ricavata da una banca dati conservata sul server (DB-IP), senza inviare il tuo
+              indirizzo IP a nessuno.
+            </p>
+            <h2 id="browser">Che cosa conserva il tuo browser</h2>
+            <p>
+              Il sito non usa cookie di tracciamento né pubblicitari. Per funzionare, conserva nel tuo browser la lingua
+              scelta (il cookie <code>poetio-language</code>, un anno, inviato al server solo per mostrare quella
+              lingua), il tema chiaro o scuro, le preferenze di lettura, il punto in cui sei arrivato in un libro, il
+              carrello e le bozze dei commenti. Questi dati ci arrivano solo con un ordine o un commento che invii. Puoi
+              cancellarli in qualsiasi momento dalle impostazioni del browser.
+            </p>
+            <h2 id="drepturi">I tuoi diritti</h2>
+            <p>
+              Puoi chiedere l’accesso ai tuoi dati, la loro rettifica, cancellazione o la limitazione del trattamento,
+              riceverli in un formato portabile e opporti al trattamento basato sul nostro legittimo interesse. Puoi
+              ritirare in qualsiasi momento il consenso per i commenti. Scrivici{email && <> a {email}</>}; rispondiamo
+              entro un mese. Puoi anche presentare un reclamo all’autorità rumena per la protezione dei dati (
+              {authority}).
+            </p>
+            <p>
+              Le condizioni di vendita sono nei <a href={terms}>termini e condizioni</a>.
             </p>
           </>
         ) : (

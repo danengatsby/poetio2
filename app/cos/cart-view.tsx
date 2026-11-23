@@ -32,6 +32,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
           'Chargement du panier…',
           'Warenkorb wird geladen…',
           'Cargando tu carrito…',
+          'Caricamento del carrello…',
         )}
       </p>
     );
@@ -46,10 +47,19 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
             'Votre panier est vide.',
             'Ihr Warenkorb ist leer.',
             'Tu carrito está vacío.',
+            'Il tuo carrello è vuoto.',
           )}
         </p>
         <a className="shop-button" href={withSiteLanguage('/carti', language)}>
-          {pick(language, 'Vezi cărțile', 'Browse the books', 'Voir les livres', 'Bücher ansehen', 'Ver los libros')}
+          {pick(
+            language,
+            'Vezi cărțile',
+            'Browse the books',
+            'Voir les livres',
+            'Bücher ansehen',
+            'Ver los libros',
+            'Sfoglia i libri',
+          )}
         </a>
       </div>
     );
@@ -67,6 +77,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
             'Vider le panier',
             'Warenkorb leeren',
             'Vaciar el carrito',
+            'Svuota il carrello',
           )}
         </button>
       </div>
@@ -81,6 +92,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
           'Vérification des prix…',
           'Preise werden geprüft…',
           'Comprobando precios…',
+          'Verifica dei prezzi…',
         )}
       </p>
     );
@@ -88,7 +100,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
     const { quote, shop } = state;
     content = (
       <div className="shop-layout">
-        <section aria-label={pick(language, 'Produse', 'Items', 'Articles', 'Artikel', 'Artículos')}>
+        <section aria-label={pick(language, 'Produse', 'Items', 'Articles', 'Artikel', 'Artículos', 'Articoli')}>
           <ul className="shop-lines">
             {quote.lines.map(line => {
               const index = items.findIndex(item => item.book_id === line.book_id && item.cover === line.cover);
@@ -100,7 +112,15 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
                 <ShopLine key={`${line.book_id}:${line.cover}`} line={line} language={language}>
                   <div className="shop-line-actions">
                     <label>
-                      {pick(language, 'Cantitate: ', 'Quantity: ', 'Quantité\u00a0: ', 'Menge: ', 'Cantidad: ')}
+                      {pick(
+                        language,
+                        'Cantitate: ',
+                        'Quantity: ',
+                        'Quantité\u00a0: ',
+                        'Menge: ',
+                        'Cantidad: ',
+                        'Quantità: ',
+                      )}
                       <select
                         value={items[index]?.quantity ?? line.quantity}
                         onChange={event => setQuantity(index, Number(event.target.value))}
@@ -113,7 +133,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
                       </select>
                     </label>
                     <button type="button" className="shop-link-button" onClick={() => remove(index)}>
-                      {pick(language, 'Șterge', 'Delete', 'Supprimer', 'Entfernen', 'Eliminar')}
+                      {pick(language, 'Șterge', 'Delete', 'Supprimer', 'Entfernen', 'Eliminar', 'Elimina')}
                       <span className="sr-only">: {line.title}</span>
                     </button>
                   </div>
@@ -124,7 +144,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
         </section>
         <aside
           className="shop-panel shop-summary"
-          aria-label={pick(language, 'Sumar', 'Summary', 'Récapitulatif', 'Übersicht', 'Resumen')}
+          aria-label={pick(language, 'Sumar', 'Summary', 'Récapitulatif', 'Übersicht', 'Resumen', 'Riepilogo')}
         >
           <ShopTotals quote={quote} language={language} />
           {!shop.ready && (
@@ -136,6 +156,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
                 'Les commandes en ligne ouvrent bientôt.',
                 'Online-Bestellungen sind bald möglich.',
                 'Los pedidos en línea abrirán pronto.',
+                'Gli ordini online apriranno presto.',
               )}
             </p>
           )}
@@ -148,6 +169,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
                 'Passer la commande',
                 'Zur Kasse',
                 'Tramitar pedido',
+                'Procedi all’acquisto',
               )}
             </a>
           ) : (
@@ -159,6 +181,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
                 'Passer la commande',
                 'Zur Kasse',
                 'Tramitar pedido',
+                'Procedi all’acquisto',
               )}
             </button>
           )}
@@ -174,11 +197,11 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
       cartCurrent
       back={{
         href: withSiteLanguage('/carti', language),
-        label: pick(language, 'Cărți', 'Books', 'Livres', 'Bücher', 'Libros'),
+        label: pick(language, 'Cărți', 'Books', 'Livres', 'Bücher', 'Libros', 'Libri'),
       }}
     >
       <h1 className="shop-title">
-        {pick(language, 'Coșul de cumpărături', 'Shopping cart', 'Panier', 'Warenkorb', 'Carrito')}
+        {pick(language, 'Coșul de cumpărături', 'Shopping cart', 'Panier', 'Warenkorb', 'Carrito', 'Carrello')}
         {inBrowser && count > 0 && ` (${count})`}
       </h1>
       {content}

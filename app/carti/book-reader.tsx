@@ -147,7 +147,15 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
   const previous = () => go(single ? page - 1 : Math.max(1, firstVisible - 2));
   const next = () => go(single ? page + 1 : firstVisible + 2);
   const previousLabel = single
-    ? pick(language, 'Pagina anterioară', 'Previous page', 'Page précédente', 'Vorherige Seite', 'Página anterior')
+    ? pick(
+        language,
+        'Pagina anterioară',
+        'Previous page',
+        'Page précédente',
+        'Vorherige Seite',
+        'Página anterior',
+        'Pagina precedente',
+      )
     : pick(
         language,
         'Paginile anterioare',
@@ -155,12 +163,45 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
         'Pages précédentes',
         'Vorherige Seiten',
         'Páginas anteriores',
+        'Pagine precedenti',
       );
   const nextLabel = single
-    ? pick(language, 'Pagina următoare', 'Next page', 'Page suivante', 'Nächste Seite', 'Página siguiente')
-    : pick(language, 'Paginile următoare', 'Next pages', 'Pages suivantes', 'Nächste Seiten', 'Páginas siguientes');
-  const firstLabel = pick(language, 'Prima pagină', 'First page', 'Première page', 'Erste Seite', 'Primera página');
-  const lastLabel = pick(language, 'Ultima pagină', 'Last page', 'Dernière page', 'Letzte Seite', 'Última página');
+    ? pick(
+        language,
+        'Pagina următoare',
+        'Next page',
+        'Page suivante',
+        'Nächste Seite',
+        'Página siguiente',
+        'Pagina successiva',
+      )
+    : pick(
+        language,
+        'Paginile următoare',
+        'Next pages',
+        'Pages suivantes',
+        'Nächste Seiten',
+        'Páginas siguientes',
+        'Pagine successive',
+      );
+  const firstLabel = pick(
+    language,
+    'Prima pagină',
+    'First page',
+    'Première page',
+    'Erste Seite',
+    'Primera página',
+    'Prima pagina',
+  );
+  const lastLabel = pick(
+    language,
+    'Ultima pagină',
+    'Last page',
+    'Dernière page',
+    'Letzte Seite',
+    'Última página',
+    'Ultima pagina',
+  );
   const zoomLabel = enlarged
     ? pick(
         language,
@@ -169,8 +210,9 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
         'Ajuster à la page',
         'An Seite anpassen',
         'Ajustar a la página',
+        'Adatta alla pagina',
       )
-    : pick(language, 'Mărește', 'Zoom in', 'Agrandir', 'Vergrößern', 'Ampliar');
+    : pick(language, 'Mărește', 'Zoom in', 'Agrandir', 'Vergrößern', 'Ampliar', 'Ingrandisci');
   function navigation(position: 'top' | 'bottom') {
     return (
       <nav
@@ -183,6 +225,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
           `Navigation des pages ${position === 'top' ? 'en haut' : 'en bas'}`,
           `Seitennavigation ${position === 'top' ? 'oben' : 'unten'}`,
           `Navegación de páginas ${position === 'top' ? 'arriba' : 'abajo'}`,
+          `Navigazione delle pagine ${position === 'top' ? 'in alto' : 'in basso'}`,
         )}
       >
         <button
@@ -204,7 +247,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
         >
           <ArrowLeft size={18} aria-hidden="true" />
           <span className="book-control-text">
-            {pick(language, 'Înapoi', 'Previous', 'Précédente', 'Zurück', 'Anterior')}
+            {pick(language, 'Înapoi', 'Previous', 'Précédente', 'Zurück', 'Anterior', 'Precedente')}
           </span>
         </button>
         <form
@@ -216,7 +259,15 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
         >
           <label>
             <span className="sr-only">
-              {pick(language, 'Numărul paginii', 'Page number', 'Numéro de page', 'Seitenzahl', 'Número de página')}
+              {pick(
+                language,
+                'Numărul paginii',
+                'Page number',
+                'Numéro de page',
+                'Seitenzahl',
+                'Número de página',
+                'Numero di pagina',
+              )}
             </span>
             <input
               aria-label={pick(
@@ -226,6 +277,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
                 'Numéro de page',
                 'Seitenzahl',
                 'Número de página',
+                'Numero di pagina',
               )}
               type="number"
               inputMode="numeric"
@@ -251,6 +303,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
               `${pages} pages`,
               `${pages} Seiten`,
               `${pages} páginas`,
+              `${pages} pagine`,
             )}
           >
             / {pages}
@@ -265,6 +318,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
               'Aller à la page',
               'Gehe zu Seite',
               'Ir a la página',
+              'Vai alla pagina',
             )}
             title={pick(
               language,
@@ -273,10 +327,11 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
               'Aller à la page',
               'Gehe zu Seite',
               'Ir a la página',
+              'Vai alla pagina',
             )}
           >
             <CornerDownLeft size={18} aria-hidden="true" />
-            <span className="book-control-text">{pick(language, 'Mergi', 'Go', 'OK', 'Los', 'Ir')}</span>
+            <span className="book-control-text">{pick(language, 'Mergi', 'Go', 'OK', 'Los', 'Ir', 'Vai')}</span>
           </button>
         </form>
         <button
@@ -287,7 +342,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
           onClick={next}
         >
           <span className="book-control-text">
-            {pick(language, 'Înainte', 'Next', 'Suivante', 'Weiter', 'Siguiente')}
+            {pick(language, 'Înainte', 'Next', 'Suivante', 'Weiter', 'Siguiente', 'Successiva')}
           </span>
           <ArrowRight size={18} aria-hidden="true" />
         </button>
@@ -320,7 +375,15 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
     <section
       className="book-reader protected-book-reader"
       data-layout={layout}
-      aria-label={pick(language, 'Citire carte', 'Book reader', 'Liseuse', 'Buchleser', 'Lector de libros')}
+      aria-label={pick(
+        language,
+        'Citire carte',
+        'Book reader',
+        'Liseuse',
+        'Buchleser',
+        'Lector de libros',
+        'Lettore di libri',
+      )}
     >
       <p className="book-reader-note">
         {pick(
@@ -330,6 +393,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
           'Poetio — lecture seule',
           'Poetio — nur Lesen',
           'Poetio — solo lectura',
+          'Poetio — sola lettura',
         )}
       </p>
       <div
@@ -342,6 +406,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
           'Préférences de lecture',
           'Leseeinstellungen',
           'Preferencias de lectura',
+          'Preferenze di lettura',
         )}
       >
         <button
@@ -350,7 +415,15 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
           aria-pressed={mode === 'original'}
           onClick={() => setPreferences({ mode: 'original' })}
         >
-          {pick(language, 'Pagina originală', 'Original page', 'Page originale', 'Originalseite', 'Página original')}
+          {pick(
+            language,
+            'Pagina originală',
+            'Original page',
+            'Page originale',
+            'Originalseite',
+            'Página original',
+            'Pagina originale',
+          )}
         </button>
         <button
           type="button"
@@ -381,6 +454,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
             'Réinitialiser les préférences de lecture',
             'Leseeinstellungen zurücksetzen',
             'Restablecer las preferencias de lectura',
+            'Ripristina le preferenze di lettura',
           )}
         </button>
       </div>
@@ -393,6 +467,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
               'Le mode de lecture et la taille du texte sont enregistrés pour les livres dans ce navigateur. La réinitialisation conserve la page enregistrée.',
               'Lesemodus und Textgröße werden für Bücher in diesem Browser gespeichert. Beim Zurücksetzen bleibt Ihre gespeicherte Seite erhalten.',
               'El modo de lectura y el tamaño del texto de los libros se guardan en este navegador. Al restablecerlos se conserva la página guardada.',
+              'La modalità di lettura e la dimensione del testo dei libri vengono salvate in questo browser. Il ripristino mantiene la pagina salvata.',
             )
           : pick(
               language,
@@ -401,6 +476,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
               'Ce navigateur ne peut pas enregistrer les préférences de lecture. Vous pouvez les utiliser jusqu’au prochain rechargement.',
               'Dieser Browser kann die Leseeinstellungen nicht speichern. Sie funktionieren bis zum nächsten Neuladen.',
               'Este navegador no puede guardar las preferencias de lectura. Puedes usarlas hasta que recargues la página.',
+              'Questo browser non può salvare le preferenze di lettura. Puoi usarle fino al prossimo ricaricamento.',
             )}
       </p>
       {failed || (mode === 'original' && imageFailed) ? (
@@ -413,6 +489,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
               'La page du livre n’a pas pu être chargée. Réessayez.',
               'Die Buchseite konnte nicht geladen werden. Versuchen Sie es erneut.',
               'No se pudo cargar la página del libro. Inténtalo de nuevo.',
+              'Non è stato possibile caricare la pagina del libro. Riprova.',
             )}
           </p>
           <button
@@ -424,7 +501,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
               setRetry(value => value + 1);
             }}
           >
-            {pick(language, 'Reîncearcă', 'Try again', 'Réessayer', 'Erneut versuchen', 'Reintentar')}
+            {pick(language, 'Reîncearcă', 'Try again', 'Réessayer', 'Erneut versuchen', 'Reintentar', 'Riprova')}
           </button>
         </div>
       ) : null}
@@ -432,7 +509,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
         <>
           {navigation('top')}
           <p className="book-reader-note book-visible-pages" aria-live="polite">
-            {`${pick(language, visiblePages.length === 2 ? 'Paginile' : 'Pagina', visiblePages.length === 2 ? 'Pages' : 'Page', visiblePages.length === 2 ? 'Pages' : 'Page', visiblePages.length === 2 ? 'Seiten' : 'Seite', visiblePages.length === 2 ? 'Páginas' : 'Página')} ${firstVisible}${lastVisible > firstVisible ? `–${lastVisible}` : ''} ${pick(language, 'din', 'of', 'sur', 'von', 'de')} ${pages}`}
+            {`${pick(language, visiblePages.length === 2 ? 'Paginile' : 'Pagina', visiblePages.length === 2 ? 'Pages' : 'Page', visiblePages.length === 2 ? 'Pages' : 'Page', visiblePages.length === 2 ? 'Seiten' : 'Seite', visiblePages.length === 2 ? 'Páginas' : 'Página', visiblePages.length === 2 ? 'Pagine' : 'Pagina')} ${firstVisible}${lastVisible > firstVisible ? `–${lastVisible}` : ''} ${pick(language, 'din', 'of', 'sur', 'von', 'de', 'di')} ${pages}`}
           </p>
           {mode === 'text' ? (
             <BookTextView
@@ -467,6 +544,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
                   'Page du livre\u00a0; les flèches tournent les pages, Début et Fin mènent à la première et à la dernière, Échap quitte le zoom',
                   'Buchseite; Pfeiltasten blättern, Pos1 und Ende springen zur ersten und letzten Seite, Esc beendet den Zoom',
                   'Página del libro; las flechas pasan las páginas, Inicio y Fin van a la primera y a la última, Esc sale del zoom',
+                  'Pagina del libro; le frecce girano le pagine, Inizio e Fine vanno alla prima e all’ultima, Esc esce dallo zoom',
                 )}
                 onKeyDown={event => {
                   if (event.altKey || event.ctrlKey || event.metaKey) return;
@@ -510,6 +588,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
                               `Réduire la page ${number}`,
                               `Seite ${number} verkleinern`,
                               `Reducir la página ${number}`,
+                              `Rimpicciolisci la pagina ${number}`,
                             )
                           : pick(
                               language,
@@ -518,6 +597,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
                               `Agrandir la page ${number}`,
                               `Seite ${number} vergrößern`,
                               `Ampliar la página ${number}`,
+                              `Ingrandisci la pagina ${number}`,
                             )
                       }
                       onClick={() => togglePageZoom(number)}
@@ -525,7 +605,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
                       <img
                         className="book-page-image"
                         src={`/api/book-pages/${fileId}/${number}?v=${retry}`}
-                        alt={`${title} — ${pick(language, 'pagina', 'page', 'page', 'Seite', 'página')} ${number}`}
+                        alt={`${title} — ${pick(language, 'pagina', 'page', 'page', 'Seite', 'página', 'pagina')} ${number}`}
                         onLoad={() => {
                           setLoaded(previous => (previous.includes(number) ? previous : [...previous, number]));
                           if (number === page) remember(number);
@@ -556,6 +636,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
                   'L’aperçu conserve votre position de lecture enregistrée.',
                   'Die Vorschau behält Ihre gespeicherte Leseposition.',
                   'La vista previa conserva tu posición de lectura guardada.',
+                  'L’anteprima mantiene la posizione di lettura salvata.',
                 )
               : !memoryAvailable
                 ? pick(
@@ -565,6 +646,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
                     'Ce navigateur ne peut pas enregistrer votre position de lecture.',
                     'Dieser Browser kann Ihre Leseposition nicht speichern.',
                     'Este navegador no puede guardar tu posición de lectura.',
+                    'Questo browser non può salvare la tua posizione di lettura.',
                   )
                 : resumed
                   ? pick(
@@ -574,6 +656,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
                       `Lecture reprise à la page ${resumed}. Votre position est enregistrée dans ce navigateur.`,
                       `Lesen bei Seite ${resumed} fortgesetzt. Ihre Position wird in diesem Browser gespeichert.`,
                       `Lectura reanudada en la página ${resumed}. Tu posición se guarda en este navegador.`,
+                      `Lettura ripresa da pagina ${resumed}. La tua posizione è salvata in questo browser.`,
                     )
                   : pick(
                       language,
@@ -582,6 +665,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
                       'Votre position de lecture est enregistrée dans ce navigateur.',
                       'Ihre Leseposition wird in diesem Browser gespeichert.',
                       'Tu posición de lectura se guarda en este navegador.',
+                      'La tua posizione di lettura è salvata in questo browser.',
                     )}
           </p>
         </>
@@ -598,6 +682,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
               'Chargement des pages…',
               'Seiten werden geladen…',
               'Cargando páginas…',
+              'Caricamento delle pagine…',
             )}
           </p>
         )}

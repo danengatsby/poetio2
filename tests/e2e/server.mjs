@@ -76,6 +76,7 @@ try {
     if (poem.fr_content) body.fr_provenance = await translationProvenance(poem, 'manual', 'fr');
     if (poem.de_content) body.de_provenance = await translationProvenance(poem, 'manual', 'de');
     if (poem.es_content) body.es_provenance = await translationProvenance(poem, 'manual', 'es');
+    if (poem.it_content) body.it_provenance = await translationProvenance(poem, 'manual', 'it');
     const response = await fetch(base + '/api/poems', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Origin: base, 'oai-authenticated-user-email': OWNER_EMAIL },

@@ -219,3 +219,29 @@ test('a Spanish version sits beside the French and German ones', async t => {
     { status: 409, message: /spaniolă/ },
   );
 });
+
+test('an Italian version sits beside the others', async t => {
+  const db = await store(t);
+  const id = crypto.randomUUID();
+  const italian = {
+    it_title: 'La ruota di fumo',
+    it_theme: 'amore',
+    it_content: 'Sono prigioniero nella ruota della vita\nda un po’ di tempo.',
+  };
+  const all = { ...original, ...italian };
+  const input = {
+    ...all,
+    translation_provenance: await translationProvenance(all, 'manual'),
+    it_provenance: await translationProvenance(all, 'automatic', 'it'),
+  };
+  const saved = await poems.createPoem(db, id, poems.validateInput(input));
+  assert.equal(await translationStatus(saved, 'it'), 'ready');
+  assert.equal(poemVersion(saved, 'it').title, 'La ruota di fumo');
+  const card = (await listPoemCards(db, { lang: 'it' }, 'it')).poems[0];
+  assert.deepEqual([card.title, card.language], ['La ruota di fumo', 'it']);
+  assert.equal((await listPoemCards(db, { lang: 'it', q: 'prigioniero' }, 'it')).total, 1);
+  await assert.rejects(
+    async () => poems.updatePoem(db, id, saved.revision, poems.validateInput({ ...input, it_content: 'Altro testo' })),
+    { status: 409, message: /italiană/ },
+  );
+});

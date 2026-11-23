@@ -20,7 +20,12 @@ type StoredPoem = Omit<Poem, 'translation_provenance' | VersionProvenance> & {
   translation_provenance: string | null;
 } & Partial<Record<VersionProvenance, string | null>>;
 /** The language names used in error messages. */
-const LANGUAGE_NAME: Record<ExtraLanguage, string> = { fr: 'franceză', de: 'germană', es: 'spaniolă' };
+const LANGUAGE_NAME: Record<ExtraLanguage, string> = {
+  fr: 'franceză',
+  de: 'germană',
+  es: 'spaniolă',
+  it: 'italiană',
+};
 function parseStored(value: string | null | undefined) {
   try {
     return parseTranslationProvenance(JSON.parse(value || 'null'));
@@ -38,6 +43,7 @@ function readPoem<T extends StoredPoem>(
     fr_provenance: parseStored(row.fr_provenance),
     de_provenance: parseStored(row.de_provenance),
     es_provenance: parseStored(row.es_provenance),
+    it_provenance: parseStored(row.it_provenance),
   };
 }
 const storedProvenance = (poem: PoemInput) =>

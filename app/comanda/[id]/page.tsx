@@ -19,6 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'Votre commande — Poetio',
       'Ihre Bestellung — Poetio',
       'Tu pedido — Poetio',
+      'Il tuo ordine — Poetio',
     ),
     robots: { index: false, follow: false },
     // The link carries the order key; keep it out of other sites' logs.
@@ -48,6 +49,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
         fr: deliveryWindow(placed, settings, 'fr'),
         de: deliveryWindow(placed, settings, 'de'),
         es: deliveryWindow(placed, settings, 'es'),
+        it: deliveryWindow(placed, settings, 'it'),
       }}
     />
   );

@@ -12,7 +12,15 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const language = await requestLanguage();
   return pageMetadata({
-    title: pick(language, 'Cărți — Poetio', 'Books — Poetio', 'Livres — Poetio', 'Bücher — Poetio', 'Libros — Poetio'),
+    title: pick(
+      language,
+      'Cărți — Poetio',
+      'Books — Poetio',
+      'Livres — Poetio',
+      'Bücher — Poetio',
+      'Libros — Poetio',
+      'Libri — Poetio',
+    ),
     description: pick(
       language,
       'Colecția de cărți Poetio.',
@@ -20,6 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'La collection de livres Poetio.',
       'Die Buchsammlung von Poetio.',
       'La colección de libros de Poetio.',
+      'La collezione di libri di Poetio.',
     ),
     path: '/carti',
     language,

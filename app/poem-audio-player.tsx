@@ -46,7 +46,7 @@ export default function PoemAudioPlayer({
         controls
         preload="metadata"
         src={source}
-        aria-label={`${pick(language, 'Ascultă: ', 'Listen to: ', 'Écouter\u00a0: ', 'Anhören: ', 'Escuchar: ')}${title}`}
+        aria-label={`${pick(language, 'Ascultă: ', 'Listen to: ', 'Écouter\u00a0: ', 'Anhören: ', 'Escuchar: ', 'Ascolta: ')}${title}`}
         aria-disabled={!source || undefined}
         aria-describedby={!source || failed ? `${id}-status` : undefined}
         onLoadedMetadata={() => {
@@ -67,6 +67,7 @@ export default function PoemAudioPlayer({
                 'Audio chargé. Écoutez-le pour vérifier l’enregistrement.',
                 'Audio geladen. Spielen Sie es ab, um die Aufnahme zu prüfen.',
                 'Audio cargado. Reprodúcelo para comprobar la grabación.',
+                'Audio caricato. Riproducilo per controllare la registrazione.',
               )
             : pick(
                 language,
@@ -75,6 +76,7 @@ export default function PoemAudioPlayer({
                 'Chargement de l’audio…',
                 'Audio wird geladen…',
                 'Cargando el audio…',
+                'Caricamento dell’audio…',
               )}
         </p>
       )}
@@ -87,6 +89,7 @@ export default function PoemAudioPlayer({
             `L’enregistrement en ${recording === 'ro' ? 'roumain' : 'anglais'} n’a pas encore été ajouté.`,
             `Eine ${recording === 'ro' ? 'rumänische' : 'englische'} Aufnahme wurde noch nicht hinzugefügt.`,
             `Aún no se ha añadido una grabación en ${recording === 'ro' ? 'rumano' : 'inglés'}.`,
+            `Non è ancora stata aggiunta una registrazione in ${recording === 'ro' ? 'rumeno' : 'inglese'}.`,
           )}
         </p>
       )}
@@ -99,6 +102,7 @@ export default function PoemAudioPlayer({
             'Cet enregistrement ne peut pas être lu. Réessayez ou téléchargez le fichier.',
             'Diese Aufnahme kann nicht abgespielt werden. Versuchen Sie es erneut oder laden Sie die Datei herunter.',
             'Esta grabación no se puede reproducir. Inténtalo de nuevo o descarga el archivo.',
+            'Questa registrazione non può essere riprodotta. Riprova o scarica il file.',
           )}{' '}
           <a href={source} download>
             {pick(
@@ -108,6 +112,7 @@ export default function PoemAudioPlayer({
               'Télécharger l’audio',
               'Audio herunterladen',
               'Descargar el audio',
+              'Scarica l’audio',
             )}
           </a>
         </p>

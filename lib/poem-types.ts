@@ -1,8 +1,8 @@
 import type { TranslationProvenance } from './translation-provenance';
 /** The language a poem is written in; its one `translated_*` version is in the other. */
 export type PoemLanguage = 'ro' | 'en-US';
-/** Languages with their own version of each poem (`fr_*`, `de_*`, `es_*`), besides the one translation. */
-export const EXTRA_LANGUAGES = ['fr', 'de', 'es'] as const;
+/** Languages with their own version of each poem (`fr_*`, `de_*`, `es_*`, `it_*`), besides the translation. */
+export const EXTRA_LANGUAGES = ['fr', 'de', 'es', 'it'] as const;
 export type ExtraLanguage = (typeof EXTRA_LANGUAGES)[number];
 /** The languages of the site. */
 export type SiteLanguage = PoemLanguage | ExtraLanguage;
@@ -32,6 +32,10 @@ export type Poem = {
   es_theme?: string | null;
   es_content?: string | null;
   es_provenance?: TranslationProvenance | null;
+  it_title?: string | null;
+  it_theme?: string | null;
+  it_content?: string | null;
+  it_provenance?: TranslationProvenance | null;
   image_id: string | null;
   audio_ro_id: string | null;
   audio_en_id: string | null;
@@ -63,4 +67,8 @@ export type PoemInput = Pick<Poem, 'title' | 'author' | 'theme' | 'content'> & {
   es_theme?: string | null;
   es_content?: string | null;
   es_provenance?: TranslationProvenance | null;
+  it_title?: string | null;
+  it_theme?: string | null;
+  it_content?: string | null;
+  it_provenance?: TranslationProvenance | null;
 };

@@ -16,6 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'Dan Enache — Auteur | Poetio',
       'Dan Enache — Autor | Poetio',
       'Dan Enache — Autor | Poetio',
+      'Dan Enache — Autore | Poetio',
     ),
     description: pick(
       language,
@@ -24,6 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'À propos de Poetio\u00a0: le portrait et la biographie complète du poète Dan Enache.',
       'Über Poetio: das Porträt und die vollständige Biografie des Dichters Dan Enache.',
       'Sobre Poetio: el retrato y la biografía completa del poeta Dan Enache.',
+      'Su Poetio: il ritratto e la biografia completa del poeta Dan Enache.',
     ),
     path: '/autor',
     language,

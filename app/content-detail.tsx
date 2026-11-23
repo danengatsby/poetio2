@@ -52,11 +52,27 @@ export default function ContentDetail({
   const share = (
     <div className="content-share">
       <button type="button" className="secondary-button" onClick={() => void copy()}>
-        {pick(language, 'Copiază linkul', 'Copy link', 'Copier le lien', 'Link kopieren', 'Copiar enlace')}
+        {pick(
+          language,
+          'Copiază linkul',
+          'Copy link',
+          'Copier le lien',
+          'Link kopieren',
+          'Copiar enlace',
+          'Copia il link',
+        )}
       </button>
       <span role="status">
         {copied
-          ? pick(language, 'Link copiat.', 'Link copied.', 'Lien copié.', 'Link kopiert.', 'Enlace copiado.')
+          ? pick(
+              language,
+              'Link copiat.',
+              'Link copied.',
+              'Lien copié.',
+              'Link kopiert.',
+              'Enlace copiado.',
+              'Link copiato.',
+            )
           : ''}
       </span>
       {manualLink && (
@@ -68,6 +84,7 @@ export default function ContentDetail({
             'Copiez le lien manuellement',
             'Link manuell kopieren',
             'Copia el enlace manualmente',
+            'Copia il link manualmente',
           )}
           <input readOnly type="url" value={manualLink} onFocus={event => event.currentTarget.select()} />
         </label>
@@ -84,6 +101,7 @@ export default function ContentDetail({
           'Aller au contenu',
           'Zum Inhalt springen',
           'Ir al contenido',
+          'Vai al contenuto',
         )}
       </a>
       <SiteHeader language={language} onLanguageChange={changeLanguage} videoPage={!!video} poemPage={!!poem} />
@@ -97,6 +115,7 @@ export default function ContentDetail({
             'Retour à la collection',
             'Zurück zur Sammlung',
             'Volver a la colección',
+            'Torna alla collezione',
           )}
         </a>
         {poem ? (
@@ -125,6 +144,7 @@ export default function ContentDetail({
                   'Qu’est-ce que cette vidéo vous a évoqué\u00a0?',
                   'Woran hat Sie dieses Video erinnert?',
                   '¿Qué te ha evocado este vídeo?',
+                  'Che cosa ti ha suscitato questo video?',
                 )
               : undefined
           }
@@ -143,6 +163,7 @@ export default function ContentDetail({
               'Retour à la collection',
               'Zurück zur Sammlung',
               'Volver a la colección',
+              'Torna alla collezione',
             )}
           </a>{' '}
           · <LegalLinks language={language} />

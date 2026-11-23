@@ -20,6 +20,9 @@ export const POEM_SEARCH_COLUMNS = [
   'es_title',
   'es_theme',
   'es_content',
+  'it_title',
+  'it_theme',
+  'it_content',
 ] as const;
 type SearchColumn = (typeof POEM_SEARCH_COLUMNS)[number];
 const setOf = (columns: readonly SearchColumn[]) => columns.map(column => column + '=?').join(', ');

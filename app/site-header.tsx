@@ -56,14 +56,14 @@ export default function SiteHeader({
           href={withSiteLanguage('/video', language)}
           aria-current={videoPage ? 'page' : undefined}
         >
-          {pick(language, 'Video', 'Video', 'Vidéo', 'Video', 'Vídeo')}
+          {pick(language, 'Video', 'Video', 'Vidéo', 'Video', 'Vídeo', 'Video')}
         </a>
         <a
           className="nav-link"
           href={withSiteLanguage('/carti', language)}
           aria-current={booksPage ? 'page' : undefined}
         >
-          {pick(language, 'Cărți', 'Books', 'Livres', 'Bücher', 'Libros')}
+          {pick(language, 'Cărți', 'Books', 'Livres', 'Bücher', 'Libros', 'Libri')}
         </a>
         <a
           className="nav-link"
@@ -85,7 +85,7 @@ export default function SiteHeader({
           }
         }}
       >
-        <summary>{pick(language, 'Opțiuni', 'Options', 'Options', 'Optionen', 'Opciones')}</summary>
+        <summary>{pick(language, 'Opțiuni', 'Options', 'Options', 'Optionen', 'Opciones', 'Opzioni')}</summary>
         <div className="site-options-panel">
           <ThemeToggle language={language} />
           <a className="admin-entry" href="/admin">

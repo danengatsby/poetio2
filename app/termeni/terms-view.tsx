@@ -13,7 +13,7 @@ function SellerContact({ shop, language }: { shop: PublicShop; language: SiteLan
       {shop.seller_address && (
         <>
           <br />
-          {pick(language, 'Adresa: ', 'Address: ', 'Adresse\u00a0: ', 'Adresse: ', 'Dirección: ')}
+          {pick(language, 'Adresa: ', 'Address: ', 'Adresse\u00a0: ', 'Adresse: ', 'Dirección: ', 'Indirizzo: ')}
           {addressLine(shop.seller_address)}
         </>
       )}
@@ -26,14 +26,14 @@ function SellerContact({ shop, language }: { shop: PublicShop; language: SiteLan
       {shop.contact_email && (
         <>
           <br />
-          {pick(language, 'Email: ', 'Email: ', 'E-mail\u00a0: ', 'E-Mail: ', 'Correo electrónico: ')}
+          {pick(language, 'Email: ', 'Email: ', 'E-mail\u00a0: ', 'E-Mail: ', 'Correo electrónico: ', 'Email: ')}
           <a href={`mailto:${shop.contact_email}`}>{shop.contact_email}</a>
         </>
       )}
       {shop.contact_phone && (
         <>
           <br />
-          {pick(language, 'Telefon: ', 'Phone: ', 'Téléphone\u00a0: ', 'Telefon: ', 'Teléfono: ')}
+          {pick(language, 'Telefon: ', 'Phone: ', 'Téléphone\u00a0: ', 'Telefon: ', 'Teléfono: ', 'Telefono: ')}
           <a href={`tel:${shop.contact_phone.replace(/[^\d+]/g, '')}`}>{shop.contact_phone}</a>
         </>
       )}
@@ -98,6 +98,16 @@ function WithdrawalForm({ shop, language }: { shop: PublicShop; language: SiteLa
       'Firma del consumidor (solo si el presente formulario se presenta en papel): …',
       'Fecha: …',
     ],
+    [
+      `Destinatario: ${to}`,
+      'Con la presente notifico il recesso dal mio contratto di vendita dei seguenti beni: …',
+      'Ordinato il: … / ricevuto il: …',
+      'Numero dell’ordine: …',
+      'Nome del consumatore: …',
+      'Indirizzo del consumatore: …',
+      'Firma del consumatore (solo se il presente modulo è notificato in versione cartacea): …',
+      'Data: …',
+    ],
   );
   const subject = pick(
     language,
@@ -106,6 +116,7 @@ function WithdrawalForm({ shop, language }: { shop: PublicShop; language: SiteLa
     'Rétractation du contrat',
     'Widerruf des Vertrags',
     'Desistimiento del contrato',
+    'Recesso dal contratto',
   );
   return (
     <>
@@ -117,6 +128,7 @@ function WithdrawalForm({ shop, language }: { shop: PublicShop; language: SiteLa
           'Formulaire de rétractation',
           'Widerrufsformular',
           'Formulario de desistimiento',
+          'Modulo di recesso',
         )}
       </h2>
       <p>
@@ -127,6 +139,7 @@ function WithdrawalForm({ shop, language }: { shop: PublicShop; language: SiteLa
           'Complétez et renvoyez ce formulaire uniquement si vous souhaitez vous rétracter du contrat. Vous pouvez aussi écrire avec vos propres mots\u00a0; le formulaire est facultatif.',
           'Wenn Sie den Vertrag widerrufen wollen, füllen Sie dieses Formular aus und senden Sie es zurück. Sie können auch mit eigenen Worten schreiben; das Formular ist nicht verpflichtend.',
           'Rellena y envía este formulario solo si quieres desistir del contrato. También puedes escribir con tus propias palabras; el formulario no es obligatorio.',
+          'Compila e restituisci questo modulo solo se desideri recedere dal contratto. Puoi anche scrivere con parole tue; il modulo non è obbligatorio.',
         )}
       </p>
       <div className="shop-withdrawal-form">
@@ -146,6 +159,7 @@ function WithdrawalForm({ shop, language }: { shop: PublicShop; language: SiteLa
               'Envoyer le formulaire par e-mail',
               'Formular per E-Mail senden',
               'Enviar el formulario por correo electrónico',
+              'Invia il modulo via email',
             )}
           </a>
         </p>
@@ -179,6 +193,7 @@ export default function TermsView({ initialLanguage, shop }: { initialLanguage: 
             'Conditions générales de vente',
             'Allgemeine Geschäftsbedingungen',
             'Términos y condiciones de venta',
+            'Termini e condizioni di vendita',
           )}
         </h1>
         {language === 'ro' ? (
@@ -485,6 +500,82 @@ export default function TermsView({ initialLanguage, shop }: { initialLanguage: 
               </a>
               ) o recurrir a la resolución alternativa de litigios (SAL): {sal}. El contrato se rige por la legislación
               rumana.
+            </p>
+          </>
+        ) : language === 'it' ? (
+          <>
+            <h2 id="vanzator">Il venditore</h2>
+            <p>
+              I libri ordinati su Poetio sono venduti e spediti da <strong>{seller}</strong>.
+              <SellerContact shop={shop} language={language} />
+            </p>
+            <h2 id="comanda">L’ordine e il contratto</h2>
+            <p>
+              Puoi ordinare dal carrello o con il pulsante «Acquista ora». Prima dell’invio vedi i libri, il prezzo
+              totale con la spedizione e il metodo di pagamento. Dopo aver premuto «Ordine con obbligo di pagamento»
+              ricevi il numero dell’ordine, un link dove puoi vederne lo stato in qualsiasi momento e un’email di
+              conferma. Il contratto si conclude quando il venditore conferma l’ordine; se un libro non può più essere
+              consegnato, ti avvisiamo e non paghi nulla.
+            </p>
+            <h2 id="preturi">Prezzi e pagamento</h2>
+            <p>
+              I prezzi sono indicati in {shop.currency} nella pagina di ogni libro e sono prezzi finali. Spedizione:{' '}
+              {shipping === null
+                ? 'indicata al momento dell’ordine'
+                : shipping
+                  ? formatMoney(shipping, shop.currency, 'it')
+                  : 'gratuita'}
+              , addebitata una sola volta per ordine. {methods && <>Metodi di pagamento: {methods}.</>}
+            </p>
+            <h2 id="livrare">Consegna</h2>
+            <p>
+              Consegniamo tramite corriere, in Romania, di solito entro {days} giorni lavorativi dall’ordine (dal
+              ricevimento del pagamento, in caso di bonifico bancario). Se non possiamo consegnare entro questo termine,
+              ti avvisiamo; puoi annullare l’ordine e ti rimborsiamo subito tutto ciò che hai pagato. Il rischio di
+              perdita o danneggiamento dei libri passa a te quando ricevi il pacco.
+            </p>
+            <h2 id="retur">Diritto di recesso e resi</h2>
+            <p>
+              Puoi recedere dall’acquisto entro 14 giorni dal giorno in cui tu (o una persona da te indicata, diversa
+              dal vettore) ricevi i libri, senza indicarne le ragioni (OUG 34/2014). Per recedere, informa il venditore
+              prima della scadenza del termine con una dichiarazione esplicita, per esempio un’email
+              {email && <> a {email}</>}, indicando il numero dell’ordine. Puoi usare il{' '}
+              <a href="#formular-retragere">modulo di recesso</a>, ma non è obbligatorio.
+            </p>
+            <p>
+              Rispedisci poi i libri all’indirizzo del venditore entro 14 giorni dalla tua comunicazione. Le spese di
+              restituzione sono a tuo carico. Sei responsabile solo della diminuzione del valore dei libri risultante da
+              una manipolazione diversa da quella necessaria per esaminarli.
+            </p>
+            <p>
+              Ti rimborsiamo tutti i pagamenti ricevuti, comprese le spese di consegna standard, entro 14 giorni dalla
+              tua comunicazione, con lo stesso mezzo di pagamento; se hai pagato in contrassegno, con bonifico sul conto
+              che ci indichi. Possiamo trattenere il rimborso finché non abbiamo ricevuto i libri o finché non hai
+              dimostrato di averli rispediti, se precedente.
+            </p>
+            <WithdrawalForm shop={shop} language={language} />
+            <h2 id="garantie">Garanzia legale di conformità</h2>
+            <p>
+              I libri beneficiano della garanzia legale di conformità (OUG 140/2021) per 2 anni dalla consegna. Se
+              ricevi un libro danneggiato, incompleto o diverso da quello ordinato, scrivici: lo sostituiamo o, se non è
+              possibile, ti rimborsiamo, senza costi per te.
+            </p>
+            <h2 id="date">Dati personali</h2>
+            <p>
+              Il tuo nome, indirizzo, telefono ed email sono usati solo per consegnare i libri, per la fatturazione e
+              per comunicare con te riguardo all’ordine. Non vengono mai venduti né usati a fini pubblicitari. Quali
+              dati conserviamo, per quanto tempo e quali sono i tuoi diritti:{' '}
+              <a href={privacy}>informativa sulla privacy</a>.
+            </p>
+            <h2 id="reclamatii">Reclami e controversie</h2>
+            <p>
+              Per qualsiasi problema scrivi prima a noi; rispondiamo il prima possibile. Puoi rivolgerti anche
+              all’autorità rumena per la tutela dei consumatori (
+              <a href="https://anpc.ro" rel="noopener noreferrer">
+                anpc.ro
+              </a>
+              ) o ricorrere alla risoluzione alternativa delle controversie (SAL): {sal}. Il contratto è regolato dalla
+              legge rumena.
             </p>
           </>
         ) : (

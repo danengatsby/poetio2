@@ -25,6 +25,9 @@ export type ReadablePoem = Pick<
   | 'es_title'
   | 'es_theme'
   | 'es_content'
+  | 'it_title'
+  | 'it_theme'
+  | 'it_content'
   | 'audio_ro_id'
   | 'audio_en_id'
 >;
@@ -44,17 +47,18 @@ export default function PoemReading({
   const version = poemVersion(poem, language),
     text = version ?? poem;
   const actualLanguage = version ? language : poem.source_language;
-  // There are Romanian and English recordings; the French, German and Spanish pages play the original's.
+  // There are Romanian and English recordings; the other languages' pages play the original's.
   const recording = isExtraLanguage(actualLanguage) ? poem.source_language : actualLanguage;
   const audioField = recording === 'en-US' ? 'audio_en_id' : 'audio_ro_id';
   const { preferences, storageAvailable, setPreferences, resetPreferences } = usePoemReadingPreferences();
   return (
     <article className="poem-reading" lang={language}>
       <p className="eyebrow" lang={actualLanguage}>
-        {text.theme || pick(language, 'Poezie', 'Poetry', 'Poésie', 'Lyrik', 'Poesía')}
+        {text.theme || pick(language, 'Poezie', 'Poetry', 'Poésie', 'Lyrik', 'Poesía', 'Poesia')}
       </p>
       <h1 lang={actualLanguage}>
-        {text.title || pick(language, 'Fără titlu', 'Untitled', 'Sans titre', 'Ohne Titel', 'Sin título')}
+        {text.title ||
+          pick(language, 'Fără titlu', 'Untitled', 'Sans titre', 'Ohne Titel', 'Sin título', 'Senza titolo')}
       </h1>
       {poem.author && <p className="reader-author">{poem.author}</p>}
       {children}
@@ -67,6 +71,7 @@ export default function PoemReading({
             'Confort de lecture',
             'Lesekomfort',
             'Comodidad de lectura',
+            'Comfort di lettura',
           )}
         </summary>
         <div className="poem-reading-controls">
@@ -79,6 +84,7 @@ export default function PoemReading({
               'Taille du texte du poème',
               'Textgröße des Gedichts',
               'Tamaño del texto del poema',
+              'Dimensione del testo della poesia',
             )}
           >
             <button
@@ -93,6 +99,7 @@ export default function PoemReading({
                 'Réduire le texte du poème',
                 'Gedichttext verkleinern',
                 'Reducir el texto del poema',
+                'Riduci il testo della poesia',
               )}
             >
               A−
@@ -110,20 +117,31 @@ export default function PoemReading({
                 'Agrandir le texte du poème',
                 'Gedichttext vergrößern',
                 'Ampliar el texto del poema',
+                'Ingrandisci il testo della poesia',
               )}
             >
               A+
             </button>
           </div>
           <label>
-            {pick(language, 'Lățimea textului', 'Text width', 'Largeur du texte', 'Textbreite', 'Ancho del texto')}
+            {pick(
+              language,
+              'Lățimea textului',
+              'Text width',
+              'Largeur du texte',
+              'Textbreite',
+              'Ancho del texto',
+              'Larghezza del testo',
+            )}
             <select
               value={preferences.width}
               onChange={event => setPreferences({ width: event.target.value as typeof preferences.width })}
             >
-              <option value="narrow">{pick(language, 'Îngustă', 'Narrow', 'Étroite', 'Schmal', 'Estrecho')}</option>
-              <option value="normal">{pick(language, 'Medie', 'Medium', 'Moyenne', 'Mittel', 'Medio')}</option>
-              <option value="wide">{pick(language, 'Largă', 'Wide', 'Large', 'Breit', 'Ancho')}</option>
+              <option value="narrow">
+                {pick(language, 'Îngustă', 'Narrow', 'Étroite', 'Schmal', 'Estrecho', 'Stretta')}
+              </option>
+              <option value="normal">{pick(language, 'Medie', 'Medium', 'Moyenne', 'Mittel', 'Medio', 'Media')}</option>
+              <option value="wide">{pick(language, 'Largă', 'Wide', 'Large', 'Breit', 'Ancho', 'Larga')}</option>
             </select>
           </label>
           <button type="button" className="secondary-button" onClick={resetPreferences}>
@@ -134,6 +152,7 @@ export default function PoemReading({
               'Réinitialiser les réglages de lecture',
               'Leseeinstellungen zurücksetzen',
               'Restablecer los ajustes de lectura',
+              'Ripristina le impostazioni di lettura',
             )}
           </button>
         </div>
@@ -146,6 +165,7 @@ export default function PoemReading({
                 'Les préférences de lecture sont enregistrées dans ce navigateur.',
                 'Die Leseeinstellungen werden in diesem Browser gespeichert.',
                 'Las preferencias de lectura se guardan en este navegador.',
+                'Le preferenze di lettura vengono salvate in questo browser.',
               )
             : pick(
                 language,
@@ -154,6 +174,7 @@ export default function PoemReading({
                 'Les préférences ne peuvent pas être enregistrées. Les réglages fonctionnent jusqu’au prochain rechargement.',
                 'Die Einstellungen können nicht gespeichert werden. Sie funktionieren bis zum nächsten Neuladen.',
                 'No se pueden guardar las preferencias. Los ajustes funcionan hasta que recargues la página.',
+                'Non è possibile salvare le preferenze. Le impostazioni funzionano fino al prossimo ricaricamento.',
               )}
         </p>
       </details>
@@ -175,6 +196,7 @@ export default function PoemReading({
             'Traduction indisponible\u00a0; voici l’original.',
             'Übersetzung nicht verfügbar; das Original wird angezeigt.',
             'Traducción no disponible; se muestra el original.',
+            'Traduzione non disponibile; viene mostrato l’originale.',
           )}
         </p>
       )}

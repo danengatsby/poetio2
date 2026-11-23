@@ -45,7 +45,16 @@ export default function BooksView({
         {book ? (
           <>
             <a className="book-back" href={withSiteLanguage('/carti', language)}>
-              ← {pick(language, 'Toate cărțile', 'All books', 'Tous les livres', 'Alle Bücher', 'Todos los libros')}
+              ←{' '}
+              {pick(
+                language,
+                'Toate cărțile',
+                'All books',
+                'Tous les livres',
+                'Alle Bücher',
+                'Todos los libros',
+                'Tutti i libri',
+              )}
             </a>
             <BookPresentation book={book} language={language} />
             <div className="book-comments">
@@ -60,6 +69,7 @@ export default function BooksView({
                   'Qu’est-ce que ce livre vous a évoqué\u00a0? Partagez quelques pensées.',
                   'Woran hat Sie dieses Buch erinnert? Teilen Sie ein paar Gedanken.',
                   '¿Qué te ha evocado este libro? Comparte algunas ideas.',
+                  'Che cosa ti ha suscitato questo libro? Condividi qualche pensiero.',
                 )}
               />
             </div>
@@ -77,10 +87,11 @@ export default function BooksView({
                     'Des pages à découvrir',
                     'Seiten zum Entdecken',
                     'Páginas por descubrir',
+                    'Pagine da scoprire',
                   )}
                 </p>
                 <h1>
-                  {pick(language, 'Cărți', 'Books', 'Livres', 'Bücher', 'Libros')}
+                  {pick(language, 'Cărți', 'Books', 'Livres', 'Bücher', 'Libros', 'Libri')}
                   <span className="count">({String(books.length).padStart(2, '0')})</span>
                 </h1>
               </div>
@@ -92,6 +103,7 @@ export default function BooksView({
                   'Un moment pour lire.',
                   'Ein Moment zum Lesen.',
                   'Un momento para leer.',
+                  'Un momento per leggere.',
                 )}
               </p>
             </div>
@@ -105,6 +117,7 @@ export default function BooksView({
                     'Les livres n’ont pas pu être chargés pour le moment.',
                     'Die Bücher konnten gerade nicht geladen werden.',
                     'Ahora mismo no se pudieron cargar los libros.',
+                    'Al momento non è stato possibile caricare i libri.',
                   )}
                 </p>
                 <a className="secondary-button" href={withSiteLanguage('/carti', language)}>
@@ -134,6 +147,7 @@ export default function BooksView({
                           'Ouvrir pour lire.',
                           'Zum Lesen öffnen.',
                           'Abrir para leer.',
+                          'Apri per leggere.',
                         )}
                     </p>
                     <div className="card-bottom">
@@ -144,9 +158,9 @@ export default function BooksView({
                       <a
                         className="book-read-link"
                         href={withSiteLanguage(`/carti/${item.id}`, language)}
-                        aria-label={`${pick(language, 'Citește', 'Read', 'Lire', 'Lesen', 'Leer')}: ${item.title}`}
+                        aria-label={`${pick(language, 'Citește', 'Read', 'Lire', 'Lesen', 'Leer', 'Leggi')}: ${item.title}`}
                       >
-                        {pick(language, 'Citește', 'Read', 'Lire', 'Lesen', 'Leer')} ↗
+                        {pick(language, 'Citește', 'Read', 'Lire', 'Lesen', 'Leer', 'Leggi')} ↗
                       </a>
                     </div>
                   </article>
@@ -162,6 +176,7 @@ export default function BooksView({
                     'Le premier livre apparaîtra bientôt ici.',
                     'Das erste Buch erscheint bald hier.',
                     'El primer libro aparecerá pronto aquí.',
+                    'Il primo libro apparirà presto qui.',
                   )}
                 </p>
                 {canAdmin && (
@@ -173,6 +188,7 @@ export default function BooksView({
                       'Ajouter le premier livre',
                       'Das erste Buch hinzufügen',
                       'Añadir el primer libro',
+                      'Aggiungi il primo libro',
                     )}
                   </a>
                 )}

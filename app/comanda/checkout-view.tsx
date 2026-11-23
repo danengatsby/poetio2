@@ -66,6 +66,7 @@ export default function CheckoutView({
                 'Trop de tentatives. Attendez une minute et réessayez.',
                 'Zu viele Versuche. Warten Sie eine Minute und versuchen Sie es erneut.',
                 'Demasiados intentos. Espera un minuto y vuelve a intentarlo.',
+                'Troppi tentativi. Attendi un minuto e riprova.',
               )
             : data.error ||
                 pick(
@@ -75,6 +76,7 @@ export default function CheckoutView({
                   'La commande n’a pas pu être envoyée.',
                   'Die Bestellung konnte nicht gesendet werden.',
                   'No se pudo enviar el pedido.',
+                  'Non è stato possibile inviare l’ordine.',
                 ),
         );
       if (!direct) clearCart();
@@ -94,7 +96,7 @@ export default function CheckoutView({
       <span>
         {label}
         {options.required === false &&
-          ` (${pick(language, 'opțional', 'optional', 'facultatif', 'optional', 'opcional')})`}
+          ` (${pick(language, 'opțional', 'optional', 'facultatif', 'optional', 'opcional', 'facoltativo')})`}
       </span>
       <input
         name={name}
@@ -111,7 +113,9 @@ export default function CheckoutView({
 
   let content;
   if (!inBrowser)
-    content = <p>{pick(language, 'Se încarcă…', 'Loading…', 'Chargement…', 'Wird geladen…', 'Cargando…')}</p>;
+    content = (
+      <p>{pick(language, 'Se încarcă…', 'Loading…', 'Chargement…', 'Wird geladen…', 'Cargando…', 'Caricamento…')}</p>
+    );
   else if (!items.length)
     content = (
       <div className="shop-empty shop-panel">
@@ -123,10 +127,19 @@ export default function CheckoutView({
             'Votre panier est vide.',
             'Ihr Warenkorb ist leer.',
             'Tu carrito está vacío.',
+            'Il tuo carrello è vuoto.',
           )}
         </p>
         <a className="shop-button" href={withSiteLanguage('/carti', language)}>
-          {pick(language, 'Vezi cărțile', 'Browse the books', 'Voir les livres', 'Bücher ansehen', 'Ver los libros')}
+          {pick(
+            language,
+            'Vezi cărțile',
+            'Browse the books',
+            'Voir les livres',
+            'Bücher ansehen',
+            'Ver los libros',
+            'Sfoglia i libri',
+          )}
         </a>
       </div>
     );
@@ -146,6 +159,7 @@ export default function CheckoutView({
           'Vérification des prix…',
           'Preise werden geprüft…',
           'Comprobando precios…',
+          'Verifica dei prezzi…',
         )}
       </p>
     );
@@ -159,6 +173,7 @@ export default function CheckoutView({
           'Les commandes en ligne ouvrent bientôt.',
           'Online-Bestellungen sind bald möglich.',
           'Los pedidos en línea abrirán pronto.',
+          'Gli ordini online apriranno presto.',
         )}
       </p>
     );
@@ -176,6 +191,7 @@ export default function CheckoutView({
                 '1. Adresse de livraison',
                 '1. Lieferadresse',
                 '1. Dirección de entrega',
+                '1. Indirizzo di consegna',
               )}
             </legend>
             {field(
@@ -187,6 +203,7 @@ export default function CheckoutView({
                 'Nom et prénom',
                 'Vor- und Nachname',
                 'Nombre y apellidos',
+                'Nome e cognome',
               ),
               {
                 autoComplete: 'name',
@@ -194,7 +211,7 @@ export default function CheckoutView({
                 max: 120,
               },
             )}
-            {field('phone', pick(language, 'Telefon', 'Phone', 'Téléphone', 'Telefon', 'Teléfono'), {
+            {field('phone', pick(language, 'Telefon', 'Phone', 'Téléphone', 'Telefon', 'Teléfono', 'Telefono'), {
               type: 'tel',
               autoComplete: 'tel',
               max: 30,
@@ -205,6 +222,7 @@ export default function CheckoutView({
                 'Pour le livreur.',
                 'Für den Kurier.',
                 'Para el mensajero.',
+                'Per il corriere.',
               ),
             })}
             {field('email', 'Email', {
@@ -218,6 +236,7 @@ export default function CheckoutView({
                 'Pour la confirmation de commande.',
                 'Für die Bestellbestätigung.',
                 'Para la confirmación del pedido.',
+                'Per la conferma dell’ordine.',
               ),
             })}
             {field(
@@ -229,6 +248,7 @@ export default function CheckoutView({
                 'Adresse',
                 'Straße und Hausnummer',
                 'Dirección',
+                'Indirizzo',
               ),
               {
                 autoComplete: 'street-address',
@@ -236,7 +256,7 @@ export default function CheckoutView({
                 max: 300,
               },
             )}
-            {field('city', pick(language, 'Localitatea', 'City', 'Localité', 'Ort', 'Localidad'), {
+            {field('city', pick(language, 'Localitatea', 'City', 'Localité', 'Ort', 'Localidad', 'Località'), {
               autoComplete: 'address-level2',
               max: 100,
             })}
@@ -249,6 +269,7 @@ export default function CheckoutView({
                 'Département (județ)',
                 'Kreis (județ)',
                 'Distrito (județ)',
+                'Distretto (județ)',
               ),
               {
                 autoComplete: 'address-level1',
@@ -257,7 +278,15 @@ export default function CheckoutView({
             )}
             {field(
               'postal_code',
-              pick(language, 'Cod poștal', 'Postal code', 'Code postal', 'Postleitzahl', 'Código postal'),
+              pick(
+                language,
+                'Cod poștal',
+                'Postal code',
+                'Code postal',
+                'Postleitzahl',
+                'Código postal',
+                'Codice postale',
+              ),
               {
                 autoComplete: 'postal-code',
                 required: false,
@@ -273,8 +302,9 @@ export default function CheckoutView({
                   'Note pour le vendeur',
                   'Hinweis für den Verkäufer',
                   'Nota para el vendedor',
+                  'Nota per il venditore',
                 )}{' '}
-                ({pick(language, 'opțional', 'optional', 'facultatif', 'optional', 'opcional')})
+                ({pick(language, 'opțional', 'optional', 'facultatif', 'optional', 'opcional', 'facoltativo')})
               </span>
               <textarea name="note" maxLength={1000} value={values.note} onChange={update('note')} />
             </label>
@@ -292,6 +322,7 @@ export default function CheckoutView({
                 '2. Mode de paiement',
                 '2. Zahlungsart',
                 '2. Forma de pago',
+                '2. Metodo di pagamento',
               )}
             </legend>
             {state.shop.payment_methods.map(item => (
@@ -314,6 +345,7 @@ export default function CheckoutView({
                           'Vous payez le livreur à la réception du colis.',
                           'Sie zahlen bei Lieferung an den Kurier.',
                           'Pagas al mensajero cuando llega el paquete.',
+                          'Paghi il corriere quando arriva il pacco.',
                         )
                       : pick(
                           language,
@@ -322,6 +354,7 @@ export default function CheckoutView({
                           'Vous recevez les coordonnées bancaires après la commande\u00a0; nous expédions dès réception du paiement.',
                           'Die Kontodaten erhalten Sie nach der Bestellung; wir versenden nach Zahlungseingang.',
                           'Recibes los datos de la cuenta tras el pedido; enviamos en cuanto llega el pago.',
+                          'Ricevi i dati del conto dopo l’ordine; spediamo appena arriva il pagamento.',
                         )}
                   </small>
                 </span>
@@ -337,6 +370,7 @@ export default function CheckoutView({
                 '3. Vérifiez les articles',
                 '3. Artikel prüfen',
                 '3. Revisa los artículos',
+                '3. Controlla gli articoli',
               )}
             </legend>
             <ul className="shop-lines shop-field-wide">
@@ -353,6 +387,7 @@ export default function CheckoutView({
                   'Modifier le panier',
                   'Warenkorb ändern',
                   'Cambiar el carrito',
+                  'Modifica il carrello',
                 )}
               </a>
             )}
@@ -367,6 +402,7 @@ export default function CheckoutView({
             'Récapitulatif de la commande',
             'Bestellübersicht',
             'Resumen del pedido',
+            'Riepilogo dell’ordine',
           )}
         >
           <ShopTotals quote={quote} language={language} />
@@ -380,6 +416,7 @@ export default function CheckoutView({
                 'J’ai lu et j’accepte les ',
                 'Ich habe die ',
                 'He leído y acepto los ',
+                'Ho letto e accetto i ',
               )}
               <a href={withSiteLanguage('/termeni', language)} target="_blank" rel="noopener">
                 {pick(
@@ -389,6 +426,7 @@ export default function CheckoutView({
                   'conditions générales de vente',
                   'Allgemeinen Geschäftsbedingungen',
                   'términos y condiciones',
+                  'termini e condizioni',
                 )}
               </a>
               {pick(
@@ -398,6 +436,7 @@ export default function CheckoutView({
                 ', y compris le droit de rétractation de 14\u00a0jours.',
                 ' gelesen und akzeptiere sie, einschließlich des 14-tägigen Widerrufsrechts.',
                 ', incluido el derecho de desistimiento de 14 días.',
+                ', compreso il diritto di recesso di 14 giorni.',
               )}
             </span>
           </label>
@@ -408,7 +447,7 @@ export default function CheckoutView({
           )}
           <button type="submit" className="shop-button shop-button-orange" disabled={sending || !quote.ok}>
             {sending
-              ? pick(language, 'Se trimite…', 'Sending…', 'Envoi…', 'Wird gesendet…', 'Enviando…')
+              ? pick(language, 'Se trimite…', 'Sending…', 'Envoi…', 'Wird gesendet…', 'Enviando…', 'Invio in corso…')
               : pick(
                   language,
                   'Comandă cu obligație de plată',
@@ -416,6 +455,7 @@ export default function CheckoutView({
                   'Commande avec obligation de paiement',
                   'Zahlungspflichtig bestellen',
                   'Pedido con obligación de pago',
+                  'Ordine con obbligo di pagamento',
                 )}
           </button>
           <p className="shop-note">
@@ -426,9 +466,18 @@ export default function CheckoutView({
               'Passer la commande vous engage à payer. Vos données servent uniquement à livrer les livres (',
               'Mit der Bestellung verpflichten Sie sich zur Zahlung. Ihre Daten werden nur für die Lieferung der Bücher verwendet (',
               'Al hacer el pedido te comprometes a pagar. Tus datos solo se usan para entregar los libros (',
+              'Effettuando l’ordine ti impegni a pagare. I tuoi dati sono usati solo per consegnare i libri (',
             )}
             <a href={withSiteLanguage('/confidentialitate', language)} target="_blank" rel="noopener">
-              {pick(language, 'confidențialitate', 'privacy', 'confidentialité', 'Datenschutz', 'privacidad')}
+              {pick(
+                language,
+                'confidențialitate',
+                'privacy',
+                'confidentialité',
+                'Datenschutz',
+                'privacidad',
+                'privacy',
+              )}
             </a>
             ).
           </p>
@@ -453,12 +502,13 @@ export default function CheckoutView({
                 'Retour au panier',
                 'Zurück zum Warenkorb',
                 'Volver al carrito',
+                'Torna al carrello',
               ),
             }
       }
     >
       <h1 className="shop-title">
-        {pick(language, 'Finalizează comanda', 'Checkout', 'Commande', 'Kasse', 'Finalizar pedido')}
+        {pick(language, 'Finalizează comanda', 'Checkout', 'Commande', 'Kasse', 'Finalizar pedido', 'Cassa')}
       </h1>
       {content}
     </ShopFrame>

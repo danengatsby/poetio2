@@ -27,6 +27,10 @@ export const fixturePoems = [
     es_theme: 'Luz de prueba',
     es_content:
       'El encuentro en la arboleda\ntiene pasos de hoja y de agua.\n\nEn el laberinto de la tarde\nnos encontramos sin mapa.',
+    it_title: 'L’incontro nel boschetto',
+    it_theme: 'Luce di prova',
+    it_content:
+      'L’incontro nel boschetto\nha passi di foglia e d’acqua.\n\nNel labirinto della sera\nci troviamo senza mappa.',
   },
   {
     title: 'Seara la margine'.normalize('NFD'),
