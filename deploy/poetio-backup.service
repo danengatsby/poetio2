@@ -1,6 +1,9 @@
 [Unit]
 Description=Poetio encrypted backup and isolated restore verification
 After=local-fs.target
+# Email when this job fails and once more when it works again (scripts/alert-mail.py).
+OnFailure=poetio-alert@%n.service
+OnSuccess=poetio-alert@%n.service
 
 [Service]
 Type=oneshot

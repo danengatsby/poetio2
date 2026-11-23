@@ -2,6 +2,8 @@
 Description=Poetio order confirmation emails
 After=network-online.target
 Wants=network-online.target
+# Email when this job fails (scripts/alert-mail.py); it runs too often to report each success.
+OnFailure=poetio-alert@%n.service
 
 [Service]
 Type=oneshot

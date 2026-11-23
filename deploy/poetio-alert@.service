@@ -1,0 +1,23 @@
+[Unit]
+Description=Poetio email alert for %i
+# Started by OnFailure=/OnSuccess= of the Poetio jobs (scripts/alert-mail.py decides
+# whether to write). It has no OnFailure= itself, so a failed alert cannot loop.
+
+[Service]
+Type=oneshot
+DynamicUser=true
+# Reads the failed job's journal lines.
+SupplementaryGroups=systemd-journal
+# SMTP account and recipient, shared with the comment and order notices.
+EnvironmentFile=-/etc/poetio/notify.env
+ExecStart=/usr/bin/python3 /usr/local/sbin/poetio-alert %i
+StateDirectory=poetio-alert
+StateDirectoryMode=0700
+UMask=0077
+TimeoutStartSec=2min
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SyslogIdentifier=poetio-alert

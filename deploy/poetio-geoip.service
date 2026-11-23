@@ -2,6 +2,9 @@
 Description=Update the IP location database for Poetio visit statistics
 After=network-online.target
 Wants=network-online.target
+# Email when this job fails and once more when it works again (scripts/alert-mail.py).
+OnFailure=poetio-alert@%n.service
+OnSuccess=poetio-alert@%n.service
 
 [Service]
 Type=oneshot

@@ -3,6 +3,9 @@ Description=Report the public Poetio site to the external heartbeat service
 After=network-online.target
 Wants=network-online.target
 ConditionPathExists=/etc/poetio/external.env
+# Email when this job fails and once more when it works again (scripts/alert-mail.py).
+OnFailure=poetio-alert@%n.service
+OnSuccess=poetio-alert@%n.service
 
 [Service]
 Type=oneshot

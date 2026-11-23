@@ -1,0 +1,67 @@
+# Checks poetio.cloud from outside the server every 30 minutes. When the site does not
+# answer, the run fails and GitHub emails the account that last changed this schedule
+# (the one that pushes to main), as for any failed workflow it started. This is the alert
+# that still works when the whole server is down; the server's own jobs email through
+# poetio-alert@.service (scripts/alert-mail.py).
+#
+# GitHub may start a scheduled run some minutes late, and it pauses schedules in a public
+# repository after 60 days without commits (it emails a warning first; "Enable workflow"
+# in the Actions tab, or any push, resumes it).
+name: Uptime
+
+on:
+  schedule:
+    - cron: '17,47 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  site:
+    name: poetio.cloud answers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Home page, RSS feed and certificate
+        shell: python3 {0}
+        env:
+          SITE: https://poetio.cloud
+          CERT_MIN_DAYS: '14'
+        run: |
+          import os, socket, ssl, sys, time, urllib.parse, urllib.request
+
+          site = os.environ['SITE']
+          host = urllib.parse.urlparse(site).hostname
+
+          def check():
+              for path, marker in (('/', b'<html lang="ro"'), ('/feed.xml', b'<rss')):
+                  request = urllib.request.Request(site + path, headers={'User-Agent': 'poetio-uptime (GitHub Actions)'})
+                  started = time.monotonic()
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      body = response.read()
+                      if response.status != 200 or marker not in body:
+                          raise RuntimeError(f'{site}{path} answered {response.status} without the expected content.')
+                  print(f'{site}{path}: 200 in {time.monotonic() - started:.2f} s')
+              context = ssl.create_default_context()
+              with socket.create_connection((host, 443), timeout=30) as raw, context.wrap_socket(raw, server_hostname=host) as tls:
+                  days = (ssl.cert_time_to_seconds(tls.getpeercert()['notAfter']) - time.time()) / 86400
+              if days < float(os.environ['CERT_MIN_DAYS']):
+                  raise RuntimeError(f'The HTTPS certificate of {host} expires in {days:.0f} days; renewal is not working.')
+              print(f'Certificate valid for {days:.0f} more days.')
+
+          # One slow moment is not an outage: try three times, a minute apart.
+          for attempt in range(1, 4):
+              try:
+                  check()
+                  sys.exit(0)
+              except Exception as error:
+                  problem = f'{type(error).__name__}: {error}'
+                  print(f'Attempt {attempt}: {problem}')
+                  if attempt < 3:
+                      time.sleep(60)
+          print(f'::error title=poetio.cloud is not answering::{problem}')
+          sys.exit(1)

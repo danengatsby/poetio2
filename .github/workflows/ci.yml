@@ -43,7 +43,7 @@ jobs:
       - run: npm run test:vps
         timeout-minutes: 15
       - run: node --test tests/ui-components.test.mjs
-      - name: Python tests for backup, release, off-site copy, monitoring and notifications
+      - name: Python tests for backup, release, off-site copy, monitoring, notifications and alerts
         timeout-minutes: 10
         run: |
           npm run test:backup
@@ -52,6 +52,7 @@ jobs:
           PYTHONDONTWRITEBYTECODE=1 python3 tests/operations-status.test.py
           PYTHONDONTWRITEBYTECODE=1 python3 tests/notify-comments.test.py
           PYTHONDONTWRITEBYTECODE=1 python3 tests/update-geoip.test.py
+          PYTHONDONTWRITEBYTECODE=1 python3 tests/alert-mail.test.py
       - run: npx playwright install --with-deps --only-shell chromium
       - run: npm run test:e2e
         timeout-minutes: 10

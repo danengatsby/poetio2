@@ -4,6 +4,9 @@ After=network-online.target poetio-backup.service
 Wants=network-online.target
 # Inactive until the destination and heartbeat URLs are configured.
 ConditionPathExists=/etc/poetio/external.env
+# Email when this job fails and once more when it works again (scripts/alert-mail.py).
+OnFailure=poetio-alert@%n.service
+OnSuccess=poetio-alert@%n.service
 
 [Service]
 Type=oneshot
