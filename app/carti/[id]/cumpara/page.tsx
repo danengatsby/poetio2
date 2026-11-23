@@ -59,6 +59,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
         `${book.title} — order the book on Poetio.`,
         `${book.title} — commandez le livre sur Poetio.`,
         `${book.title} — bestellen Sie das Buch auf Poetio.`,
+        `${book.title} — pide el libro en Poetio.`,
       ),
     ),
     path: bookSalePath(book.id),
@@ -80,6 +81,7 @@ export default async function BookSalePage(props: Props) {
     'en-US': deliveryWindow(now, settings, 'en-US'),
     fr: deliveryWindow(now, settings, 'fr'),
     de: deliveryWindow(now, settings, 'de'),
+    es: deliveryWindow(now, settings, 'es'),
   };
   const offers = shop.ready
     ? saleVariants(book).filter(variant => variant.price.endsWith(` ${settings.currency}`))

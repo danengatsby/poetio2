@@ -36,7 +36,7 @@ export function formatBookPrice(value: string | null | undefined, language: Site
   const stored = normalizeBookPrice(value);
   if (!stored) return null;
   const [amount, currency] = stored.split(' ');
-  return new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR', 'de-DE'), {
+  return new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR', 'de-DE', 'es-ES'), {
     style: 'currency',
     currency,
   }).format(Number(amount));
@@ -47,7 +47,7 @@ export function bookPriceDisplay(value: string | null | undefined, language: Sit
   const stored = normalizeBookPrice(value);
   if (!stored) return null;
   const [amount, currency] = stored.split(' ');
-  const parts = new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR', 'de-DE'), {
+  const parts = new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR', 'de-DE', 'es-ES'), {
     style: 'currency',
     currency,
   }).formatToParts(Number(amount));

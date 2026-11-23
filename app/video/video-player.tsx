@@ -57,7 +57,7 @@ export default function VideoPlayer({
           <track
             kind="subtitles"
             srcLang="ro"
-            label={pick(language, 'Română', 'Romanian', 'Roumain', 'Rumänisch')}
+            label={pick(language, 'Română', 'Romanian', 'Roumain', 'Rumänisch', 'Rumano')}
             src={pilotSubtitles.path}
           />
         )}
@@ -81,6 +81,7 @@ export default function VideoPlayer({
             'Romanian subtitles',
             'Sous-titres en roumain',
             'Rumänische Untertitel',
+            'Subtítulos en rumano',
           )}
         </button>
       )}
@@ -93,6 +94,7 @@ export default function VideoPlayer({
                 'File loaded. Play it to check the picture and sound.',
                 'Fichier chargé. Lancez la lecture pour vérifier l’image et le son.',
                 'Datei geladen. Spielen Sie sie ab, um Bild und Ton zu prüfen.',
+                'Archivo cargado. Reprodúcelo para comprobar la imagen y el sonido.',
               )
             : pick(
                 language,
@@ -100,6 +102,7 @@ export default function VideoPlayer({
                 'Checking video loading…',
                 'Vérification du chargement de la vidéo…',
                 'Videoladen wird geprüft…',
+                'Comprobando la carga del vídeo…',
               )}
         </p>
       )}
@@ -111,9 +114,17 @@ export default function VideoPlayer({
             'This video cannot be played in this browser. Try another browser or download the file.',
             'Cette vidéo ne peut pas être lue dans ce navigateur. Essayez un autre navigateur ou téléchargez le fichier.',
             'Dieses Video kann in diesem Browser nicht abgespielt werden. Versuchen Sie einen anderen Browser oder laden Sie die Datei herunter.',
+            'Este vídeo no se puede reproducir en este navegador. Prueba otro navegador o descarga el archivo.',
           )}{' '}
           <a href={src} download>
-            {pick(language, 'Descarcă video', 'Download video', 'Télécharger la vidéo', 'Video herunterladen')}
+            {pick(
+              language,
+              'Descarcă video',
+              'Download video',
+              'Télécharger la vidéo',
+              'Video herunterladen',
+              'Descargar el vídeo',
+            )}
           </a>
         </p>
       )}

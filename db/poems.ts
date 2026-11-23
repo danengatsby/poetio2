@@ -20,7 +20,7 @@ type StoredPoem = Omit<Poem, 'translation_provenance' | VersionProvenance> & {
   translation_provenance: string | null;
 } & Partial<Record<VersionProvenance, string | null>>;
 /** The language names used in error messages. */
-const LANGUAGE_NAME: Record<ExtraLanguage, string> = { fr: 'franceză', de: 'germană' };
+const LANGUAGE_NAME: Record<ExtraLanguage, string> = { fr: 'franceză', de: 'germană', es: 'spaniolă' };
 function parseStored(value: string | null | undefined) {
   try {
     return parseTranslationProvenance(JSON.parse(value || 'null'));
@@ -37,6 +37,7 @@ function readPoem<T extends StoredPoem>(
     translation_provenance: parseStored(row.translation_provenance),
     fr_provenance: parseStored(row.fr_provenance),
     de_provenance: parseStored(row.de_provenance),
+    es_provenance: parseStored(row.es_provenance),
   };
 }
 const storedProvenance = (poem: PoemInput) =>
@@ -45,6 +46,10 @@ const storedVersion = (poem: PoemInput, language: ExtraLanguage) => {
   const provenance = poem[`${language}_provenance`];
   return provenance ? JSON.stringify(provenance) : null;
 };
+/** The columns of every language's own version, in the order of their values below. */
+const VERSION_COLUMNS = EXTRA_LANGUAGES.flatMap(language =>
+  ['title', 'theme', 'content', 'provenance'].map(field => `${language}_${field}`),
+);
 const VERSION_FIELDS = EXTRA_LANGUAGES.flatMap(language => [
   `${language}_title` as const,
   `${language}_theme` as const,
@@ -295,7 +300,11 @@ export async function createPoem(db: Database, id: string, input: PoemInput, val
   const now = Date.now();
   const insert = db
     .prepare(
-      'INSERT INTO poems (id, title, author, theme, content, source_language, translated_title, translated_theme, translated_content, translation_provenance, fr_title, fr_theme, fr_content, fr_provenance, de_title, de_theme, de_content, de_provenance, image_id, audio_ro_id, audio_en_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT(id) DO NOTHING',
+      `INSERT INTO poems (id, title, author, theme, content, source_language, translated_title, translated_theme, translated_content, translation_provenance, ${VERSION_COLUMNS.join(', ')}, image_id, audio_ro_id, audio_en_id, revision, created_at, updated_at) VALUES (${Array(
+        13 + VERSION_COLUMNS.length,
+      )
+        .fill('?')
+        .join(', ')}, 1, ?, ?) ON CONFLICT(id) DO NOTHING`,
     )
     .bind(
       id,
@@ -411,7 +420,7 @@ export async function updatePoem(
   const versions = await requireCurrentVersions(kept);
   const update = db
     .prepare(
-      'UPDATE poems SET title = ?, author = ?, theme = ?, content = ?, source_language = ?, translated_title = ?, translated_theme = ?, translated_content = ?, translation_provenance = ?, fr_title = ?, fr_theme = ?, fr_content = ?, fr_provenance = ?, de_title = ?, de_theme = ?, de_content = ?, de_provenance = ?, image_id = CASE WHEN ? = 1 THEN ? ELSE image_id END, audio_ro_id = CASE WHEN ? = 1 THEN ? ELSE audio_ro_id END, audio_en_id = CASE WHEN ? = 1 THEN ? ELSE audio_en_id END, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?',
+      `UPDATE poems SET title = ?, author = ?, theme = ?, content = ?, source_language = ?, translated_title = ?, translated_theme = ?, translated_content = ?, translation_provenance = ?, ${VERSION_COLUMNS.map(column => column + ' = ?').join(', ')}, image_id = CASE WHEN ? = 1 THEN ? ELSE image_id END, audio_ro_id = CASE WHEN ? = 1 THEN ? ELSE audio_ro_id END, audio_en_id = CASE WHEN ? = 1 THEN ? ELSE audio_en_id END, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?`,
     )
     .bind(
       input.title,

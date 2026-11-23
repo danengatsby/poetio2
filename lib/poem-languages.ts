@@ -23,6 +23,9 @@ export function poemVersion(
     | 'de_title'
     | 'de_theme'
     | 'de_content'
+    | 'es_title'
+    | 'es_theme'
+    | 'es_content'
   >,
   language: SiteLanguage,
 ) {

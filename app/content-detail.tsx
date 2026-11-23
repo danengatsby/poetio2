@@ -52,10 +52,12 @@ export default function ContentDetail({
   const share = (
     <div className="content-share">
       <button type="button" className="secondary-button" onClick={() => void copy()}>
-        {pick(language, 'Copiază linkul', 'Copy link', 'Copier le lien', 'Link kopieren')}
+        {pick(language, 'Copiază linkul', 'Copy link', 'Copier le lien', 'Link kopieren', 'Copiar enlace')}
       </button>
       <span role="status">
-        {copied ? pick(language, 'Link copiat.', 'Link copied.', 'Lien copié.', 'Link kopiert.') : ''}
+        {copied
+          ? pick(language, 'Link copiat.', 'Link copied.', 'Lien copié.', 'Link kopiert.', 'Enlace copiado.')
+          : ''}
       </span>
       {manualLink && (
         <label>
@@ -65,6 +67,7 @@ export default function ContentDetail({
             'Copy the link manually',
             'Copiez le lien manuellement',
             'Link manuell kopieren',
+            'Copia el enlace manualmente',
           )}
           <input readOnly type="url" value={manualLink} onFocus={event => event.currentTarget.select()} />
         </label>
@@ -74,13 +77,27 @@ export default function ContentDetail({
   return (
     <>
       <a className="skip-link" href="#main">
-        {pick(language, 'Mergi la conținut', 'Skip to content', 'Aller au contenu', 'Zum Inhalt springen')}
+        {pick(
+          language,
+          'Mergi la conținut',
+          'Skip to content',
+          'Aller au contenu',
+          'Zum Inhalt springen',
+          'Ir al contenido',
+        )}
       </a>
       <SiteHeader language={language} onLanguageChange={changeLanguage} videoPage={!!video} poemPage={!!poem} />
       <main id="main" className="content-detail shell" lang={language}>
         <a className="content-back" href={collectionPath}>
           ←{' '}
-          {pick(language, 'Înapoi la colecție', 'Back to collection', 'Retour à la collection', 'Zurück zur Sammlung')}
+          {pick(
+            language,
+            'Înapoi la colecție',
+            'Back to collection',
+            'Retour à la collection',
+            'Zurück zur Sammlung',
+            'Volver a la colección',
+          )}
         </a>
         {poem ? (
           <PoemReading poem={poem} language={language}>
@@ -107,6 +124,7 @@ export default function ContentDetail({
                   'What did this video bring to mind?',
                   'Qu’est-ce que cette vidéo vous a évoqué\u00a0?',
                   'Woran hat Sie dieses Video erinnert?',
+                  '¿Qué te ha evocado este vídeo?',
                 )
               : undefined
           }
@@ -124,6 +142,7 @@ export default function ContentDetail({
               'Back to collection',
               'Retour à la collection',
               'Zurück zur Sammlung',
+              'Volver a la colección',
             )}
           </a>{' '}
           · <LegalLinks language={language} />

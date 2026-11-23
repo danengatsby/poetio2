@@ -24,14 +24,21 @@ export default function AuthorProfile({ initialLanguage }: { initialLanguage: Si
   return (
     <>
       <a className="skip-link" href="#main">
-        {pick(language, 'Mergi la biografie', 'Skip to biography', 'Aller à la biographie', 'Zur Biografie springen')}
+        {pick(
+          language,
+          'Mergi la biografie',
+          'Skip to biography',
+          'Aller à la biographie',
+          'Zur Biografie springen',
+          'Ir a la biografía',
+        )}
       </a>
       <SiteHeader language={language} onLanguageChange={changeLanguage} authorPage />
       <main id="main" lang={language}>
         <section className="intro shell" aria-labelledby="page-title">
           <p className="eyebrow">{copy.author}</p>
           <h1 id="page-title">
-            {pick(language, 'Despre Poetio', 'About Poetio', 'À propos de Poetio', 'Über Poetio')}
+            {pick(language, 'Despre Poetio', 'About Poetio', 'À propos de Poetio', 'Über Poetio', 'Sobre Poetio')}
           </h1>
         </section>
         <AboutPoetio language={language} portrait={{ src: '/assets/dan-enache.jpg', width: 960, height: 960 }} />
@@ -45,6 +52,7 @@ export default function AuthorProfile({ initialLanguage }: { initialLanguage: Si
               'Share a thought about Poetio and the author’s story.',
               'Partagez une pensée sur Poetio et l’histoire de l’auteur.',
               'Teilen Sie einen Gedanken zu Poetio und zur Geschichte des Autors.',
+              'Comparte una idea sobre Poetio y la historia del autor.',
             )}
           />
         </div>

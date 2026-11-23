@@ -7,7 +7,13 @@ import ShopFrame, { useShopLanguage } from '../shop-frame';
 
 // The privacy notice (GDPR art. 13). It describes what the site actually stores; keep it in step
 // with lib/visits.ts (retention), the nginx log rotation (14 days) and the backup retention.
-const UPDATED = { ro: '22 noiembrie 2026', en: '22 November 2026', fr: '22 novembre 2026', de: '22. November 2026' };
+const UPDATED = {
+  ro: '22 noiembrie 2026',
+  en: '22 November 2026',
+  fr: '22 novembre 2026',
+  de: '22. November 2026',
+  es: '22 de noviembre de 2026',
+};
 const LOG_DAYS = 14;
 const BACKUP_DAYS = 30;
 
@@ -33,6 +39,7 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
             'Privacy notice',
             'Politique de confidentialité',
             'Datenschutzerklärung',
+            'Política de privacidad',
           )}
         </h1>
         {language === 'ro' ? (
@@ -286,6 +293,90 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
             </p>
             <p>
               Die Verkaufsbedingungen finden Sie in den <a href={terms}>Allgemeinen Geschäftsbedingungen</a>.
+            </p>
+          </>
+        ) : language === 'es' ? (
+          <>
+            <p>
+              Qué datos personales trata Poetio (poetio.cloud), por qué, durante cuánto tiempo los guardamos y cuáles
+              son tus derechos. Última actualización: {UPDATED.es}.
+            </p>
+            <h2 id="operator">Responsable del tratamiento</h2>
+            <p>
+              El responsable del tratamiento de los datos es <strong>{controller}</strong>.
+              {email && <> Escríbenos a {email}</>}
+              {phone && (
+                <>
+                  {email ? ' o llama al ' : ' Llama al '}
+                  {phone}
+                </>
+              )}
+              {(email || phone) && '.'}
+            </p>
+            <h2 id="date">Qué datos usamos y para qué</h2>
+            <ul>
+              <li>
+                <strong>Pedidos de libros.</strong> Tu nombre, dirección de entrega, teléfono, correo electrónico y
+                observaciones, para entregar los libros, emitir los documentos de pago y escribirte sobre el pedido. La
+                base jurídica es el contrato (art. 6, apartado 1, letra b del RGPD) y nuestras obligaciones contables
+                (letra c). Los conservamos el tiempo que requiera el pedido y después el que exija la normativa contable
+                y fiscal.
+              </li>
+              <li>
+                <strong>Comentarios.</strong> El nombre que escribes y el texto del comentario. Solo se publican tras su
+                aprobación. La base jurídica es tu consentimiento (letra a); los borramos en cuanto nos lo pidas.
+              </li>
+              <li id="vizite">
+                <strong>Estadísticas de visitas.</strong> Por cada página abierta guardamos la dirección IP, la página,
+                la hora, el navegador y la localidad aproximada deducida de la IP, para saber qué se lee y proteger el
+                sitio de abusos. La base jurídica es nuestro interés legítimo (letra f). No se usan cookies para ello.
+                La dirección IP y los datos del navegador se borran a los {VISIT_IP_RETENTION_DAYS} días; solo quedan el
+                número de visitas, las páginas y las localidades.
+              </li>
+              <li>
+                <strong>Registros del servidor.</strong> Dirección IP, dirección solicitada, hora y navegador, por
+                seguridad y para resolver problemas (interés legítimo, letra f). Se borran automáticamente a los{' '}
+                {LOG_DAYS} días.
+              </li>
+              <li>
+                <strong>Copias de seguridad.</strong> Contienen los datos anteriores, están cifradas y se borran
+                automáticamente como máximo a los {BACKUP_DAYS} días.
+              </li>
+            </ul>
+            <p>No tomamos decisiones automatizadas sobre ti ni elaboramos perfiles.</p>
+            <h2 id="destinatari">Quién más recibe los datos</h2>
+            <ul>
+              <li>La empresa de mensajería recibe tu nombre, dirección y teléfono para entregar el paquete.</li>
+              <li>El servidor del sitio está alquilado a Amazon Web Services, en la Unión Europea (Fráncfort).</li>
+              <li>
+                Google envía los correos de confirmación de pedido (Gmail) y guarda una copia cifrada de la copia de
+                seguridad (Google Drive), que no puede leer. Google puede tratar datos fuera del Espacio Económico
+                Europeo, con las garantías que exige el RGPD (Marco de Privacidad de Datos UE-EE. UU.).
+              </li>
+            </ul>
+            <p>
+              No vendemos datos, no mostramos publicidad ni usamos servicios de análisis o de publicidad de otras
+              empresas. La localidad se obtiene de una base de datos guardada en el servidor (DB-IP), sin enviar tu
+              dirección IP a nadie.
+            </p>
+            <h2 id="browser">Qué guarda tu navegador</h2>
+            <p>
+              El sitio no usa cookies de seguimiento ni de publicidad. Para funcionar, guarda en tu navegador el idioma
+              elegido (la cookie <code>poetio-language</code>, un año, que se envía al servidor solo para mostrar ese
+              idioma), el tema claro u oscuro, las preferencias de lectura, el punto en que te quedaste en un libro, el
+              carrito y los borradores de comentarios. Estos datos solo nos llegan con un pedido o un comentario que
+              envíes. Puedes borrarlos cuando quieras en los ajustes del navegador.
+            </p>
+            <h2 id="drepturi">Tus derechos</h2>
+            <p>
+              Puedes pedir el acceso a tus datos, su rectificación, supresión o la limitación de su tratamiento,
+              recibirlos en un formato portable y oponerte al tratamiento basado en nuestro interés legítimo. Puedes
+              retirar en cualquier momento tu consentimiento para los comentarios. Escríbenos{email && <> a {email}</>};
+              respondemos en un plazo máximo de un mes. También puedes presentar una reclamación ante la autoridad
+              rumana de protección de datos ({authority}).
+            </p>
+            <p>
+              Las condiciones de venta están en los <a href={terms}>términos y condiciones</a>.
             </p>
           </>
         ) : (

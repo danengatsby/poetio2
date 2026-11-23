@@ -45,7 +45,7 @@ export default function BooksView({
         {book ? (
           <>
             <a className="book-back" href={withSiteLanguage('/carti', language)}>
-              ← {pick(language, 'Toate cărțile', 'All books', 'Tous les livres', 'Alle Bücher')}
+              ← {pick(language, 'Toate cărțile', 'All books', 'Tous les livres', 'Alle Bücher', 'Todos los libros')}
             </a>
             <BookPresentation book={book} language={language} />
             <div className="book-comments">
@@ -59,6 +59,7 @@ export default function BooksView({
                   'What did this book bring to mind? Share a few thoughts.',
                   'Qu’est-ce que ce livre vous a évoqué\u00a0? Partagez quelques pensées.',
                   'Woran hat Sie dieses Buch erinnert? Teilen Sie ein paar Gedanken.',
+                  '¿Qué te ha evocado este libro? Comparte algunas ideas.',
                 )}
               />
             </div>
@@ -75,10 +76,11 @@ export default function BooksView({
                     'Pages to discover',
                     'Des pages à découvrir',
                     'Seiten zum Entdecken',
+                    'Páginas por descubrir',
                   )}
                 </p>
                 <h1>
-                  {pick(language, 'Cărți', 'Books', 'Livres', 'Bücher')}
+                  {pick(language, 'Cărți', 'Books', 'Livres', 'Bücher', 'Libros')}
                   <span className="count">({String(books.length).padStart(2, '0')})</span>
                 </h1>
               </div>
@@ -89,6 +91,7 @@ export default function BooksView({
                   'A moment to read.',
                   'Un moment pour lire.',
                   'Ein Moment zum Lesen.',
+                  'Un momento para leer.',
                 )}
               </p>
             </div>
@@ -101,6 +104,7 @@ export default function BooksView({
                     'Books could not be loaded right now.',
                     'Les livres n’ont pas pu être chargés pour le moment.',
                     'Die Bücher konnten gerade nicht geladen werden.',
+                    'Ahora mismo no se pudieron cargar los libros.',
                   )}
                 </p>
                 <a className="secondary-button" href={withSiteLanguage('/carti', language)}>
@@ -129,6 +133,7 @@ export default function BooksView({
                           'Open to read.',
                           'Ouvrir pour lire.',
                           'Zum Lesen öffnen.',
+                          'Abrir para leer.',
                         )}
                     </p>
                     <div className="card-bottom">
@@ -139,9 +144,9 @@ export default function BooksView({
                       <a
                         className="book-read-link"
                         href={withSiteLanguage(`/carti/${item.id}`, language)}
-                        aria-label={`${pick(language, 'Citește', 'Read', 'Lire', 'Lesen')}: ${item.title}`}
+                        aria-label={`${pick(language, 'Citește', 'Read', 'Lire', 'Lesen', 'Leer')}: ${item.title}`}
                       >
-                        {pick(language, 'Citește', 'Read', 'Lire', 'Lesen')} ↗
+                        {pick(language, 'Citește', 'Read', 'Lire', 'Lesen', 'Leer')} ↗
                       </a>
                     </div>
                   </article>
@@ -156,6 +161,7 @@ export default function BooksView({
                     'The first book will appear here soon.',
                     'Le premier livre apparaîtra bientôt ici.',
                     'Das erste Buch erscheint bald hier.',
+                    'El primer libro aparecerá pronto aquí.',
                   )}
                 </p>
                 {canAdmin && (
@@ -166,6 +172,7 @@ export default function BooksView({
                       'Add the first book',
                       'Ajouter le premier livre',
                       'Das erste Buch hinzufügen',
+                      'Añadir el primer libro',
                     )}
                   </a>
                 )}

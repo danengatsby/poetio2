@@ -21,6 +21,7 @@ export default function ThemeToggle({ language = 'ro' }: { language?: SiteLangua
         'Switch theme: night / day',
         'Changer de thème\u00a0: nuit / jour',
         'Design wechseln: Nacht / Tag',
+        'Cambiar de tema: noche / día',
       )}
       onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
     >
@@ -29,18 +30,18 @@ export default function ThemeToggle({ language = 'ro' }: { language?: SiteLangua
         <Moon aria-hidden="true" />
         <span>
           <span className="sr-only">
-            {pick(language, 'Activează tema de ', 'Switch to ', 'Passer au thème ', 'Wechseln zu ')}
+            {pick(language, 'Activează tema de ', 'Switch to ', 'Passer au thème ', 'Wechseln zu ', 'Cambiar a ')}
           </span>
-          {pick(language, 'Noapte', 'Night', 'Nuit', 'Nacht')}
+          {pick(language, 'Noapte', 'Night', 'Nuit', 'Nacht', 'Noche')}
         </span>
       </span>
       <span className="theme-toggle-day">
         <Sun aria-hidden="true" />
         <span>
           <span className="sr-only">
-            {pick(language, 'Activează tema de ', 'Switch to ', 'Passer au thème ', 'Wechseln zu ')}
+            {pick(language, 'Activează tema de ', 'Switch to ', 'Passer au thème ', 'Wechseln zu ', 'Cambiar a ')}
           </span>
-          {pick(language, 'Zi', 'Day', 'Jour', 'Tag')}
+          {pick(language, 'Zi', 'Day', 'Jour', 'Tag', 'Día')}
         </span>
       </span>
     </Button>

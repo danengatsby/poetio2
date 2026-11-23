@@ -33,6 +33,13 @@ const copy = {
     read: 'Die Gedichte entdecken',
     source: 'Biografie des Autors auf PoetrySoup',
   },
+  es: {
+    about: 'Sobre Poetio',
+    biography: 'Esbozo biográfico',
+    portrait: 'Retrato de Dan Enache',
+    read: 'Descubrir los poemas',
+    source: 'Biografía del autor en PoetrySoup',
+  },
 };
 
 type AboutPoetioProps = {

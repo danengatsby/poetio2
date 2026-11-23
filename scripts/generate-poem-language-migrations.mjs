@@ -1,5 +1,5 @@
 // Writes the migrations that give poems their own version in another language: 0024 (French,
-// fr_*) and 0025 (German, de_*). Each adds the columns (as drizzle-kit generates them) and recreates
+// fr_*), 0025 (German, de_*) and 0026 (Spanish, es_*). Each adds the columns (as drizzle-kit generates them) and recreates
 // the poem triggers that must include them: search index (and its FTS5 table), search queue and
 // editorial history. Run deliberately; `--check` verifies the committed files. The search fold is
 // the one generated for 0018.
@@ -95,6 +95,7 @@ END;`);
 for (const [file, language, before] of [
   ['0024_poem_french.sql', 'fr', []],
   ['0025_poem_german.sql', 'de', ['fr']],
+  ['0026_poem_spanish.sql', 'es', ['fr', 'de']],
 ]) {
   const target = new URL('../drizzle/' + file, import.meta.url);
   const content = migration(language, before);

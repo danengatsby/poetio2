@@ -109,8 +109,8 @@
     padding: 0.4rem 0.5rem;
   }
 }
-/* Four languages do not fit beside the wordmark on a phone: they get a row of their own. */
-@media (max-width: 440px) {
+/* Five languages do not fit beside the wordmark on a phone: they get a row of their own. */
+@media (max-width: 500px) {
   .public-header {
     grid-template-columns: 1fr auto;
   }

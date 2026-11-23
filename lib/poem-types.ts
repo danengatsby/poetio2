@@ -1,8 +1,8 @@
 import type { TranslationProvenance } from './translation-provenance';
 /** The language a poem is written in; its one `translated_*` version is in the other. */
 export type PoemLanguage = 'ro' | 'en-US';
-/** Languages with their own version of each poem (`fr_*`, `de_*`), besides the one translation. */
-export const EXTRA_LANGUAGES = ['fr', 'de'] as const;
+/** Languages with their own version of each poem (`fr_*`, `de_*`, `es_*`), besides the one translation. */
+export const EXTRA_LANGUAGES = ['fr', 'de', 'es'] as const;
 export type ExtraLanguage = (typeof EXTRA_LANGUAGES)[number];
 /** The languages of the site. */
 export type SiteLanguage = PoemLanguage | ExtraLanguage;
@@ -28,6 +28,10 @@ export type Poem = {
   de_theme?: string | null;
   de_content?: string | null;
   de_provenance?: TranslationProvenance | null;
+  es_title?: string | null;
+  es_theme?: string | null;
+  es_content?: string | null;
+  es_provenance?: TranslationProvenance | null;
   image_id: string | null;
   audio_ro_id: string | null;
   audio_en_id: string | null;
@@ -55,4 +59,8 @@ export type PoemInput = Pick<Poem, 'title' | 'author' | 'theme' | 'content'> & {
   de_theme?: string | null;
   de_content?: string | null;
   de_provenance?: TranslationProvenance | null;
+  es_title?: string | null;
+  es_theme?: string | null;
+  es_content?: string | null;
+  es_provenance?: TranslationProvenance | null;
 };

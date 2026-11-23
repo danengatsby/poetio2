@@ -23,6 +23,10 @@ export const fixturePoems = [
     de_theme: 'Probelicht',
     de_content:
       'Die Begegnung im Hain\nhat Schritte aus Laub und Wasser.\n\nIm Labyrinth des Abends\nfinden wir uns ohne Karte.',
+    es_title: 'El encuentro en la arboleda',
+    es_theme: 'Luz de prueba',
+    es_content:
+      'El encuentro en la arboleda\ntiene pasos de hoja y de agua.\n\nEn el laberinto de la tarde\nnos encontramos sin mapa.',
   },
   {
     title: 'Seara la margine'.normalize('NFD'),

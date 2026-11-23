@@ -6,11 +6,18 @@ export default function LegalLinks({ language }: { language: SiteLanguage }) {
   return (
     <span className="legal-links">
       <a href={withSiteLanguage('/termeni', language)}>
-        {pick(language, 'Termeni și condiții', 'Terms and conditions', 'Conditions générales', 'AGB')}
+        {pick(
+          language,
+          'Termeni și condiții',
+          'Terms and conditions',
+          'Conditions générales',
+          'AGB',
+          'Términos y condiciones',
+        )}
       </a>
       {' · '}
       <a href={withSiteLanguage('/confidentialitate', language)}>
-        {pick(language, 'Confidențialitate', 'Privacy', 'Confidentialité', 'Datenschutz')}
+        {pick(language, 'Confidențialitate', 'Privacy', 'Confidentialité', 'Datenschutz', 'Privacidad')}
       </a>
     </span>
   );

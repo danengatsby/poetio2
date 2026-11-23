@@ -36,7 +36,7 @@ export const poems = sqliteTable(
     translatedTheme: text('translated_theme'),
     translatedContent: text('translated_content'),
     translationProvenance: text('translation_provenance'),
-    // The French and German versions, shown when the site is in that language (besides translated_*).
+    // The French, German and Spanish versions, shown when the site is in that language (besides translated_*).
     frTitle: text('fr_title'),
     frTheme: text('fr_theme'),
     frContent: text('fr_content'),
@@ -45,6 +45,10 @@ export const poems = sqliteTable(
     deTheme: text('de_theme'),
     deContent: text('de_content'),
     deProvenance: text('de_provenance'),
+    esTitle: text('es_title'),
+    esTheme: text('es_theme'),
+    esContent: text('es_content'),
+    esProvenance: text('es_provenance'),
     imageId: text('image_id').references(() => poemImages.id),
     audioRoId: text('audio_ro_id').references(() => poemAudio.id),
     audioEnId: text('audio_en_id').references(() => poemAudio.id),
@@ -294,6 +298,9 @@ export const poemSearch = sqliteTable('poem_search', {
   deTitle: text('de_title').notNull().default(''),
   deTheme: text('de_theme').notNull().default(''),
   deContent: text('de_content').notNull().default(''),
+  esTitle: text('es_title').notNull().default(''),
+  esTheme: text('es_theme').notNull().default(''),
+  esContent: text('es_content').notNull().default(''),
 });
 
 export const bookSearchPages = sqliteTable(

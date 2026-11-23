@@ -26,7 +26,7 @@ async function read(props: Props) {
 export async function generateMetadata(props: Props) {
   const { poem, language } = await read(props);
   const version = poemVersion(poem, language) ?? poem;
-  const path = contentPath('poem', poem.id) + pick(language, '', '?lang=en-US', '?lang=fr', '?lang=de');
+  const path = contentPath('poem', poem.id) + pick(language, '', '?lang=en-US', '?lang=fr', '?lang=de', '?lang=es');
   const metadata = contentMetadata({
     title: version.title,
     author: poem.author,
@@ -46,6 +46,7 @@ export async function generateMetadata(props: Props) {
         ...(poemVersion(poem, 'en-US') ? { 'en-US': siteOrigin + contentPath('poem', poem.id) + '?lang=en-US' } : {}),
         ...(poemVersion(poem, 'fr') ? { fr: siteOrigin + contentPath('poem', poem.id) + '?lang=fr' } : {}),
         ...(poemVersion(poem, 'de') ? { de: siteOrigin + contentPath('poem', poem.id) + '?lang=de' } : {}),
+        ...(poemVersion(poem, 'es') ? { es: siteOrigin + contentPath('poem', poem.id) + '?lang=es' } : {}),
       },
     },
   };
@@ -64,7 +65,10 @@ export default async function PoemPage(props: Props) {
             name: version.title,
             author: { '@type': 'Person', name: poem.author },
             inLanguage: poemVersion(poem, language) ? language : poem.source_language,
-            url: siteOrigin + contentPath('poem', poem.id) + pick(language, '', '?lang=en-US', '?lang=fr', '?lang=de'),
+            url:
+              siteOrigin +
+              contentPath('poem', poem.id) +
+              pick(language, '', '?lang=en-US', '?lang=fr', '?lang=de', '?lang=es'),
             datePublished: new Date(poem.created_at).toISOString(),
             dateModified: new Date(poem.updated_at).toISOString(),
           }),

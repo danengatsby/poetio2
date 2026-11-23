@@ -17,6 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'Privacy — Poetio',
       'Confidentialité — Poetio',
       'Datenschutz — Poetio',
+      'Privacidad — Poetio',
     ),
   };
 }

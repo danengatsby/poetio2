@@ -20,8 +20,8 @@ export default function VideoReading({
 }) {
   return (
     <article>
-      <p className="eyebrow">{pick(language, 'Video', 'Video', 'Vidéo', 'Video')}</p>
-      <h1>{video.title || pick(language, 'Fără titlu', 'Untitled', 'Sans titre', 'Ohne Titel')}</h1>
+      <p className="eyebrow">{pick(language, 'Video', 'Video', 'Vidéo', 'Video', 'Vídeo')}</p>
+      <h1>{video.title || pick(language, 'Fără titlu', 'Untitled', 'Sans titre', 'Ohne Titel', 'Sin título')}</h1>
       {video.author && <p className="reader-author">{video.author}</p>}
       {children}
       {src ? (
@@ -41,6 +41,7 @@ export default function VideoReading({
             'Choose a video to check playback.',
             'Choisissez une vidéo pour vérifier la lecture.',
             'Wählen Sie ein Video, um die Wiedergabe zu prüfen.',
+            'Elige un vídeo para comprobar la reproducción.',
           )}
         </p>
       )}

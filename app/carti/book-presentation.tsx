@@ -38,9 +38,16 @@ export default function BookPresentation({
         />
         <div>
           <p className="eyebrow">
-            {pick(language, 'Biblioteca Poetio', 'Poetio library', 'Bibliothèque Poetio', 'Poetio-Bibliothek')}
+            {pick(
+              language,
+              'Biblioteca Poetio',
+              'Poetio library',
+              'Bibliothèque Poetio',
+              'Poetio-Bibliothek',
+              'Biblioteca Poetio',
+            )}
           </p>
-          <h1>{book.title || pick(language, 'Fără titlu', 'Untitled', 'Sans titre', 'Ohne Titel')}</h1>
+          <h1>{book.title || pick(language, 'Fără titlu', 'Untitled', 'Sans titre', 'Ohne Titel', 'Sin título')}</h1>
           {book.author && <p className="reader-author">{book.author}</p>}
           <p className="book-description">{book.description}</p>
         </div>
@@ -61,6 +68,7 @@ export default function BookPresentation({
             'Prepare the private PDF in the editor to check pages and text in the reader.',
             'Préparez le PDF privé dans l’éditeur pour vérifier les pages et le texte dans la liseuse.',
             'Bereiten Sie das private PDF im Editor vor, um Seiten und Text im Leser zu prüfen.',
+            'Prepara el PDF privado en el editor para comprobar las páginas y el texto en el lector.',
           )}
         </p>
       )}

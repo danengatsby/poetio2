@@ -59,6 +59,7 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
               'Search the collection',
               'Rechercher dans la collection',
               'Sammlung durchsuchen',
+              'Buscar en la colección',
             )}
           >
             <input type="hidden" name="lang" value={language} />
@@ -69,38 +70,67 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
                 'Search titles and text',
                 'Rechercher dans les titres et les textes',
                 'Titel und Texte durchsuchen',
+                'Buscar en títulos y textos',
               )}
               <input type="search" name="q" defaultValue={filters.q} maxLength={120} />
             </label>
             <label>
-              {pick(language, 'Temă', 'Theme', 'Thème', 'Thema')}
+              {pick(language, 'Temă', 'Theme', 'Thème', 'Thema', 'Tema')}
               <input
                 name="theme"
                 defaultValue={filters.theme}
                 maxLength={80}
-                placeholder={pick(language, 'ex. natură', 'e.g. nature', 'ex. nature', 'z. B. Natur')}
+                placeholder={pick(
+                  language,
+                  'ex. natură',
+                  'e.g. nature',
+                  'ex. nature',
+                  'z. B. Natur',
+                  'p. ej. naturaleza',
+                )}
               />
             </label>
             <label>
-              {pick(language, 'Traducere', 'Translation', 'Traduction', 'Übersetzung')}
+              {pick(language, 'Traducere', 'Translation', 'Traduction', 'Übersetzung', 'Traducción')}
               <select name="translation" defaultValue={filters.translation}>
                 <option value="all">
-                  {pick(language, 'Toate poemele', 'All poems', 'Tous les poèmes', 'Alle Gedichte')}
+                  {pick(language, 'Toate poemele', 'All poems', 'Tous les poèmes', 'Alle Gedichte', 'Todos los poemas')}
                 </option>
                 <option value="with">
-                  {pick(language, 'Cu traducere', 'With a translation', 'Avec traduction', 'Mit Übersetzung')}
+                  {pick(
+                    language,
+                    'Cu traducere',
+                    'With a translation',
+                    'Avec traduction',
+                    'Mit Übersetzung',
+                    'Con traducción',
+                  )}
                 </option>
                 <option value="without">
-                  {pick(language, 'Fără traducere', 'Without a translation', 'Sans traduction', 'Ohne Übersetzung')}
+                  {pick(
+                    language,
+                    'Fără traducere',
+                    'Without a translation',
+                    'Sans traduction',
+                    'Ohne Übersetzung',
+                    'Sin traducción',
+                  )}
                 </option>
               </select>
             </label>
             <button type="submit" className="primary-button">
-              {pick(language, 'Caută', 'Search', 'Rechercher', 'Suchen')}
+              {pick(language, 'Caută', 'Search', 'Rechercher', 'Suchen', 'Buscar')}
             </button>
             {filtered && (
               <a className="collection-reset" href={reset}>
-                {pick(language, 'Șterge filtrele', 'Clear filters', 'Effacer les filtres', 'Filter zurücksetzen')}
+                {pick(
+                  language,
+                  'Șterge filtrele',
+                  'Clear filters',
+                  'Effacer les filtres',
+                  'Filter zurücksetzen',
+                  'Borrar filtros',
+                )}
               </a>
             )}
           </form>
@@ -112,8 +142,9 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
                   `${(page - 1) * POEM_PAGE_SIZE + 1}–${(page - 1) * POEM_PAGE_SIZE + poems.length} of ${total} poems`,
                   `${(page - 1) * POEM_PAGE_SIZE + 1}–${(page - 1) * POEM_PAGE_SIZE + poems.length} sur ${total} poèmes`,
                   `${(page - 1) * POEM_PAGE_SIZE + 1}–${(page - 1) * POEM_PAGE_SIZE + poems.length} von ${total} Gedichten`,
+                  `${(page - 1) * POEM_PAGE_SIZE + 1}–${(page - 1) * POEM_PAGE_SIZE + poems.length} de ${total} poemas`,
                 )
-              : pick(language, '0 poeme', '0 poems', '0 poème', '0 Gedichte')}
+              : pick(language, '0 poeme', '0 poems', '0 poème', '0 Gedichte', '0 poemas')}
           </p>
           {poems.length ? (
             <div className="poem-grid">
@@ -161,6 +192,7 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
                       'No poems match these filters. Try other words or clear the filters.',
                       'Aucun poème ne correspond à ces filtres. Essayez d’autres mots ou effacez les filtres.',
                       'Keine Gedichte entsprechen diesen Filtern. Versuchen Sie andere Wörter oder setzen Sie die Filter zurück.',
+                      'Ningún poema coincide con estos filtros. Prueba otras palabras o borra los filtros.',
                     )
                   : copy.empty}
               </p>
@@ -180,11 +212,19 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
                 'Collection pages',
                 'Pages de la collection',
                 'Seiten der Sammlung',
+                'Páginas de la colección',
               )}
             >
               {page > 1 && (
                 <a className="secondary-button" rel="prev" href={collectionHref(filters, page - 1)}>
-                  {pick(language, '← Pagina anterioară', '← Previous page', '← Page précédente', '← Vorherige Seite')}
+                  {pick(
+                    language,
+                    '← Pagina anterioară',
+                    '← Previous page',
+                    '← Page précédente',
+                    '← Vorherige Seite',
+                    '← Página anterior',
+                  )}
                 </a>
               )}
               <span aria-current="page">
@@ -194,11 +234,19 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
                   `Page ${page} of ${pages}`,
                   `Page ${page} sur ${pages}`,
                   `Seite ${page} von ${pages}`,
+                  `Página ${page} de ${pages}`,
                 )}
               </span>
               {page < pages && (
                 <a className="secondary-button" rel="next" href={collectionHref(filters, page + 1)}>
-                  {pick(language, 'Pagina următoare →', 'Next page →', 'Page suivante →', 'Nächste Seite →')}
+                  {pick(
+                    language,
+                    'Pagina următoare →',
+                    'Next page →',
+                    'Page suivante →',
+                    'Nächste Seite →',
+                    'Página siguiente →',
+                  )}
                 </a>
               )}
             </nav>

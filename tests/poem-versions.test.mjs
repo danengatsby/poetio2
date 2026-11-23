@@ -190,3 +190,32 @@ test('a poem keeps French and German versions side by side, each checked on its 
     .first();
   assert.equal(JSON.parse(history.snapshot).de_title, 'Das Rad aus Rauch');
 });
+
+test('a Spanish version sits beside the French and German ones', async t => {
+  const db = await store(t);
+  const id = crypto.randomUUID();
+  const spanish = {
+    es_title: 'La rueda de humo',
+    es_theme: 'amor',
+    es_content: 'Estoy atrapado en la rueda de la vida\ndesde hace un tiempo.',
+  };
+  const all = { ...original, ...french, ...spanish };
+  const input = {
+    ...all,
+    translation_provenance: await translationProvenance(all, 'manual'),
+    fr_provenance: await translationProvenance(all, 'automatic', 'fr'),
+    es_provenance: await translationProvenance(all, 'automatic', 'es'),
+  };
+  const saved = await poems.createPoem(db, id, poems.validateInput(input));
+  assert.equal(await translationStatus(saved, 'es'), 'ready');
+  assert.equal(poemVersion(saved, 'es').title, 'La rueda de humo');
+  assert.equal(poemVersion(saved, 'de'), null);
+  const card = (await listPoemCards(db, { lang: 'es' }, 'es')).poems[0];
+  assert.deepEqual([card.title, card.language], ['La rueda de humo', 'es']);
+  assert.equal((await listPoemCards(db, { lang: 'es', q: 'atrapado' }, 'es')).total, 1);
+  assert.equal((await listPoemCards(db, { lang: 'de', translation: 'without' }, 'de')).total, 1);
+  await assert.rejects(
+    async () => poems.updatePoem(db, id, saved.revision, poems.validateInput({ ...input, es_content: 'Otro texto' })),
+    { status: 409, message: /spaniolă/ },
+  );
+});

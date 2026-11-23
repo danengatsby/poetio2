@@ -38,7 +38,7 @@ import { adminPoemListUrl, type AdminPoemCollection } from '@/lib/poem-admin-lis
 
 type Draft = PoemInput & { id: string; revision: number; isNew: boolean };
 /** How the editor names each language with its own version. */
-const VERSION_NAME: Record<ExtraLanguage, string> = { fr: 'franceză', de: 'germană' };
+const VERSION_NAME: Record<ExtraLanguage, string> = { fr: 'franceză', de: 'germană', es: 'spaniolă' };
 const blank = (): Draft => ({
   id: crypto.randomUUID(),
   title: '',
@@ -58,6 +58,10 @@ const blank = (): Draft => ({
   de_theme: '',
   de_content: '',
   de_provenance: null,
+  es_title: '',
+  es_theme: '',
+  es_content: '',
+  es_provenance: null,
   image_id: null,
   audio_ro_id: null,
   audio_en_id: null,
@@ -83,6 +87,10 @@ const fromPoem = (poem: Poem): Draft => ({
   de_theme: poem.de_theme || '',
   de_content: poem.de_content || '',
   de_provenance: poem.de_provenance ?? null,
+  es_title: poem.es_title || '',
+  es_theme: poem.es_theme || '',
+  es_content: poem.es_content || '',
+  es_provenance: poem.es_provenance ?? null,
   image_id: poem.image_id,
   audio_ro_id: poem.audio_ro_id,
   audio_en_id: poem.audio_en_id,
@@ -214,6 +222,7 @@ export default function Admin({
   const versionStates: Record<ExtraLanguage, ReturnType<typeof useTranslationStatus>> = {
     fr: useTranslationStatus(draft, 'fr'),
     de: useTranslationStatus(draft, 'de'),
+    es: useTranslationStatus(draft, 'es'),
   };
   const versionMessage = (language: ExtraLanguage) => {
     const name = VERSION_NAME[language];

@@ -34,6 +34,7 @@ export default function BookCovers({
       `Details and purchase: ${book.title} — ${cover}`,
       `Détails et achat\u00a0: ${book.title} — ${cover}`,
       `Details und Kauf: ${book.title} — ${cover}`,
+      `Detalles y compra: ${book.title} — ${cover}`,
     );
   const covers = [
     { number: 1, id: book.image_id, src: previewSources[0] },
@@ -53,7 +54,7 @@ export default function BookCovers({
           <a
             className="book-cover-option book-cover-link"
             href={saleHref()}
-            aria-label={saleLabel(pick(language, 'copertă', 'cover', 'couverture', 'Umschlag'))}
+            aria-label={saleLabel(pick(language, 'copertă', 'cover', 'couverture', 'Umschlag', 'portada'))}
             {...target}
           >
             {placeholder}
@@ -75,10 +76,11 @@ export default function BookCovers({
         'Covers and purchase',
         'Couvertures et achat',
         'Umschläge und Kauf',
+        'Portadas y compra',
       )}
     >
       {covers.map(cover => {
-        const label = `${pick(language, 'Coperta', 'Cover', 'Couverture', 'Umschlag')} ${cover.number}`;
+        const label = `${pick(language, 'Coperta', 'Cover', 'Couverture', 'Umschlag', 'Portada')} ${cover.number}`;
         const content = (
           <>
             <img
@@ -96,8 +98,8 @@ export default function BookCovers({
               {sale && (
                 <span className="book-cover-buy">
                   {buyable
-                    ? pick(language, 'Cumpără', 'Buy', 'Acheter', 'Kaufen')
-                    : pick(language, 'Detalii', 'Details', 'Détails', 'Details')}
+                    ? pick(language, 'Cumpără', 'Buy', 'Acheter', 'Kaufen', 'Comprar')
+                    : pick(language, 'Detalii', 'Details', 'Détails', 'Details', 'Detalles')}
                 </span>
               )}
             </span>

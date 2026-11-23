@@ -183,6 +183,13 @@
       "when": 1795397742863,
       "tag": "0025_poem_german",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1795400076094,
+      "tag": "0026_poem_spanish",
+      "breakpoints": true
     }
   ]
 }

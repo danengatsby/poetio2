@@ -25,7 +25,14 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
   if (!inBrowser)
     content = (
       <p>
-        {pick(language, 'Se încarcă coșul…', 'Loading your cart…', 'Chargement du panier…', 'Warenkorb wird geladen…')}
+        {pick(
+          language,
+          'Se încarcă coșul…',
+          'Loading your cart…',
+          'Chargement du panier…',
+          'Warenkorb wird geladen…',
+          'Cargando tu carrito…',
+        )}
       </p>
     );
   else if (!items.length)
@@ -38,10 +45,11 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
             'Your cart is empty.',
             'Votre panier est vide.',
             'Ihr Warenkorb ist leer.',
+            'Tu carrito está vacío.',
           )}
         </p>
         <a className="shop-button" href={withSiteLanguage('/carti', language)}>
-          {pick(language, 'Vezi cărțile', 'Browse the books', 'Voir les livres', 'Bücher ansehen')}
+          {pick(language, 'Vezi cărțile', 'Browse the books', 'Voir les livres', 'Bücher ansehen', 'Ver los libros')}
         </a>
       </div>
     );
@@ -52,7 +60,14 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
           {state.message}
         </p>
         <button type="button" className="shop-link-button" onClick={clearCart}>
-          {pick(language, 'Golește coșul', 'Empty the cart', 'Vider le panier', 'Warenkorb leeren')}
+          {pick(
+            language,
+            'Golește coșul',
+            'Empty the cart',
+            'Vider le panier',
+            'Warenkorb leeren',
+            'Vaciar el carrito',
+          )}
         </button>
       </div>
     );
@@ -65,6 +80,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
           'Checking prices…',
           'Vérification des prix…',
           'Preise werden geprüft…',
+          'Comprobando precios…',
         )}
       </p>
     );
@@ -72,7 +88,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
     const { quote, shop } = state;
     content = (
       <div className="shop-layout">
-        <section aria-label={pick(language, 'Produse', 'Items', 'Articles', 'Artikel')}>
+        <section aria-label={pick(language, 'Produse', 'Items', 'Articles', 'Artikel', 'Artículos')}>
           <ul className="shop-lines">
             {quote.lines.map(line => {
               const index = items.findIndex(item => item.book_id === line.book_id && item.cover === line.cover);
@@ -84,7 +100,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
                 <ShopLine key={`${line.book_id}:${line.cover}`} line={line} language={language}>
                   <div className="shop-line-actions">
                     <label>
-                      {pick(language, 'Cantitate: ', 'Quantity: ', 'Quantité\u00a0: ', 'Menge: ')}
+                      {pick(language, 'Cantitate: ', 'Quantity: ', 'Quantité\u00a0: ', 'Menge: ', 'Cantidad: ')}
                       <select
                         value={items[index]?.quantity ?? line.quantity}
                         onChange={event => setQuantity(index, Number(event.target.value))}
@@ -97,7 +113,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
                       </select>
                     </label>
                     <button type="button" className="shop-link-button" onClick={() => remove(index)}>
-                      {pick(language, 'Șterge', 'Delete', 'Supprimer', 'Entfernen')}
+                      {pick(language, 'Șterge', 'Delete', 'Supprimer', 'Entfernen', 'Eliminar')}
                       <span className="sr-only">: {line.title}</span>
                     </button>
                   </div>
@@ -108,7 +124,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
         </section>
         <aside
           className="shop-panel shop-summary"
-          aria-label={pick(language, 'Sumar', 'Summary', 'Récapitulatif', 'Übersicht')}
+          aria-label={pick(language, 'Sumar', 'Summary', 'Récapitulatif', 'Übersicht', 'Resumen')}
         >
           <ShopTotals quote={quote} language={language} />
           {!shop.ready && (
@@ -119,16 +135,31 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
                 'Online orders open soon.',
                 'Les commandes en ligne ouvrent bientôt.',
                 'Online-Bestellungen sind bald möglich.',
+                'Los pedidos en línea abrirán pronto.',
               )}
             </p>
           )}
           {quote.ok ? (
             <a className="shop-button" href={withSiteLanguage('/comanda', language)}>
-              {pick(language, 'Finalizează comanda', 'Proceed to checkout', 'Passer la commande', 'Zur Kasse')}
+              {pick(
+                language,
+                'Finalizează comanda',
+                'Proceed to checkout',
+                'Passer la commande',
+                'Zur Kasse',
+                'Tramitar pedido',
+              )}
             </a>
           ) : (
             <button type="button" className="shop-button" disabled>
-              {pick(language, 'Finalizează comanda', 'Proceed to checkout', 'Passer la commande', 'Zur Kasse')}
+              {pick(
+                language,
+                'Finalizează comanda',
+                'Proceed to checkout',
+                'Passer la commande',
+                'Zur Kasse',
+                'Tramitar pedido',
+              )}
             </button>
           )}
         </aside>
@@ -141,10 +172,13 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
       language={language}
       onLanguageChange={changeLanguage}
       cartCurrent
-      back={{ href: withSiteLanguage('/carti', language), label: pick(language, 'Cărți', 'Books', 'Livres', 'Bücher') }}
+      back={{
+        href: withSiteLanguage('/carti', language),
+        label: pick(language, 'Cărți', 'Books', 'Livres', 'Bücher', 'Libros'),
+      }}
     >
       <h1 className="shop-title">
-        {pick(language, 'Coșul de cumpărături', 'Shopping cart', 'Panier', 'Warenkorb')}
+        {pick(language, 'Coșul de cumpărături', 'Shopping cart', 'Panier', 'Warenkorb', 'Carrito')}
         {inBrowser && count > 0 && ` (${count})`}
       </h1>
       {content}
