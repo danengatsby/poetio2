@@ -5,6 +5,7 @@
     sudo python3 deploy/release.py activate [--release <release directory name>]
     sudo python3 deploy/release.py rollback
     sudo python3 deploy/release.py status
+    sudo python3 deploy/release.py prune [--apply]
 
 prepare   Takes the build CI attached to the pre-release build-<commit> (or a local
           --artifact made by scripts/package-build.mjs), checks it against the commit,
@@ -16,6 +17,11 @@ activate  Checks the last backup, stops the service, snapshots the database, app
 rollback  Switches `current` back to the release that was active before the last
           activation. Migrations are additive, so the database stays as it is.
 status    Shows the active release, the service, pending migrations and the last backup.
+prune     Lists, and with --apply deletes, what is no longer needed: releases beyond the
+          five newest (never the active one or its rollback target) and the database
+          snapshots before-* in /var/backups/poetio older than 30 days (never the active
+          release's own). `activate` runs it by itself after a successful activation,
+          unless --no-prune is given.
 
 Evidence for each release goes to /var/www/Poetio/publicari/<release>/.
 
@@ -48,7 +54,9 @@ SOURCE = Path(__file__).resolve().parents[1]
 BASE = Path(os.environ.get('POETIO_RELEASE_BASE', '/var/www/Poetio'))
 DATA = Path(os.environ.get('POETIO_RELEASE_DATA', '/var/lib/poetio'))
 RELEASES, CURRENT, RECORDS = BASE / 'releases', BASE / 'current', BASE / 'publicari'
-BACKUPS = Path('/var/backups/poetio')
+BACKUPS = Path(os.environ.get('POETIO_RELEASE_BACKUPS', '/var/backups/poetio'))
+KEEP_RELEASES, SNAPSHOT_DAYS = 5, 30
+STAMP = re.compile(r'(\d{8}T\d{6}Z)')
 SERVICE, SERVICE_USER, LIVE_PORT = 'poetio.service', 'poetio', 4106
 PREVIEW_PORT = int(os.environ.get('POETIO_PREVIEW_PORT', '4203'))
 PUBLIC_ORIGIN = 'https://poetio.cloud'
@@ -447,7 +455,7 @@ def verify_release(release, evidence):
 
 def require_production():
     if not ROOT or BASE != Path('/var/www/Poetio') or DATA != Path('/var/lib/poetio'):
-        raise SystemExit('activate and rollback run only as root on the production paths.')
+        raise SystemExit('activate, rollback and prune --apply run only as root on the production paths.')
 
 
 def activate(arguments):
@@ -518,6 +526,14 @@ def activate(arguments):
         'stop_to_health_seconds': downtime, 'activated_at': dt.datetime.now(dt.timezone.utc).isoformat(),
     })
     print(json.dumps(result))
+    if not arguments.no_prune:
+        # Housekeeping never undoes a healthy activation.
+        try:
+            plan = prune_plan()
+            apply_prune(plan)
+            record(evidence, 'prune.json', {key: [path.name for path in value] for key, value in plan.items()})
+        except BaseException as error:
+            print(f'Old releases and snapshots were not pruned: {error}', file=sys.stderr)
 
 
 def rollback(arguments):
@@ -538,6 +554,58 @@ def rollback(arguments):
     if not ok:
         raise SystemExit(f'{previous} is active again but not healthy: {problem}')
     print(json.dumps({'rolled_back_to': str(previous)}))
+
+
+def stamp_age_days(path, now):
+    """Age from the UTC timestamp in the name (before-20261120T200702Z-...), else from mtime."""
+    match = STAMP.search(path.name)
+    if match:
+        made = dt.datetime.strptime(match.group(1), '%Y%m%dT%H%M%SZ').replace(tzinfo=dt.timezone.utc).timestamp()
+    else:
+        made = path.stat().st_mtime
+    return (now - made) / 86400
+
+
+def prune_plan(now=None, keep=KEEP_RELEASES, days=SNAPSHOT_DAYS):
+    """What is safe to delete: old releases, leftover staging folders and old snapshots."""
+    now = time.time() if now is None else now
+    active = CURRENT.resolve() if CURRENT.is_symlink() else None
+    protected = {active} if active else set()
+    if active and (RECORDS / active.name / 'activation.json').exists():
+        # The rollback target stays, however old it is.
+        protected.add(Path(json.loads((RECORDS / active.name / 'activation.json').read_text())['previous_release']).resolve())
+    releases = sorted(path for path in RELEASES.glob('*') if path.is_dir() and not path.is_symlink() and STAMP.match(path.name))
+    newest = set(releases[-keep:]) if keep else set()
+    old_releases = [path for path in releases if path.resolve() not in protected and path not in newest]
+    # Folders a failed `prepare` left behind (tempfile.mkdtemp in RELEASES).
+    staging = [path for path in RELEASES.glob('poetio-build-*')
+               if path.is_dir() and not path.is_symlink() and (now - path.stat().st_mtime) > 86400]
+    own = 'before-' + active.name if active else None
+    snapshots = sorted(path for path in BACKUPS.glob('before-*')
+                       if path.is_dir() and not path.is_symlink() and path.name != own and stamp_age_days(path, now) > days)
+    return {'releases': old_releases, 'staging': staging, 'snapshots': snapshots,
+            'kept_releases': [path for path in releases if path not in old_releases]}
+
+
+def apply_prune(plan):
+    for path in [*plan['releases'], *plan['staging'], *plan['snapshots']]:
+        if path.parent not in (RELEASES, BACKUPS):
+            raise SystemExit(f'Refusing to delete {path}: outside {RELEASES} and {BACKUPS}.')
+        shutil.rmtree(path)
+
+
+def prune(arguments):
+    if arguments.apply:
+        require_production()
+    plan = prune_plan()
+    free_before = shutil.disk_usage(BASE).free
+    if arguments.apply:
+        apply_prune(plan)
+    report = {key: [path.name for path in value] for key, value in plan.items()}
+    report['applied'] = bool(arguments.apply)
+    if arguments.apply:
+        report['freed_gb'] = round((shutil.disk_usage(BASE).free - free_before) / 1024**3, 2)
+    print(json.dumps(report, indent=2, ensure_ascii=False))
 
 
 def status(arguments):
@@ -566,12 +634,14 @@ def main():
     p.add_argument('--artifact', help='a poetio-build-<commit>.tar.gz made by scripts/package-build.mjs')
     a = commands.add_parser('activate')
     a.add_argument('--release')
+    a.add_argument('--no-prune', action='store_true', help='keep old releases and snapshots this time')
     commands.add_parser('rollback')
     commands.add_parser('status')
+    commands.add_parser('prune').add_argument('--apply', action='store_true', help='delete; without it, only list')
     arguments = parser.parse_args()
-    if not ROOT and (BASE == Path('/var/www/Poetio') or DATA == Path('/var/lib/poetio')) and arguments.command != 'status':
+    if not ROOT and (BASE == Path('/var/www/Poetio') or DATA == Path('/var/lib/poetio')) and arguments.command not in ('status', 'prune'):
         raise SystemExit('Run with sudo, or set POETIO_RELEASE_BASE and POETIO_RELEASE_DATA for a test run.')
-    {'prepare': prepare, 'activate': activate, 'rollback': rollback, 'status': status}[arguments.command](arguments)
+    {'prepare': prepare, 'activate': activate, 'rollback': rollback, 'status': status, 'prune': prune}[arguments.command](arguments)
 
 
 if __name__ == '__main__':

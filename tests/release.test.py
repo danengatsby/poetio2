@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BASE = tempfile.mkdtemp(prefix='poetio-release-test-')
 os.environ['POETIO_RELEASE_BASE'] = BASE
 os.environ['POETIO_RELEASE_DATA'] = os.path.join(BASE, 'data')
+os.environ['POETIO_RELEASE_BACKUPS'] = os.path.join(BASE, 'backups')
 spec = importlib.util.spec_from_file_location('release', ROOT / 'deploy' / 'release.py')
 release = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(release)
@@ -136,6 +137,86 @@ class InstalledTreeTest(unittest.TestCase):
     def test_requires_the_hidden_lockfile(self):
         (self.modules / '.package-lock.json').unlink()
         self.assertIn('run npm ci', self.check()[0])
+
+
+class PruneTest(unittest.TestCase):
+    NOW = 1_795_000_000  # 2026-11-17T...Z
+
+    def setUp(self):
+        import shutil
+        for folder in (release.RELEASES, release.RECORDS, release.BACKUPS):
+            shutil.rmtree(folder, ignore_errors=True)
+            folder.mkdir(parents=True)
+        if release.CURRENT.is_symlink():
+            release.CURRENT.unlink()
+        stamp = lambda days_ago: release.dt.datetime.fromtimestamp(self.NOW - days_ago * 86400, release.dt.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+        self.stamp = stamp
+        # Eight releases, one a day; the active one is the newest but one, rolled back from the newest.
+        self.names = [f'{stamp(8 - day)}-r{day}' for day in range(8)]
+        for name in self.names:
+            (release.RELEASES / name / 'node_modules').mkdir(parents=True)
+        self.active, self.rollback = self.names[6], self.names[1]
+        release.switch(release.RELEASES / self.active)
+        (release.RECORDS / self.active).mkdir()
+        (release.RECORDS / self.active / 'activation.json').write_text(
+            json.dumps({'previous_release': str((release.RELEASES / self.rollback).resolve())}))
+
+    def snapshot(self, name):
+        path = release.BACKUPS / name
+        path.mkdir()
+        (path / 'poetio.sqlite3').write_bytes(b'x')
+        return path
+
+    def test_keeps_the_five_newest_the_active_one_and_its_rollback_target(self):
+        plan = release.prune_plan(now=self.NOW)
+        self.assertEqual([path.name for path in plan['releases']], [self.names[0], self.names[2]])
+        kept = {path.name for path in plan['kept_releases']}
+        self.assertEqual(kept, {self.rollback, *self.names[3:]})
+        self.assertIn(self.active, kept)
+
+    def test_snapshots_older_than_thirty_days_go_except_the_active_releases(self):
+        old = self.snapshot(f'before-{self.stamp(31)}-old-release')
+        old_word_first = self.snapshot(f'before-deploy-{self.stamp(45)}')
+        recent = self.snapshot(f'before-{self.stamp(29)}-recent')
+        own = self.snapshot('before-' + self.active)
+        os.utime(own, (self.NOW - 90 * 86400,) * 2)
+        unnamed = self.snapshot('before-something')
+        os.utime(unnamed, (self.NOW - 40 * 86400,) * 2)
+        (release.BACKUPS / 'automatic').mkdir()
+        plan = release.prune_plan(now=self.NOW)
+        self.assertEqual(plan['snapshots'], sorted([old, old_word_first, unnamed]))
+        self.assertNotIn(recent, plan['snapshots'])
+
+    def test_leftover_staging_folders_older_than_a_day_go(self):
+        fresh = release.RELEASES / 'poetio-build-fresh'
+        stale = release.RELEASES / 'poetio-build-stale'
+        fresh.mkdir()
+        stale.mkdir()
+        os.utime(stale, (self.NOW - 2 * 86400,) * 2)
+        os.utime(fresh, (self.NOW - 3600,) * 2)
+        self.assertEqual(release.prune_plan(now=self.NOW)['staging'], [stale])
+
+    def test_apply_deletes_only_what_the_plan_lists(self):
+        self.snapshot(f'before-{self.stamp(60)}-gone')
+        keep = self.snapshot(f'before-{self.stamp(1)}-stays')
+        plan = release.prune_plan(now=self.NOW)
+        release.apply_prune(plan)
+        self.assertEqual(sorted(path.name for path in release.RELEASES.iterdir()),
+                         sorted([self.rollback, *self.names[3:]]))
+        self.assertEqual([path.name for path in release.BACKUPS.iterdir()], [keep.name])
+        self.assertEqual(release.CURRENT.resolve(), (release.RELEASES / self.active).resolve())
+
+    def test_refuses_paths_outside_releases_and_backups(self):
+        outside = Path(BASE) / 'elsewhere'
+        outside.mkdir(exist_ok=True)
+        with self.assertRaises(SystemExit):
+            release.apply_prune({'releases': [outside], 'staging': [], 'snapshots': []})
+        self.assertTrue(outside.exists())
+
+    def test_without_current_nothing_is_protected_but_the_newest_five(self):
+        release.CURRENT.unlink()
+        plan = release.prune_plan(now=self.NOW)
+        self.assertEqual([path.name for path in plan['releases']], self.names[:3])
 
 
 class SwitchTest(unittest.TestCase):
