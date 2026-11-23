@@ -10,6 +10,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+// The owner's address is server configuration (lib/access.ts); tests use a placeholder.
+process.env.POETIO_OWNER_EMAIL = 'owner@example.test';
 
 test('text recovery migration preserves existing transcriptions, seeds once and detects partial schema', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'poetio-text-recovery-')),
@@ -23,7 +25,7 @@ test('text recovery migration preserves existing transcriptions, seeds once and 
       .sort())
       db.exec(await readFile(new URL('../drizzle/' + name, import.meta.url), 'utf8'));
     db.exec(
-      "INSERT INTO book_files VALUES('pdf','fixture','book.pdf','application/pdf',1,'hash','pensio53@gmail.com',1);INSERT INTO book_page_texts VALUES('pdf',2,'Text verificat — ș, ț','ro',7,1)",
+      "INSERT INTO book_files VALUES('pdf','fixture','book.pdf','application/pdf',1,'hash','owner@example.test',1);INSERT INTO book_page_texts VALUES('pdf',2,'Text verificat — ș, ț','ro',7,1)",
     );
     const before = db.prepare('SELECT * FROM book_page_texts').all();
     db.close();
@@ -122,7 +124,7 @@ test('book editorial migration snapshots existing books once and rolls history b
       .sort())
       db.exec(await readFile(new URL('../drizzle/' + name, import.meta.url), 'utf8'));
     db.exec(
-      "INSERT INTO book_files VALUES('pdf','fixture','book.pdf','application/pdf',1,'hash','pensio53@gmail.com',1); INSERT INTO books(id,title,author,description,file_id,revision,created_at,updated_at) VALUES('book','Titlu','Autor','Text','pdf',8,1,2)",
+      "INSERT INTO book_files VALUES('pdf','fixture','book.pdf','application/pdf',1,'hash','owner@example.test',1); INSERT INTO books(id,title,author,description,file_id,revision,created_at,updated_at) VALUES('book','Titlu','Autor','Text','pdf',8,1,2)",
     );
     const before = db.prepare('SELECT * FROM books').all();
     db.close();

@@ -16,6 +16,8 @@ import { imageDecoder } from '../server/image-decoder.mjs';
 import { openBookRenderer } from '../server/book-renderer.mjs';
 import { openBookBucket } from '../server/vps-storage.mjs';
 import { bookFixture, finishedBookValidation } from './book-fixture.mjs';
+// The owner's address is server configuration (lib/access.ts); tests use a placeholder.
+process.env.POETIO_OWNER_EMAIL = 'owner@example.test';
 
 const output = mkdtempSync(join(tmpdir(), 'stillword-tests-'));
 writeFileSync(join(output, 'package.json'), '{"type":"commonjs"}');
@@ -173,12 +175,12 @@ test('two book covers keep independent purchase links, private drafts and histor
   try {
     await db
       .prepare('INSERT INTO book_files VALUES(?,?,?,?,?,?,?,?)')
-      .bind(fileId, 'fixture', 'book.pdf', 'application/pdf', 1, 'hash', 'pensio53@gmail.com', 1)
+      .bind(fileId, 'fixture', 'book.pdf', 'application/pdf', 1, 'hash', 'owner@example.test', 1)
       .run();
     for (const id of [first, second])
       await db
         .prepare('INSERT INTO poem_images VALUES(?,?,?,?,?,?,?,?)')
-        .bind(id, 'fixture-' + id, 'cover.png', 'image/png', 1, 'hash-' + id, 'pensio53@gmail.com', 1)
+        .bind(id, 'fixture-' + id, 'cover.png', 'image/png', 1, 'hash-' + id, 'owner@example.test', 1)
         .run();
     const bucket = {
       get: async () => ({
@@ -274,7 +276,7 @@ test('book cover migration preserves legacy books and history, repeats safely an
       .sort())
       db.exec(readFileSync(new URL('../drizzle/' + name, import.meta.url), 'utf8'));
     db.exec(
-      "INSERT INTO book_files VALUES('pdf','fixture','book.pdf','application/pdf',1,'hash','pensio53@gmail.com',1); INSERT INTO books(id,title,author,description,file_id,revision,created_at,updated_at) VALUES('book','Titlu','Autor','Text','pdf',8,1,2)",
+      "INSERT INTO book_files VALUES('pdf','fixture','book.pdf','application/pdf',1,'hash','owner@example.test',1); INSERT INTO books(id,title,author,description,file_id,revision,created_at,updated_at) VALUES('book','Titlu','Autor','Text','pdf',8,1,2)",
     );
     const before = db.prepare('SELECT * FROM books').get(),
       history = db.prepare('SELECT * FROM content_history').all();
@@ -305,7 +307,7 @@ test('book text corrections preserve Unicode, detect stale edits, and override r
   try {
     await db
       .prepare('INSERT INTO book_files VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(fileId, 'fixture', 'book.pdf', 'application/pdf', 50, 'hash', 'pensio53@gmail.com', 1)
+      .bind(fileId, 'fixture', 'book.pdf', 'application/pdf', 50, 'hash', 'owner@example.test', 1)
       .run();
     const file = await bookFiles.getBookFile(db, fileId);
     const automatic = await bookText.readBookText(db, file, 1, renderer);
@@ -384,7 +386,7 @@ test('transcription recovery isolates files and pages, preserves private drafts 
     for (const id of [a, b])
       await db
         .prepare('INSERT INTO book_files VALUES (?,?,?,?,?,?,?,?)')
-        .bind(id, id, 'book.pdf', 'application/pdf', 50, 'hash', 'pensio53@gmail.com', 1)
+        .bind(id, id, 'book.pdf', 'application/pdf', 50, 'hash', 'owner@example.test', 1)
         .run();
     const file = await bookFiles.getBookFile(db, a),
       other = await bookFiles.getBookFile(db, b);
@@ -484,7 +486,7 @@ function imageRequest(bytes, contentType, imageId = crypto.randomUUID()) {
     headers: {
       'content-type': contentType,
       'x-upload-id': imageId,
-      'oai-authenticated-user-email': 'pensio53@gmail.com',
+      'oai-authenticated-user-email': 'owner@example.test',
     },
   });
 }
@@ -678,7 +680,7 @@ test('empty, oversized and malicious fields are handled without SQL interpolatio
 test('private mutations require the owner, matching origin and JSON', () => {
   const url = 'https://stillword.example/api/poems';
   const headers = {
-    'oai-authenticated-user-email': 'pensio53@gmail.com',
+    'oai-authenticated-user-email': 'owner@example.test',
     origin: 'https://stillword.example',
     'content-type': 'application/json',
   };
@@ -973,7 +975,7 @@ test('recordings remain private until attached, support seeking, and detach with
   };
   const recordingId = 'ff66365b-550d-4e6b-81ce-c79a218a8ee5';
   const secondId = '9a1c843c-31e1-408b-953d-e2cfc75c1279';
-  const owner = { 'oai-authenticated-user-email': 'pensio53@gmail.com' };
+  const owner = { 'oai-authenticated-user-email': 'owner@example.test' };
   const bytes = wavFixture();
   const upload = (uploadId, body = bytes) =>
     new Request('https://poetio.test/api/audio', {
@@ -1213,7 +1215,7 @@ test('video upload, publication, byte ranges, revision conflicts and removal kee
   const fileId = crypto.randomUUID();
   const secondId = crypto.randomUUID();
   const videoId = crypto.randomUUID();
-  const owner = { 'oai-authenticated-user-email': 'pensio53@gmail.com' };
+  const owner = { 'oai-authenticated-user-email': 'owner@example.test' };
   const upload = (id = fileId, data = bytes) =>
     new Request('https://poetio.test/api/video-files', {
       method: 'POST',
@@ -1359,7 +1361,7 @@ test('video comments are isolated, counted across pages, idempotent and removed 
   try {
     await db
       .prepare('INSERT INTO video_files VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(fileId, 'fixture', 'film.mp4', 'video/mp4', 1, 'hash', 'pensio53@gmail.com', 1)
+      .bind(fileId, 'fixture', 'film.mp4', 'video/mp4', 1, 'hash', 'owner@example.test', 1)
       .run();
     for (const id of [firstId, secondId])
       await videos.createVideo(
@@ -1436,7 +1438,7 @@ test('books keep original PDFs private after publication and enforce upload and 
   const id = crypto.randomUUID(),
     fileId = crypto.randomUUID(),
     imageId = crypto.randomUUID();
-  const owner = { 'oai-authenticated-user-email': 'pensio53@gmail.com' };
+  const owner = { 'oai-authenticated-user-email': 'owner@example.test' };
   const bytes = new TextEncoder().encode('%PDF-1.7\nPDF fixture\n%%EOF');
   const upload = () =>
     new Request('https://poetio.test/api/book-files', {
@@ -1474,7 +1476,7 @@ test('books keep original PDFs private after publication and enforce upload and 
     await assert.rejects(books.createBook(db, id, input, readyBookValidator), { status: 400 });
     await db
       .prepare('INSERT INTO poem_images VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(imageId, 'fixture', 'cover.png', 'image/png', 1, 'hash', 'pensio53@gmail.com', 1)
+      .bind(imageId, 'fixture', 'cover.png', 'image/png', 1, 'hash', 'owner@example.test', 1)
       .run();
     const book = await books.createBook(db, id, input, readyBookValidator);
     assert.equal(book.image_id, imageId);
@@ -1539,7 +1541,7 @@ test('book comments are isolated, counted across pages, idempotent and removed w
   try {
     await db
       .prepare('INSERT INTO book_files VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(fileId, 'fixture', 'carte.pdf', 'application/pdf', 1, 'hash', 'pensio53@gmail.com', 1)
+      .bind(fileId, 'fixture', 'carte.pdf', 'application/pdf', 1, 'hash', 'owner@example.test', 1)
       .run();
     for (const id of [firstId, secondId])
       await books.createBook(
@@ -1619,7 +1621,7 @@ for (const kind of ['poem', 'about', 'video', 'book'])
             kind === 'video' ? 'video/mp4' : 'application/pdf',
             1,
             'hash',
-            'pensio53@gmail.com',
+            'owner@example.test',
             1,
           )
           .run();
@@ -1739,7 +1741,7 @@ test('image revalidation checks visibility before 304 and keeps private previews
       return derivative;
     },
   };
-  const owner = { 'oai-authenticated-user-email': 'pensio53@gmail.com' };
+  const owner = { 'oai-authenticated-user-email': 'owner@example.test' };
   const read = (headers = {}, query = '?w=320', method = 'GET', engine = renderer) =>
     serveImage(
       db,
@@ -1751,7 +1753,7 @@ test('image revalidation checks visibility before 304 and keeps private previews
   try {
     await db
       .prepare('INSERT INTO poem_images VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(imageId, 'fixture', 'image.jpg', 'image/jpeg', 3, 'a'.repeat(64), 'pensio53@gmail.com', 1)
+      .bind(imageId, 'fixture', 'image.jpg', 'image/jpeg', 3, 'a'.repeat(64), 'owner@example.test', 1)
       .run();
     assert.equal((await read()).status, 404);
     assert.equal(renders, 0);
@@ -1791,7 +1793,7 @@ test('image revalidation checks visibility before 304 and keeps private previews
     assert.equal((await read({ 'oai-authenticated-user-email': 'other@example.com' })).status, 404);
     await db
       .prepare('INSERT INTO book_files VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(fileId, 'fixture', 'book.pdf', 'application/pdf', 1, 'hash', 'pensio53@gmail.com', 1)
+      .bind(fileId, 'fixture', 'book.pdf', 'application/pdf', 1, 'hash', 'owner@example.test', 1)
       .run();
     await books.createBook(
       db,
@@ -1819,7 +1821,7 @@ for (const kind of ['poem', 'video'])
       if (kind === 'video')
         await db
           .prepare('INSERT INTO video_files VALUES(?,?,?,?,?,?,?,?)')
-          .bind(file, 'fixture', 'file.mp4', 'video/mp4', 1, 'hash', 'pensio53@gmail.com', 1)
+          .bind(file, 'fixture', 'file.mp4', 'video/mp4', 1, 'hash', 'owner@example.test', 1)
           .run();
       const create = kind === 'poem' ? service.createPoem : videos.createVideo,
         update = kind === 'poem' ? service.updatePoem : videos.updateVideo,
@@ -1921,11 +1923,11 @@ test('book history preserves metadata, file references and deletion while recove
   try {
     await db
       .prepare('INSERT INTO book_files VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(fileId, 'fixture', 'book.pdf', 'application/pdf', 1, 'hash', 'pensio53@gmail.com', 1)
+      .bind(fileId, 'fixture', 'book.pdf', 'application/pdf', 1, 'hash', 'owner@example.test', 1)
       .run();
     await db
       .prepare('INSERT INTO poem_images VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(imageId, 'fixture', 'cover.jpg', 'image/jpeg', 1, 'hash', 'pensio53@gmail.com', 1)
+      .bind(imageId, 'fixture', 'cover.jpg', 'image/jpeg', 1, 'hash', 'owner@example.test', 1)
       .run();
     const value = {
       title: 'Prima ediție',
@@ -2046,7 +2048,7 @@ test('PDF upload rejects invalid files before storage and requires a validator',
       headers: {
         'Content-Type': 'application/pdf',
         'X-Upload-Id': crypto.randomUUID(),
-        'oai-authenticated-user-email': 'pensio53@gmail.com',
+        'oai-authenticated-user-email': 'owner@example.test',
       },
       body: bytes,
     });
@@ -2072,7 +2074,7 @@ test('book publication waits for every page and legacy invalid files cannot repl
   const db = database(),
     renderer = openBookRenderer(directory),
     bucket = openBookBucket(join(directory, 'books'));
-  const owner = 'pensio53@gmail.com',
+  const owner = 'owner@example.test',
     id = crypto.randomUUID();
   const upload = (bytes, fileId = crypto.randomUUID()) =>
     new Request('https://poetio.test/api/book-files', {
@@ -2476,7 +2478,7 @@ test('real audio/video verification blocks uploads and legacy publication, prese
   const validator = openMediaValidator(directory),
     audioBucket = openAudioBucket(join(directory, 'audio')),
     videoBucket = openVideoBucket(join(directory, 'videos'));
-  const owner = 'pensio53@gmail.com';
+  const owner = 'owner@example.test';
   const upload = (kind, bytes, type, id = crypto.randomUUID()) =>
     new Request('https://poetio.test/api/' + (kind === 'audio' ? 'audio' : 'video-files'), {
       method: 'POST',
@@ -2707,7 +2709,7 @@ test('behind nginx, recordings and films are handed over only after the same acc
   });
   const audioBucket = acceleratedBucket('/_poetio/media/audio/');
   const videoBucket = acceleratedBucket('/_poetio/media/videos/');
-  const owner = { 'oai-authenticated-user-email': 'pensio53@gmail.com' };
+  const owner = { 'oai-authenticated-user-email': 'owner@example.test' };
   const recordingId = crypto.randomUUID();
   const fileId = crypto.randomUUID();
   const movie = new Uint8Array(256);

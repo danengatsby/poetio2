@@ -1,0 +1,9 @@
+# The administrator's address lives only on the server, never in the repository.
+# Install as /etc/nginx/conf.d/poetio-owner.conf (http context, root:root 0644), with
+# the same address as POETIO_OWNER_EMAIL in /etc/poetio/runtime.env:
+#
+#   map $host $poetio_owner_email { default "owner@example.org"; }
+#
+# nginx adds it to a request only after the administrator password is accepted
+# (poetio-app.conf and the upload locations). Without this file `nginx -t` fails with
+# 'unknown "poetio_owner_email" variable', so the configuration cannot load half-done.

@@ -14,6 +14,8 @@ Environment=POETIO_PORT=4106
 Environment=VINEXT_TRUSTED_HOSTS=poetio.cloud
 # nginx serves authorized recordings and films (deploy/nginx-media-accel.conf).
 Environment=POETIO_MEDIA_ACCEL=1
+# runtime.env (root 0600) holds POETIO_OWNER_EMAIL, the administrator's address; without it
+# administration stays closed (deploy/poetio-owner.conf.example has the matching nginx line).
 EnvironmentFile=-/etc/poetio/runtime.env
 ExecStart=/usr/local/bin/node /var/www/Poetio/current/scripts/start-vps.mjs
 Restart=on-failure

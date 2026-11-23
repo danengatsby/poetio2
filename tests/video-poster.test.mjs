@@ -10,6 +10,8 @@ import { join } from 'node:path';
 import ts from 'typescript';
 import { openVideoPoster } from '../server/video-poster.mjs';
 import { mediaFixture } from './media-fixture.mjs';
+// The owner's address is server configuration (lib/access.ts); tests use a placeholder.
+process.env.POETIO_OWNER_EMAIL = 'owner@example.test';
 
 const execute = promisify(execFile);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -27,7 +29,7 @@ function library(name, type) {
     content_type: type,
     byte_size: bytes.length,
     content_hash,
-    owner_email: 'pensio53@gmail.com',
+    owner_email: 'owner@example.test',
     created_at: 1,
   };
   mkdirSync(join(directory, 'videos/videos', id), { recursive: true });
@@ -177,7 +179,7 @@ function database({ files = [], audio = [], published = new Set() }) {
     },
   };
 }
-const owner = { 'oai-authenticated-user-email': 'pensio53@gmail.com' };
+const owner = { 'oai-authenticated-user-email': 'owner@example.test' };
 const still = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(600, 1)]);
 
 test('a still is public only while its film is published, and is revalidated rather than re-sent', async () => {
@@ -251,14 +253,14 @@ test('published recordings and films may be kept by the browser but are revalida
     content_type: 'video/mp4',
     byte_size: bytes.length,
     content_hash,
-    owner_email: 'pensio53@gmail.com',
+    owner_email: 'owner@example.test',
   };
   const recording = {
     id: crypto.randomUUID(),
     content_type: 'audio/mpeg',
     byte_size: bytes.length,
     content_hash,
-    owner_email: 'pensio53@gmail.com',
+    owner_email: 'owner@example.test',
   };
   film.object_key = `videos/${film.id}/${content_hash}`;
   recording.object_key = `poem-audio/${recording.id}/${content_hash}`;

@@ -8,6 +8,8 @@ import { createRequire } from 'node:module';
 import { DatabaseSync } from 'node:sqlite';
 import ts from 'typescript';
 import { openDatabase } from '../server/vps-storage.mjs';
+// The owner's address is server configuration (lib/access.ts); tests use a placeholder.
+process.env.POETIO_OWNER_EMAIL = 'owner@example.test';
 
 const compiled = mkdtempSync(join(tmpdir(), 'poetio-search-code-'));
 writeFileSync(join(compiled, 'package.json'), '{"type":"commonjs"}');
@@ -62,8 +64,8 @@ function file(sqlite) {
   const id = crypto.randomUUID();
   sqlite
     .prepare('INSERT INTO book_files VALUES(?,?,?,?,?,?,?,?)')
-    .run(id, 'fixture', 'book.pdf', 'application/pdf', 1, 'hash', 'pensio53@gmail.com', 1);
-  return { id, owner_email: 'pensio53@gmail.com', content_hash: 'hash' };
+    .run(id, 'fixture', 'book.pdf', 'application/pdf', 1, 'hash', 'owner@example.test', 1);
+  return { id, owner_email: 'owner@example.test', content_hash: 'hash' };
 }
 
 test('search migration preserves published records and history, is repeatable, and detects partial schemas', async t => {

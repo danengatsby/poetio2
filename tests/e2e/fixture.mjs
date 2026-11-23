@@ -1,6 +1,6 @@
 // Poems written into the browser-test database. The second one stores its
 // Romanian text decomposed (NFD), as text pasted from some editors arrives.
-export const OWNER_EMAIL = 'pensio53@gmail.com';
+export const OWNER_EMAIL = 'owner@example.test';
 
 const meeting = 'Întâlnirea din crâng';
 

@@ -1,5 +1,10 @@
-// Owner identity comes from the Site's verified access policy. Never sent to clients.
-const OWNER_EMAIL = 'pensio53@gmail.com';
+// The owner's address is server configuration (POETIO_OWNER_EMAIL, systemd reads it from
+// /etc/poetio/runtime.env), not part of the public repository. nginx adds the same address
+// to a request only after the administrator password is accepted (deploy/poetio-app.conf).
+// Without it nobody is the owner, so administration stays closed. Never sent to clients.
+function ownerEmail() {
+  return process.env.POETIO_OWNER_EMAIL?.trim().toLowerCase() || '';
+}
 
 export class AppError extends Error {
   status: number;
@@ -10,7 +15,8 @@ export class AppError extends Error {
 }
 
 export function isOwnerEmail(email: string | null | undefined) {
-  return email?.trim().toLowerCase() === OWNER_EMAIL;
+  const owner = ownerEmail();
+  return owner !== '' && email?.trim().toLowerCase() === owner;
 }
 
 export function requireOwner(request: Request) {
