@@ -24,6 +24,8 @@ Serverul de producție nu mai compilează și nu mai rulează verificările grel
 
 4. **Revenire manuală**, dacă e nevoie: `sudo python3 deploy/release.py rollback`. Starea curentă se vede cu `sudo python3 deploy/release.py status`.
 
+5. **Curățenie.** După o activare reușită, `activate` șterge singur versiunile din `releases/` mai vechi decât ultimele cinci și instantaneele `before-*` din `/var/backups/poetio` mai vechi de 30 de zile. Versiunea activă, ținta ei de revenire și instantaneul versiunii active rămân întotdeauna. `--no-prune` sare curățenia o dată. Lista se vede fără să se șteargă nimic cu `sudo python3 deploy/release.py prune`, iar `prune --apply` o aplică. Copiile zilnice din `/var/backups/poetio/automatic` au propria regulă (ultimele 7).
+
 Dovezile fiecărei publicări (arhiva, manifestele, rezultatul migrării, jurnalul preview-ului, activarea) se scriu în `/var/www/Poetio/publicari/<release>/`.
 
 ## Dependențe
@@ -99,3 +101,25 @@ journalctl -u poetio --since "-7 days" | grep "CSP violation"
 ```
 
 Testele de browser verifică pe fiecare pagină deschisă că nu apare nicio încălcare (`tests/e2e/test.mjs`). Când jurnalul rămâne curat câteva zile, redenumește antetul în `Content-Security-Policy` din `next.config.ts` ca politica să fie aplicată. Dacă apar rapoarte, verifică dacă sunt reale (o resursă nouă a site-ului) sau zgomot (extensii de browser, de obicei `chrome-extension:` sau scripturi injectate).
+
+## Adresa administratorului
+
+Adresa de email a administratorului nu stă în repository. Aplicația o citește din `POETIO_OWNER_EMAIL` în `/etc/poetio/runtime.env` (root, 0600), iar nginx o adaugă la cerere, după parola de administrator, din `/etc/nginx/conf.d/poetio-owner.conf` (modelul [poetio-owner.conf.example](poetio-owner.conf.example)). Cele două trebuie să conțină aceeași adresă și adresa nu se mai schimbă, pentru că fișierele încărcate sunt înregistrate pe ea. Fără `POETIO_OWNER_EMAIL`, administrarea rămâne închisă și serviciul scrie un avertisment la pornire. Fără `poetio-owner.conf`, `nginx -t` refuză configurația. Pe un server nou, ambele fișiere se scriu înainte de `app.conf` și de prima pornire.
+
+## Jurnalul nginx
+
+Cererile pentru poetio.cloud se scriu în `/var/log/nginx/poetio.access.log`, cu numele site-ului la început și timpii de răspuns la sfârșit (`log_format poetio_vhost` din [poetio-http.conf](poetio-http.conf)). Celelalte site-uri de pe server rămân în `access.log`. Rotația zilnică din `/etc/logrotate.d/nginx` acoperă ambele fișiere.
+
+Aplicația nu are Server Actions, așa că `app.conf` refuză orice cerere cu antetul `Next-Action` sau `x-rsc-action` (403) și orice POST pe o pagină, adică în afara `/api/` (405), înainte să ajungă la Node.
+
+## Alerte
+
+Joburile serverului trimit email când eșuează: backupul, copia de pe Google Drive, verificarea site-ului la 5 minute, localizarea, emailurile de comenzi și notificările. Unitatea lor pornește `poetio-alert@<job>.service` prin `OnFailure=`. Scriptul [alert-mail.py](../scripts/alert-mail.py) trimite ultimele rânduri din jurnal prin contul SMTP din `/etc/poetio/notify.env`, la `POETIO_ALERT_TO` sau, în lipsa ei, la `POETIO_NOTIFY_TO`. Aceeași problemă se anunță din nou cel mult o dată la 6 ore (`POETIO_ALERT_REPEAT_HOURS`). Primele patru joburi trimit și un mesaj când funcționează din nou (`OnSuccess=`).
+
+```sh
+sudo install -m 0755 scripts/alert-mail.py /usr/local/sbin/poetio-alert
+sudo install -m 0644 deploy/poetio-alert@.service deploy/poetio-{backup,offsite,heartbeat,geoip,order-mail,notify}.service /etc/systemd/system/
+sudo systemctl daemon-reload
+```
+
+Verificarea de pe server nu poate anunța un server oprit de tot. Pentru asta, [uptime.yml](../.github/workflows/uptime.yml) verifică din GitHub, la fiecare 30 de minute, pagina principală, fluxul RSS și certificatul. O rulare eșuată trimite email de la GitHub contului care a făcut ultimul push pe `main`. GitHub suspendă programările dintr-un repository public după 60 de zile fără commituri și anunță înainte. Programarea se reia din tabul Actions („Enable workflow”) sau la următorul push.
