@@ -1,4 +1,4 @@
-import { env } from 'cloudflare:workers';
+import { env } from '../server/vps-env';
 import { AppError, isOwnerEmail } from '../lib/access';
 import { getBookFile, validBookFileId, type StoredBookFile } from './book-files';
 import type { Database } from './poems';

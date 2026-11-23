@@ -46,7 +46,7 @@ Meniul „Administrare” este vizibil și fără autentificare. Accesarea lui d
 
 Fișierele compilate trebuie să poată fi citite de serviciu: directorul publicat folosește proprietarul `root`, grupul `poetio`, permisiuni `0750` pentru directoare și `0640` pentru fișiere. Pentru datele modificabile, proprietarul este `poetio`, cu `0700` pentru directoare și `0600` pentru fișiere. Arhiva inițială include fișiere media cu permisiuni restrictive; copierea lor fără adaptarea permisiunilor poate împiedica pornirea serviciului.
 
-`npm run build` păstrează compilarea originală pentru Sites. `POETIO_RUNTIME=node` selectează adaptorul SQLite/disc doar pentru compilarea VPS. Publicarea pe acest server nu modifică automat site-ul din Sites, iar cele două colecții evoluează independent după migrare.
+Din 23 noiembrie 2026 există o singură compilare, cea pentru Node.js (`npm run build` este același lucru cu `npm run build:vps`); varianta Cloudflare Worker a fost retrasă. Adaptorul SQLite/disc din `server/vps-env.ts` este importat direct de aplicație.
 
 **Domeniu și certificat HTTPS**
 

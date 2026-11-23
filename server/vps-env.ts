@@ -29,7 +29,7 @@ const dataDirectory = () => process.env.POETIO_DATA_DIR || '/var/lib/poetio';
 const mediaAccel = (folder: string) =>
   process.env.POETIO_MEDIA_ACCEL === '1' ? `/_poetio/media/${folder}/` : undefined;
 
-// This module replaces cloudflare:workers only in the explicit Node build.
+// Runtime bindings for the server build: the database, stored files and helpers.
 // Bindings are lazy so compiling never creates or modifies the live database.
 export const env = {
   get OPERATIONS() {

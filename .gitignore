@@ -60,3 +60,6 @@ admin-credentials.txt
 
 # vinext build cache
 /.vinext/
+
+# local data for `npm run dev`
+/.data/

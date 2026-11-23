@@ -1,4 +1,4 @@
-import { env } from 'cloudflare:workers';
+import { env } from '../server/vps-env';
 
 /**
  * The visitor's IP address, read only from a header the platform sets: X-Real-IP from nginx

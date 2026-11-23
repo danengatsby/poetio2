@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- Keep the existing full-document administration navigation. */
 import type { Metadata } from 'next';
-import { env } from 'cloudflare:workers';
+import { env } from '@/server/vps-env';
 import { getChatGPTUser, chatGPTSignInPath } from '../../chatgpt-auth';
 import { isOwnerEmail } from '@/lib/access';
 import CommentAdmin from './comment-admin';

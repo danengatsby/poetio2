@@ -1,4 +1,4 @@
-import { env } from 'cloudflare:workers';
+import { env } from '@/server/vps-env';
 import { validateInput } from '@/db/poems';
 import { apiError, readJson, requireSafeMutation } from '@/lib/access';
 import { translatePoem, type TranslationConfig } from '@/lib/translate-poem';

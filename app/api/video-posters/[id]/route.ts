@@ -1,4 +1,4 @@
-import { env } from 'cloudflare:workers';
+import { env } from '@/server/vps-env';
 import { getPoemDb } from '@/db/binding';
 import { serveVideoPoster, type VideoPosterRenderer } from '@/db/video-posters';
 import { apiError } from '@/lib/access';

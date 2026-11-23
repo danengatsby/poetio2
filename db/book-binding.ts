@@ -1,4 +1,4 @@
-import { env } from 'cloudflare:workers';
+import { env } from '../server/vps-env';
 import type { AudioBucket } from './audio';
 import type { BookValidator } from './book-validation';
 import type { TextRenderer } from './book-text';

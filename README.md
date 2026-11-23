@@ -12,9 +12,7 @@ Automatic translation requires the secret runtime variable `OPENAI_API_KEY` in S
 
 The owner-only `/api/poems/translate` endpoint uses the [OpenAI Responses API with Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs). Requests are not stored by the Responses API (`store: false`); only the title, theme, and poem lines are submitted. Blank lines, line count, and indentation are validated before saving. Provider refusal, timeout, or invalid structure leaves the original untouched. Existing poems retain their already saved translations.
 
-- `npm run build`: build the Worker and client assets.
+- `npm run build` (same as `npm run build:vps`): build the Node server and client assets into `dist/`.
 - `npm run db:generate`: generate schema-only migrations.
 - `node --test tests/poems.test.mjs`: verify persistence, authorization, validation, safe retries, and revision conflicts.
-- `node --test tests/worker.test.mjs`: verify the built Worker, bilingual persistence, and image upload with local D1 and R2.
-
-`.openai/hosting.json` retains the original Site identity and declares the logical `DB` and `BUCKET` bindings.
+Poetio runs only on its own server under Node (`scripts/start-vps.mjs`); `server/vps-env.ts` provides the SQLite database, stored files and media helpers. The Cloudflare Worker variant was retired on 23 Nov 2026.

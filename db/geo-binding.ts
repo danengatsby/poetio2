@@ -1,4 +1,4 @@
-import { env } from 'cloudflare:workers';
+import { env } from '../server/vps-env';
 import type { PlaceFields } from '../lib/visits';
 
 export type GeoLocator = {

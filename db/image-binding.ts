@@ -1,13 +1,14 @@
-import { env } from 'cloudflare:workers';
+import { env } from '../server/vps-env';
 import type { ImageBucket } from './images';
-import { cloudflareImageDecoder, type ImageDecoder, type CloudflareImages } from './image-validation';
+import type { ImageDecoder } from './image-validation';
 
 export function getImageBucket(): ImageBucket {
-  if (!env.BUCKET) throw new Error('Poem image storage unavailable');
-  return env.BUCKET;
+  // Node's web streams differ from the DOM typings only in iterator details.
+  const bucket = (env as unknown as { BUCKET?: ImageBucket }).BUCKET;
+  if (!bucket) throw new Error('Poem image storage unavailable');
+  return bucket;
 }
 
 export function getImageDecoder(): ImageDecoder | undefined {
-  const runtime = env as unknown as { IMAGE_DECODER?: ImageDecoder; IMAGES?: CloudflareImages };
-  return runtime.IMAGE_DECODER ?? (runtime.IMAGES ? cloudflareImageDecoder(runtime.IMAGES) : undefined);
+  return (env as unknown as { IMAGE_DECODER?: ImageDecoder }).IMAGE_DECODER;
 }

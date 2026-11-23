@@ -1,4 +1,4 @@
-import { env } from 'cloudflare:workers';
+import { env } from '@/server/vps-env';
 import { getPoemDb } from '@/db/binding';
 import { readableBookFile, bookPageError } from '@/db/book-pages';
 import type { BookSearchService } from '@/db/book-search';

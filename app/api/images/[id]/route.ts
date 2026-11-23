@@ -1,4 +1,4 @@
-import { env } from 'cloudflare:workers';
+import { env } from '@/server/vps-env';
 import { getPoemDb } from '@/db/binding';
 import { getImageBucket } from '@/db/image-binding';
 import { serveImage, type ImageRenderer } from '@/db/image-serving';

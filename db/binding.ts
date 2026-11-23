@@ -1,4 +1,4 @@
-import { env } from 'cloudflare:workers';
+import { env } from '../server/vps-env';
 import type { Database } from './poems';
 
 export function getPoemDb(): Database {
