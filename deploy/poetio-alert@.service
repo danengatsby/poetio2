@@ -5,7 +5,10 @@ Description=Poetio email alert for %i
 
 [Service]
 Type=oneshot
-DynamicUser=true
+# A fixed user: systemd's dynamic users cannot reach the system bus on this server,
+# so `systemctl show` failed with "Transport endpoint is not connected".
+User=poetio
+Group=poetio
 # Reads the failed job's journal lines.
 SupplementaryGroups=systemd-journal
 # SMTP account and recipient, shared with the comment and order notices.
