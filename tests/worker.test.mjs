@@ -542,7 +542,8 @@ test(
         ['?lang=en-US', { Cookie: 'poetio-language=ro' }, 'en-US', 'Verification Poem'],
         ['?lang=ro', { Cookie: 'poetio-language=en-US' }, 'ro', 'Poem de verificare'],
         ['', { Cookie: 'poetio-language=en-US' }, 'en-US', 'Verification Poem'],
-        ['?lang=de', { Cookie: 'poetio-language=en-US' }, 'en-US', 'Verification Poem'],
+        // An unsupported language falls back to the cookie (ro, en-US, fr and de are supported).
+        ['?lang=it', { Cookie: 'poetio-language=en-US' }, 'en-US', 'Verification Poem'],
         ['?lang=en-US&lang=ro', {}, 'en-US', 'Verification Poem'],
         ['', { 'x-poetio-language': 'en-US' }, 'ro', 'Poem de verificare'],
       ]) {
