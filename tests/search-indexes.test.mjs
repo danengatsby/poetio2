@@ -27,6 +27,7 @@ const require = createRequire(import.meta.url);
 const { textMatch } = require(join(compiled, 'lib/book-text.js'));
 const { createBookSearch } = require(join(compiled, 'db/book-search.js'));
 const { listPoemCards } = require(join(compiled, 'db/poem-collection.js'));
+const { withoutLeadingTitle } = require(join(compiled, 'lib/poem-collection.js'));
 const { listAdminPoems } = require(join(compiled, 'db/poem-admin-list.js'));
 const { sitemapEntries } = require(join(compiled, 'db/sitemap.js'));
 const { sqlFoldSearch, foldSearch } = require(join(compiled, 'lib/poem-search.js'));
@@ -243,10 +244,25 @@ test('sitemap returns only paths and timestamps even for large poem bodies', asy
     db = openDatabase(path);
   t.after(() => db.close());
   const id = poem(sqlite, 'secret-tail'.repeat(3000));
+  // A version needs both a title and a text: a title alone (de) is not a German page.
+  sqlite
+    .prepare("UPDATE poems SET it_title='Titolo', it_content='Versi', de_title='Nur Titel', de_content=' ' WHERE id=?")
+    .run(id);
   const entries = await sitemapEntries(db);
-  assert.equal(entries.find(row => row.path === '/poeme/' + id).updated, 1);
-  assert(entries.every(row => Object.keys(row).sort().join(',') === 'path,updated'));
+  const entry = entries.find(row => row.path === '/poeme/' + id);
+  assert.equal(entry.updated, 1);
+  assert.deepEqual(entry.languages, ['ro', 'en-US', 'it']);
+  assert.deepEqual(entries.find(row => row.path === '/autor').languages, ['ro', 'en-US', 'fr', 'de', 'es', 'it']);
+  assert(entries.every(row => Object.keys(row).sort().join(',') === 'languages,path,updated'));
   assert.equal(JSON.stringify(entries).includes('secret-tail'), false);
+});
+
+test('summaries skip a first line that repeats the title', () => {
+  assert.equal(withoutLeadingTitle('Madre Blu\n\nL’ora blu si stende', 'Madre Blu'), '\nL’ora blu si stende');
+  assert.equal(withoutLeadingTitle('\n  mama albastră.\nOra', 'Mama Albastră'), 'Ora');
+  assert.equal(withoutLeadingTitle('Ma\u0306r\nverse', 'Măr'), 'verse', 'decomposed diacritics match');
+  assert.equal(withoutLeadingTitle('Prima linie\nA doua', 'Alt titlu'), 'Prima linie\nA doua');
+  assert.equal(withoutLeadingTitle('Text', ''), 'Text');
 });
 
 test('normalization migration repairs existing projections without changing editorial records', async t => {

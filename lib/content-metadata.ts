@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { SiteLanguage } from './poem-types';
-import { pick } from './site-language';
+import { pick, SITE_LANGUAGES } from './site-language';
 export const siteOrigin = 'https://poetio.cloud';
 export const contentPath = (kind: 'poem' | 'video' | 'book', id: string) =>
   `${kind === 'poem' ? '/poeme' : kind === 'book' ? '/carti' : '/video'}/${encodeURIComponent(id)}`;
@@ -19,6 +19,7 @@ export function contentMetadata({
   published,
   video,
   type = 'article',
+  languages,
 }: {
   title: string;
   author: string;
@@ -30,13 +31,19 @@ export function contentMetadata({
   published: number;
   video?: string;
   type?: 'article' | 'book';
+  /** Language versions of the page; without them the page has one address (books). */
+  languages?: readonly SiteLanguage[];
 }): Metadata {
-  const url = siteOrigin + path;
+  const url = siteOrigin + (languages ? languagePath(path, language) : path);
   return {
     title: `${title} — ${author ? author + ' · ' : ''}Poetio`,
     description,
     authors: author ? [{ name: author }] : undefined,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      ...(languages ? { languages: languageAlternates(path, languages) } : {}),
+      types: feedAlternate(language),
+    },
     openGraph: {
       title,
       description,
@@ -97,6 +104,28 @@ export const siteIntro = {
 export const languagePath = (path: string, language: SiteLanguage) =>
   path + pick(language, '', '?lang=en-US', '?lang=fr', '?lang=de', '?lang=es', '?lang=it');
 
+/**
+ * Every language version of a page for hreflang, plus x-default: the address
+ * without a language parameter, which serves visitors whose language the site lacks.
+ */
+export function languageAlternates(path: string, languages: readonly SiteLanguage[] = SITE_LANGUAGES) {
+  return Object.fromEntries([
+    ...languages.map(language => [language, siteOrigin + languagePath(path, language)]),
+    ['x-default', siteOrigin + path],
+  ]) as Record<string, string>;
+}
+
+export const feedTitle = (language: SiteLanguage) =>
+  `Poetio — ${pick(language, 'Poeme', 'Poems', 'Poèmes', 'Gedichte', 'Poemas', 'Poesie')}`;
+
+/**
+ * The RSS feed of new poems, announced in every page's head in the page's language.
+ * A plain address: vinext renders alternates.types only as strings, not { url, title }.
+ */
+export const feedAlternate = (language: SiteLanguage) => ({
+  'application/rss+xml': siteOrigin + languagePath('/feed.xml', language),
+});
+
 /** Canonical address, language versions and sharing preview of a collection page (/, /carti, /video, /autor). */
 export function pageMetadata({
   title,
@@ -117,14 +146,8 @@ export function pageMetadata({
     description,
     alternates: {
       canonical: url(language),
-      languages: {
-        ro: url('ro'),
-        'en-US': url('en-US'),
-        fr: url('fr'),
-        de: url('de'),
-        es: url('es'),
-        it: url('it'),
-      },
+      languages: languageAlternates(path),
+      types: feedAlternate(language),
     },
     openGraph: {
       title,

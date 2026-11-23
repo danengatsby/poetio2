@@ -263,7 +263,9 @@ def check_site(base, want):
     status, _, body = fetch(base + '/')
     assert status == 200 and b'<html lang="ro"' in body, 'home page'
     status, _, body = fetch(base + '/sitemap.xml')
-    assert status == 200 and body.count(b'<url>') == want['urls'], f'sitemap has {body.count(b"<url>")} addresses'
+    # One address without a language parameter per page; language versions follow it.
+    pages = len(re.findall(rb'<loc>[^<?]*</loc>', body))
+    assert status == 200 and pages == want['urls'], f'sitemap has {pages} pages'
     for path in ('/autor', '/carti', '/video'):
         assert fetch(base + path)[0] == 200, path
     if want['poem']:

@@ -68,6 +68,19 @@ export function collectionReturnHref(value: string | undefined, language: SiteLa
   }
 }
 
+/** A poem whose first line repeats its title (common in the originals) starts after that line in summaries. */
+export function withoutLeadingTitle(text: string, title: string) {
+  const lines = text.split('\n');
+  const first = lines.findIndex(line => line.trim());
+  const plain = (value: string) =>
+    value
+      .normalize('NFC')
+      .trim()
+      .replace(/[\s.,;:!?…—–-]+$/u, '')
+      .toLocaleLowerCase();
+  return first >= 0 && plain(title) && plain(lines[first]) === plain(title) ? lines.slice(first + 1).join('\n') : text;
+}
+
 export function poemExcerpt(prefix: string) {
   const text = prefix.trim();
   const lines = text

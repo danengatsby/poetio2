@@ -5,6 +5,7 @@ import {
   POEM_EXCERPT_LENGTH,
   collectionQuery,
   poemExcerpt,
+  withoutLeadingTitle,
   type CollectionParams,
   type PoemCard,
   type PoemCollection,
@@ -12,7 +13,8 @@ import {
 import { EXTRA_LANGUAGES, isExtraLanguage, type SiteLanguage } from '../lib/poem-types';
 import { searchPredicate } from '../lib/poem-search';
 
-const present = (prefix: string) =>
+/** SQL that is true when a version (translated, fr, de…) has both a title and a text. */
+export const present = (prefix: string) =>
   `(length(trim(coalesce(${prefix}_title, ''))) > 0 AND length(trim(coalesce(${prefix}_content, ''), char(9)||char(10)||char(13)||' ')) > 0)`;
 const translated = present('translated');
 
@@ -83,7 +85,7 @@ export async function listPoemCards(
   return {
     poems: rows.results.map(row => ({
       ...row,
-      excerpt: poemExcerpt(row.excerpt),
+      excerpt: poemExcerpt(withoutLeadingTitle(row.excerpt, row.title)),
       has_translation: Boolean(row.has_translation),
     })),
     filters,
