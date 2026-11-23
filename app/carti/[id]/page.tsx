@@ -34,6 +34,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
         `${book.title} — Citește pe Poetio.`,
         `${book.title} — Read on Poetio.`,
         `${book.title} — À lire sur Poetio.`,
+        `${book.title} — auf Poetio lesen.`,
       ),
     ),
     path: contentPath('book', book.id),

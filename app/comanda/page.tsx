@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const language = await requestLanguage();
   return {
-    title: pick(language, 'Finalizează comanda — Poetio', 'Checkout — Poetio', 'Commande — Poetio'),
+    title: pick(language, 'Finalizează comanda — Poetio', 'Checkout — Poetio', 'Commande — Poetio', 'Kasse — Poetio'),
     robots: { index: false },
   };
 }

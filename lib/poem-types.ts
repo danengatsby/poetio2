@@ -1,8 +1,13 @@
 import type { TranslationProvenance } from './translation-provenance';
 /** The language a poem is written in; its one `translated_*` version is in the other. */
 export type PoemLanguage = 'ro' | 'en-US';
-/** The languages of the site. French has its own `fr_*` version of each poem. */
-export type SiteLanguage = PoemLanguage | 'fr';
+/** Languages with their own version of each poem (`fr_*`, `de_*`), besides the one translation. */
+export const EXTRA_LANGUAGES = ['fr', 'de'] as const;
+export type ExtraLanguage = (typeof EXTRA_LANGUAGES)[number];
+/** The languages of the site. */
+export type SiteLanguage = PoemLanguage | ExtraLanguage;
+export const isExtraLanguage = (language: string): language is ExtraLanguage =>
+  (EXTRA_LANGUAGES as readonly string[]).includes(language);
 
 export type Poem = {
   id: string;
@@ -19,6 +24,10 @@ export type Poem = {
   fr_theme?: string | null;
   fr_content?: string | null;
   fr_provenance?: TranslationProvenance | null;
+  de_title?: string | null;
+  de_theme?: string | null;
+  de_content?: string | null;
+  de_provenance?: TranslationProvenance | null;
   image_id: string | null;
   audio_ro_id: string | null;
   audio_en_id: string | null;
@@ -42,4 +51,8 @@ export type PoemInput = Pick<Poem, 'title' | 'author' | 'theme' | 'content'> & {
   fr_theme?: string | null;
   fr_content?: string | null;
   fr_provenance?: TranslationProvenance | null;
+  de_title?: string | null;
+  de_theme?: string | null;
+  de_content?: string | null;
+  de_provenance?: TranslationProvenance | null;
 };

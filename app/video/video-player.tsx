@@ -57,7 +57,7 @@ export default function VideoPlayer({
           <track
             kind="subtitles"
             srcLang="ro"
-            label={pick(language, 'Română', 'Romanian', 'Roumain')}
+            label={pick(language, 'Română', 'Romanian', 'Roumain', 'Rumänisch')}
             src={pilotSubtitles.path}
           />
         )}
@@ -75,7 +75,13 @@ export default function VideoPlayer({
             }
           }}
         >
-          {pick(language, 'Subtitrări în română', 'Romanian subtitles', 'Sous-titres en roumain')}
+          {pick(
+            language,
+            'Subtitrări în română',
+            'Romanian subtitles',
+            'Sous-titres en roumain',
+            'Rumänische Untertitel',
+          )}
         </button>
       )}
       {showStatus && !failed && (
@@ -86,12 +92,14 @@ export default function VideoPlayer({
                 'Fișier încărcat. Pornește redarea pentru a verifica imaginea și sunetul.',
                 'File loaded. Play it to check the picture and sound.',
                 'Fichier chargé. Lancez la lecture pour vérifier l’image et le son.',
+                'Datei geladen. Spielen Sie sie ab, um Bild und Ton zu prüfen.',
               )
             : pick(
                 language,
                 'Se verifică încărcarea videoului…',
                 'Checking video loading…',
                 'Vérification du chargement de la vidéo…',
+                'Videoladen wird geprüft…',
               )}
         </p>
       )}
@@ -102,9 +110,10 @@ export default function VideoPlayer({
             'Videoul nu poate fi redat în acest browser. Încearcă alt browser sau descarcă fișierul.',
             'This video cannot be played in this browser. Try another browser or download the file.',
             'Cette vidéo ne peut pas être lue dans ce navigateur. Essayez un autre navigateur ou téléchargez le fichier.',
+            'Dieses Video kann in diesem Browser nicht abgespielt werden. Versuchen Sie einen anderen Browser oder laden Sie die Datei herunter.',
           )}{' '}
           <a href={src} download>
-            {pick(language, 'Descarcă video', 'Download video', 'Télécharger la vidéo')}
+            {pick(language, 'Descarcă video', 'Download video', 'Télécharger la vidéo', 'Video herunterladen')}
           </a>
         </p>
       )}

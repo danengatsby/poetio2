@@ -18,10 +18,10 @@ export default function LanguageSelector({
       type="single"
       value={language}
       onValueChange={value => {
-        if (value === 'ro' || value === 'en-US' || value === 'fr') onChange(value);
+        if (value === 'ro' || value === 'en-US' || value === 'fr' || value === 'de') onChange(value);
       }}
       className="site-language-menu"
-      aria-label={pick(language, 'Limba site-ului', 'Site language', 'Langue du site')}
+      aria-label={pick(language, 'Limba site-ului', 'Site language', 'Langue du site', 'Sprache der Website')}
     >
       <ToggleGroupItem value="ro" lang="ro" aria-label="Română" title="Română">
         {compact ? 'RO' : 'Română'}
@@ -31,6 +31,9 @@ export default function LanguageSelector({
       </ToggleGroupItem>
       <ToggleGroupItem value="fr" lang="fr" aria-label="Français" title="Français">
         {compact ? 'FR' : 'Français'}
+      </ToggleGroupItem>
+      <ToggleGroupItem value="de" lang="de" aria-label="Deutsch" title="Deutsch">
+        {compact ? 'DE' : 'Deutsch'}
       </ToggleGroupItem>
     </ToggleGroup>
   );

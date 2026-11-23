@@ -1,4 +1,4 @@
-import type { PoemInput } from './poem-types';
+import type { ExtraLanguage, PoemInput } from './poem-types';
 
 export type TranslationProvenance = {
   version: 1;
@@ -44,16 +44,33 @@ async function digest(value: string) {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('');
 }
-/** The French version, tracked like the translation but with its own provenance (fr_provenance). */
-export function frenchKey(poem: PoemInput) {
+/** The fields of a version: the translation (`translated_*`) or a language's own (`fr_*`, `de_*`). */
+export function versionFields(poem: PoemInput, target: TranslationTarget) {
+  return target === 'translated'
+    ? {
+        title: poem.translated_title,
+        theme: poem.translated_theme,
+        content: poem.translated_content,
+        provenance: poem.translation_provenance,
+      }
+    : {
+        title: poem[`${target}_title`],
+        theme: poem[`${target}_theme`],
+        content: poem[`${target}_content`],
+        provenance: poem[`${target}_provenance`],
+      };
+}
+/** A language's own version (fr_*, de_*), tracked like the translation with its own provenance. */
+export function versionKey(poem: PoemInput, target: TranslationTarget) {
+  const version = versionFields(poem, target);
   return JSON.stringify([
-    poem.fr_title?.trim() || '',
-    poem.fr_theme?.trim() || '',
-    poem.fr_content?.replace(/\r\n?/g, '\n') || '',
+    version.title?.trim() || '',
+    version.theme?.trim() || '',
+    version.content?.replace(/\r\n?/g, '\n') || '',
   ]);
 }
-/** Which version of a poem: its one translation (`translated_*`) or the French one (`fr_*`). */
-export type TranslationTarget = 'translated' | 'fr';
+/** Which version of a poem: its one translation (`translated_*`) or a language's own (`fr_*`, `de_*`). */
+export type TranslationTarget = 'translated' | ExtraLanguage;
 export async function translationProvenance(
   poem: PoemInput,
   origin: TranslationProvenance['origin'],
@@ -61,7 +78,7 @@ export async function translationProvenance(
 ): Promise<TranslationProvenance> {
   const [sourceHash, textHash] = await Promise.all([
     digest(sourceKey(poem)),
-    digest(target === 'fr' ? frenchKey(poem) : translatedKey(poem)),
+    digest(target === 'translated' ? translatedKey(poem) : versionKey(poem, target)),
   ]);
   return { version: 1, origin, sourceHash, textHash };
 }
@@ -69,10 +86,7 @@ export async function translationStatus(
   poem: PoemInput,
   target: TranslationTarget = 'translated',
 ): Promise<TranslationStatus> {
-  const [titleValue, themeValue, contentValue, provenance] =
-    target === 'fr'
-      ? [poem.fr_title, poem.fr_theme, poem.fr_content, poem.fr_provenance]
-      : [poem.translated_title, poem.translated_theme, poem.translated_content, poem.translation_provenance];
+  const { title: titleValue, theme: themeValue, content: contentValue, provenance } = versionFields(poem, target);
   const title = Boolean(titleValue?.trim()),
     content = Boolean(contentValue?.trim());
   if (!title && !content && !themeValue?.trim()) return 'missing';

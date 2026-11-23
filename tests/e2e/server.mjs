@@ -74,6 +74,7 @@ try {
     const body = { id: crypto.randomUUID(), ...poem };
     if (poem.translated_content) body.translation_provenance = await translationProvenance(poem, 'manual');
     if (poem.fr_content) body.fr_provenance = await translationProvenance(poem, 'manual', 'fr');
+    if (poem.de_content) body.de_provenance = await translationProvenance(poem, 'manual', 'de');
     const response = await fetch(base + '/api/poems', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Origin: base, 'oai-authenticated-user-email': OWNER_EMAIL },

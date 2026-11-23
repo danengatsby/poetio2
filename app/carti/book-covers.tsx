@@ -33,6 +33,7 @@ export default function BookCovers({
       `Detalii și cumpărare: ${book.title} — ${cover}`,
       `Details and purchase: ${book.title} — ${cover}`,
       `Détails et achat\u00a0: ${book.title} — ${cover}`,
+      `Details und Kauf: ${book.title} — ${cover}`,
     );
   const covers = [
     { number: 1, id: book.image_id, src: previewSources[0] },
@@ -52,7 +53,7 @@ export default function BookCovers({
           <a
             className="book-cover-option book-cover-link"
             href={saleHref()}
-            aria-label={saleLabel(pick(language, 'copertă', 'cover', 'couverture'))}
+            aria-label={saleLabel(pick(language, 'copertă', 'cover', 'couverture', 'Umschlag'))}
             {...target}
           >
             {placeholder}
@@ -68,10 +69,16 @@ export default function BookCovers({
       className={`book-covers${compact ? ' book-covers-compact' : ''}`}
       data-count={covers.length}
       role="group"
-      aria-label={pick(language, 'Coperți și achiziție', 'Covers and purchase', 'Couvertures et achat')}
+      aria-label={pick(
+        language,
+        'Coperți și achiziție',
+        'Covers and purchase',
+        'Couvertures et achat',
+        'Umschläge und Kauf',
+      )}
     >
       {covers.map(cover => {
-        const label = `${pick(language, 'Coperta', 'Cover', 'Couverture')} ${cover.number}`;
+        const label = `${pick(language, 'Coperta', 'Cover', 'Couverture', 'Umschlag')} ${cover.number}`;
         const content = (
           <>
             <img
@@ -89,8 +96,8 @@ export default function BookCovers({
               {sale && (
                 <span className="book-cover-buy">
                   {buyable
-                    ? pick(language, 'Cumpără', 'Buy', 'Acheter')
-                    : pick(language, 'Detalii', 'Details', 'Détails')}
+                    ? pick(language, 'Cumpără', 'Buy', 'Acheter', 'Kaufen')
+                    : pick(language, 'Detalii', 'Details', 'Détails', 'Details')}
                 </span>
               )}
             </span>

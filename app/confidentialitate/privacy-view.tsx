@@ -7,7 +7,7 @@ import ShopFrame, { useShopLanguage } from '../shop-frame';
 
 // The privacy notice (GDPR art. 13). It describes what the site actually stores; keep it in step
 // with lib/visits.ts (retention), the nginx log rotation (14 days) and the backup retention.
-const UPDATED = { ro: '22 noiembrie 2026', en: '22 November 2026', fr: '22 novembre 2026' };
+const UPDATED = { ro: '22 noiembrie 2026', en: '22 November 2026', fr: '22 novembre 2026', de: '22. November 2026' };
 const LOG_DAYS = 14;
 const BACKUP_DAYS = 30;
 
@@ -27,7 +27,13 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
     <ShopFrame language={language} onLanguageChange={changeLanguage}>
       <article className="shop-document">
         <h1 className="shop-title">
-          {pick(language, 'Nota de confidențialitate', 'Privacy notice', 'Politique de confidentialité')}
+          {pick(
+            language,
+            'Nota de confidențialitate',
+            'Privacy notice',
+            'Politique de confidentialité',
+            'Datenschutzerklärung',
+          )}
         </h1>
         {language === 'ro' ? (
           <>
@@ -193,6 +199,93 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
             </p>
             <p>
               Les conditions de vente figurent dans les <a href={terms}>conditions générales de vente</a>.
+            </p>
+          </>
+        ) : language === 'de' ? (
+          <>
+            <p>
+              Welche personenbezogenen Daten Poetio (poetio.cloud) verarbeitet, warum, wie lange wir sie speichern und
+              welche Rechte Sie haben. Stand: {UPDATED.de}.
+            </p>
+            <h2 id="operator">Verantwortlicher</h2>
+            <p>
+              Verantwortlich für die Datenverarbeitung ist <strong>{controller}</strong>.
+              {email && <> Schreiben Sie uns an {email}</>}
+              {phone && (
+                <>
+                  {email ? ' oder rufen Sie an unter ' : ' Rufen Sie an unter '}
+                  {phone}
+                </>
+              )}
+              {(email || phone) && '.'}
+            </p>
+            <h2 id="date">Welche Daten und wozu</h2>
+            <ul>
+              <li>
+                <strong>Buchbestellungen.</strong> Ihr Name, Ihre Lieferadresse, Telefonnummer, E-Mail und Anmerkungen,
+                um die Bücher zu liefern, Zahlungsbelege auszustellen und Ihnen zur Bestellung zu schreiben.
+                Rechtsgrundlage sind der Vertrag (Art. 6 Abs. 1 lit. b DSGVO) und unsere buchhalterischen Pflichten
+                (lit. c). Wir speichern sie, solange die Bestellung es erfordert, und danach so lange, wie es das
+                Buchhaltungs- und Steuerrecht verlangt.
+              </li>
+              <li>
+                <strong>Kommentare.</strong> Der Name, den Sie eingeben, und der Text des Kommentars. Sie werden erst
+                nach Freigabe öffentlich. Rechtsgrundlage ist Ihre Einwilligung (lit. a); wir löschen sie jederzeit auf
+                Ihre Anfrage.
+              </li>
+              <li id="vizite">
+                <strong>Besuchsstatistik.</strong> Für jede geöffnete Seite speichern wir die IP-Adresse, die Seite, die
+                Uhrzeit, den Browser und den aus der IP abgeleiteten ungefähren Ort, um zu wissen, was gelesen wird, und
+                um die Website vor Missbrauch zu schützen. Rechtsgrundlage ist unser berechtigtes Interesse (lit. f).
+                Dafür werden keine Cookies verwendet. IP-Adresse und Browserdaten werden nach {VISIT_IP_RETENTION_DAYS}{' '}
+                Tagen gelöscht; es bleiben nur die Zahl der Besuche, die Seiten und die Orte.
+              </li>
+              <li>
+                <strong>Serverprotokolle.</strong> IP-Adresse, aufgerufene Adresse, Uhrzeit und Browser, für Sicherheit
+                und Fehlersuche (berechtigtes Interesse, lit. f). Sie werden nach {LOG_DAYS} Tagen automatisch gelöscht.
+              </li>
+              <li>
+                <strong>Sicherungskopien.</strong> Sie enthalten die oben genannten Daten, sind verschlüsselt und werden
+                nach höchstens {BACKUP_DAYS} Tagen automatisch gelöscht.
+              </li>
+            </ul>
+            <p>Wir treffen keine automatisierten Entscheidungen über Sie und erstellen keine Profile.</p>
+            <h2 id="destinatari">Wer die Daten noch erhält</h2>
+            <ul>
+              <li>Der Kurierdienst erhält Ihren Namen, Ihre Adresse und Telefonnummer, um das Paket zuzustellen.</li>
+              <li>
+                Der Server der Website wird bei Amazon Web Services in der Europäischen Union (Frankfurt) gemietet.
+              </li>
+              <li>
+                Google versendet die Bestellbestätigungen (Gmail) und bewahrt eine verschlüsselte Kopie der Sicherung
+                auf (Google Drive), die es nicht lesen kann. Google kann Daten auch außerhalb des Europäischen
+                Wirtschaftsraums verarbeiten, mit den von der DSGVO verlangten Garantien (EU-US-Datenschutzrahmen).
+              </li>
+            </ul>
+            <p>
+              Wir verkaufen keine Daten, schalten keine Werbung und nutzen keine Analyse- oder Werbedienste anderer
+              Unternehmen. Der Ort wird über eine auf dem Server gespeicherte Datenbank (DB-IP) ermittelt, ohne Ihre
+              IP-Adresse an jemanden weiterzugeben.
+            </p>
+            <h2 id="browser">Was Ihr Browser speichert</h2>
+            <p>
+              Die Website verwendet keine Tracking- oder Werbe-Cookies. Damit sie funktioniert, speichert sie in Ihrem
+              Browser die gewählte Sprache (das Cookie <code>poetio-language</code>, ein Jahr, das nur an den Server
+              gesendet wird, um diese Sprache anzuzeigen), das helle oder dunkle Design, die Leseeinstellungen, Ihre
+              Stelle in einem Buch, den Warenkorb und Kommentarentwürfe. Diese Daten erreichen uns nur mit einer
+              Bestellung oder einem Kommentar, die Sie absenden. Sie können sie jederzeit in den Browsereinstellungen
+              löschen.
+            </p>
+            <h2 id="drepturi">Ihre Rechte</h2>
+            <p>
+              Sie können Auskunft über Ihre Daten, deren Berichtigung, Löschung oder die Einschränkung der Verarbeitung
+              verlangen, sie in einem übertragbaren Format erhalten und der Verarbeitung auf Grundlage unseres
+              berechtigten Interesses widersprechen. Ihre Einwilligung für Kommentare können Sie jederzeit widerrufen.
+              Schreiben Sie uns{email && <> an {email}</>}; wir antworten innerhalb eines Monats. Sie können sich auch
+              bei der rumänischen Datenschutzbehörde beschweren ({authority}).
+            </p>
+            <p>
+              Die Verkaufsbedingungen finden Sie in den <a href={terms}>Allgemeinen Geschäftsbedingungen</a>.
             </p>
           </>
         ) : (

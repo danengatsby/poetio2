@@ -60,7 +60,7 @@ export default function VideoGallery({
   return (
     <>
       <a className="skip-link" href="#main">
-        {pick(language, 'Mergi la videouri', 'Skip to videos', 'Aller aux vidéos')}
+        {pick(language, 'Mergi la videouri', 'Skip to videos', 'Aller aux vidéos', 'Zu den Videos springen')}
       </a>
       <SiteHeader language={language} onLanguageChange={changeLanguage} videoPage />
       <main id="main" className="video-main shell" lang={language}>
@@ -70,7 +70,13 @@ export default function VideoGallery({
         <div className="section-heading">
           <div>
             <p className="eyebrow">
-              {pick(language, 'Povești în mișcare', 'Stories in motion', 'Histoires en mouvement')}
+              {pick(
+                language,
+                'Povești în mișcare',
+                'Stories in motion',
+                'Histoires en mouvement',
+                'Geschichten in Bewegung',
+              )}
             </p>
             <h1>
               Video<span className="count">({String(videos.length).padStart(2, '0')})</span>
@@ -82,6 +88,7 @@ export default function VideoGallery({
               'Un răgaz pentru imagini și cuvinte.',
               'A moment for images and words.',
               'Un moment pour les images et les mots.',
+              'Ein Moment für Bilder und Worte.',
             )}
           </p>
         </div>
@@ -93,6 +100,7 @@ export default function VideoGallery({
                 'Videourile nu pot fi încărcate momentan.',
                 'Videos could not be loaded right now.',
                 'Les vidéos n’ont pas pu être chargées pour le moment.',
+                'Die Videos konnten gerade nicht geladen werden.',
               )}
             </p>
             <a className="secondary-button" href={withSiteLanguage('/video', language)}>
@@ -109,17 +117,23 @@ export default function VideoGallery({
                     trigger.current = event.currentTarget;
                     setActive(index);
                   }}
-                  aria-label={`${pick(language, 'Redă', 'Play', 'Lire')}: ${video.title} · ${countLabel(video)}`}
+                  aria-label={`${pick(language, 'Redă', 'Play', 'Lire', 'Abspielen')}: ${video.title} · ${countLabel(video)}`}
                 >
                   <VideoCover key={video.file_id} fileId={video.file_id} />
                   <span className="card-meta">
                     <span>{String(index + 1).padStart(2, '0')}</span>
-                    <span>{pick(language, 'Video', 'Video', 'Vidéo')}</span>
+                    <span>{pick(language, 'Video', 'Video', 'Vidéo', 'Video')}</span>
                   </span>
                   <h2>{video.title}</h2>
                   <p>
                     {video.description ||
-                      pick(language, 'Deschide pentru a viziona.', 'Open to watch.', 'Ouvrir pour regarder.')}
+                      pick(
+                        language,
+                        'Deschide pentru a viziona.',
+                        'Open to watch.',
+                        'Ouvrir pour regarder.',
+                        'Zum Ansehen öffnen.',
+                      )}
                   </p>
                   <span className="card-bottom">
                     <span>
@@ -130,7 +144,7 @@ export default function VideoGallery({
                   </span>
                 </button>
                 <a className="content-page-link" href={withSiteLanguage(contentPath('video', video.id), language)}>
-                  {pick(language, 'Pagina videoului ↗', 'Video page ↗', 'Page de la vidéo ↗')}
+                  {pick(language, 'Pagina videoului ↗', 'Video page ↗', 'Page de la vidéo ↗', 'Videoseite ↗')}
                 </a>
               </div>
             ))}
@@ -143,11 +157,18 @@ export default function VideoGallery({
                 'Primul video va apărea aici în curând.',
                 'The first video will appear here soon.',
                 'La première vidéo apparaîtra bientôt ici.',
+                'Das erste Video erscheint bald hier.',
               )}
             </p>
             {canAdmin && (
               <a className="primary-button" href="/admin/video">
-                {pick(language, 'Adaugă primul video', 'Add the first video', 'Ajouter la première vidéo')}
+                {pick(
+                  language,
+                  'Adaugă primul video',
+                  'Add the first video',
+                  'Ajouter la première vidéo',
+                  'Das erste Video hinzufügen',
+                )}
               </a>
             )}
           </div>
@@ -191,7 +212,7 @@ export default function VideoGallery({
                 </span>
                 <DialogClose
                   className="reader-close"
-                  aria-label={pick(language, 'Închide videoul', 'Close video', 'Fermer la vidéo')}
+                  aria-label={pick(language, 'Închide videoul', 'Close video', 'Fermer la vidéo', 'Video schließen')}
                 >
                   ×
                 </DialogClose>
@@ -215,11 +236,18 @@ export default function VideoGallery({
                       'Video din colecția Poetio.',
                       'A video from the Poetio collection.',
                       'Une vidéo de la collection Poetio.',
+                      'Ein Video aus der Poetio-Sammlung.',
                     )}
                 </DialogDescription>
               </article>
               <a className="content-page-link" href={withSiteLanguage(contentPath('video', current.id), language)}>
-                {pick(language, 'Deschide pagina videoului ↗', 'Open video page ↗', 'Ouvrir la page de la vidéo ↗')}
+                {pick(
+                  language,
+                  'Deschide pagina videoului ↗',
+                  'Open video page ↗',
+                  'Ouvrir la page de la vidéo ↗',
+                  'Videoseite öffnen ↗',
+                )}
               </a>
               <ReaderComments
                 key={current.id}
@@ -231,6 +259,7 @@ export default function VideoGallery({
                   'Ce ți-a transmis acest video? Lasă câteva gânduri.',
                   'What did this video bring to mind? Share a few thoughts.',
                   'Qu’est-ce que cette vidéo vous a évoqué\u00a0? Partagez quelques pensées.',
+                  'Woran hat Sie dieses Video erinnert? Teilen Sie ein paar Gedanken.',
                 )}
               />
               <div className="reader-navigation">
@@ -241,7 +270,7 @@ export default function VideoGallery({
                   {(active ?? 0) + 1} / {videos.length}
                 </span>
                 <button disabled={active === videos.length - 1} onClick={() => navigate(1)}>
-                  {pick(language, 'Următorul →', 'Next video →', 'Vidéo suivante →')}
+                  {pick(language, 'Următorul →', 'Next video →', 'Vidéo suivante →', 'Nächstes Video →')}
                 </button>
               </div>
             </>

@@ -108,9 +108,10 @@ export function amountCents(amount: string) {
 }
 
 export function formatMoney(cents: number, currency: string, language: SiteLanguage) {
-  return new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR'), { style: 'currency', currency }).format(
-    cents / 100,
-  );
+  return new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR', 'de-DE'), {
+    style: 'currency',
+    currency,
+  }).format(cents / 100);
 }
 
 export const isCurrency = (value: unknown): value is BookPriceCurrency =>
@@ -133,7 +134,7 @@ export function deliveryWindow(
   settings: Pick<ShopSettings, 'delivery_min_days' | 'delivery_max_days'>,
   language: SiteLanguage,
 ) {
-  const format = new Intl.DateTimeFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR'), {
+  const format = new Intl.DateTimeFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR', 'de-DE'), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -150,6 +151,7 @@ export const paymentLabel = (method: PaymentMethod, language: SiteLanguage) =>
     { cod: 'Ramburs (plătești la livrare)', transfer: 'Transfer bancar' },
     { cod: 'Cash on delivery', transfer: 'Bank transfer' },
     { cod: 'Paiement à la livraison', transfer: 'Virement bancaire' },
+    { cod: 'Zahlung bei Lieferung (Nachnahme)', transfer: 'Banküberweisung' },
   )[method];
 
 export const statusLabel: Record<OrderStatus, string> = {
@@ -169,11 +171,11 @@ export const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 };
 
-export const BOOK_LANGUAGES: Record<string, { ro: string; en: string; fr: string }> = {
-  ro: { ro: 'Română', en: 'Romanian', fr: 'Roumain' },
-  en: { ro: 'Engleză', en: 'English', fr: 'Anglais' },
-  fr: { ro: 'Franceză', en: 'French', fr: 'Français' },
-  de: { ro: 'Germană', en: 'German', fr: 'Allemand' },
-  it: { ro: 'Italiană', en: 'Italian', fr: 'Italien' },
-  es: { ro: 'Spaniolă', en: 'Spanish', fr: 'Espagnol' },
+export const BOOK_LANGUAGES: Record<string, { ro: string; en: string; fr: string; de: string }> = {
+  ro: { ro: 'Română', en: 'Romanian', fr: 'Roumain', de: 'Rumänisch' },
+  en: { ro: 'Engleză', en: 'English', fr: 'Anglais', de: 'Englisch' },
+  fr: { ro: 'Franceză', en: 'French', fr: 'Français', de: 'Französisch' },
+  de: { ro: 'Germană', en: 'German', fr: 'Allemand', de: 'Deutsch' },
+  it: { ro: 'Italiană', en: 'Italian', fr: 'Italien', de: 'Italienisch' },
+  es: { ro: 'Spaniolă', en: 'Spanish', fr: 'Espagnol', de: 'Spanisch' },
 };

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import type { PoemInput, SiteLanguage } from '@/lib/poem-types';
+import { isExtraLanguage, type PoemInput, type SiteLanguage } from '@/lib/poem-types';
 import { poemVersion } from '@/lib/poem-languages';
 import PoemReading, { type ReadablePoem } from '../poem-reading';
 import type { SelectedAudio } from './audio-upload-field';
@@ -37,6 +37,9 @@ export default function PoemPreview({
     fr_title: draft.fr_title ?? null,
     fr_theme: draft.fr_theme ?? null,
     fr_content: draft.fr_content ?? null,
+    de_title: draft.de_title ?? null,
+    de_theme: draft.de_theme ?? null,
+    de_content: draft.de_content ?? null,
     audio_ro_id: draft.audio_ro_id ?? null,
     audio_en_id: draft.audio_en_id ?? null,
   };
@@ -48,7 +51,7 @@ export default function PoemPreview({
           <p>
             {translationPending
               ? 'Se afișează traducerea completată acum în editor. Pentru traducerea automată, folosește mai întâi „Pregătește traducerea în schiță”, dacă este disponibilă.'
-              : 'Originalul, traducerea și versiunea în franceză din editor pot fi comparate cu selectorul RO/EN/FR.'}
+              : 'Originalul, traducerea și versiunile în franceză și germană din editor pot fi comparate cu selectorul RO/EN/FR/DE.'}
           </p>
           <p>Fișierele audio selectate sunt redate local. Previzualizarea nu le încarcă pe server.</p>
         </>
@@ -56,8 +59,9 @@ export default function PoemPreview({
     >
       {language => {
         const actual = poemVersion(poem, language) ? language : poem.source_language;
-        // As on the site: the French version plays the original's recording.
-        const field = (actual === 'fr' ? poem.source_language : actual) === 'ro' ? 'audio_ro_id' : 'audio_en_id';
+        // As on the site: the French and German versions play the original's recording.
+        const field =
+          (isExtraLanguage(actual) ? poem.source_language : actual) === 'ro' ? 'audio_ro_id' : 'audio_en_id';
         const selected = audio[field];
         return (
           <LocalAudioPoem

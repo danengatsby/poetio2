@@ -59,6 +59,23 @@ const copy = {
     slow: 'Vous avez envoyé trop de commentaires. Attendez une minute et réessayez.',
     success: 'Votre commentaire a bien été reçu et apparaîtra après validation par l’administrateur.',
   },
+  de: {
+    title: 'Kommentare',
+    intro: 'Woran hat Sie dieses Gedicht erinnert? Teilen Sie ein paar Gedanken.',
+    name: 'Ihr Name',
+    body: 'Ihr Kommentar',
+    note: 'Ihr Name und Ihr Kommentar werden nach Freigabe durch den Administrator öffentlich. Bitte bleiben Sie respektvoll.',
+    send: 'Kommentar senden',
+    sending: 'Wird gesendet…',
+    loading: 'Kommentare werden geladen…',
+    empty: 'Schreiben Sie den ersten Kommentar.',
+    more: 'Weitere Kommentare',
+    retry: 'Erneut versuchen',
+    loadError: 'Die Kommentare konnten gerade nicht geladen werden.',
+    sendError: 'Ihr Kommentar konnte nicht veröffentlicht werden. Ihr Text wurde behalten; versuchen Sie es erneut.',
+    slow: 'Sie haben zu viele Kommentare gesendet. Warten Sie eine Minute und versuchen Sie es erneut.',
+    success: 'Ihr Kommentar ist eingegangen und erscheint nach Freigabe durch den Administrator.',
+  },
 };
 
 export default function PoemComments({
@@ -252,12 +269,14 @@ function CommentForm({
                     'Schița se păstrează în această filă la schimbarea limbii și reîncărcare, cel mult 24 de ore.',
                     'The draft survives language changes and reloads in this tab for up to 24 hours.',
                     'Le brouillon reste dans cet onglet malgré les changements de langue et les rechargements, pendant 24 heures au plus.',
+                    'Der Entwurf bleibt bei Sprachwechsel und Neuladen in diesem Tab bis zu 24 Stunden erhalten.',
                   )
                 : pick(
                     language,
                     'Browserul nu permite păstrarea schiței. Copiază textul înainte de a părăsi pagina.',
                     'This browser cannot save the draft. Copy your text before leaving this page.',
                     'Ce navigateur ne peut pas enregistrer le brouillon. Copiez votre texte avant de quitter cette page.',
+                    'Dieser Browser kann den Entwurf nicht speichern. Kopieren Sie Ihren Text, bevor Sie die Seite verlassen.',
                   )}
             </p>
             <button
@@ -272,6 +291,7 @@ function CommentForm({
                       'Ștergi numele și comentariul netrimis?',
                       'Discard the name and unsent comment?',
                       'Effacer le nom et le commentaire non envoyé\u00a0?',
+                      'Namen und nicht gesendeten Kommentar verwerfen?',
                     ),
                   )
                 ) {
@@ -281,7 +301,7 @@ function CommentForm({
                 }
               }}
             >
-              {pick(language, 'Abandonează schița', 'Discard draft', 'Effacer le brouillon')}
+              {pick(language, 'Abandonează schița', 'Discard draft', 'Effacer le brouillon', 'Entwurf verwerfen')}
             </button>
           </>
         )}

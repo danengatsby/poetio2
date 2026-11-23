@@ -29,9 +29,9 @@ export async function generateMetadata(props: Props) {
     author: video.author,
     description: excerpt(
       video.description,
-      `${video.title} — ${pick(language, 'Video din colecția Poetio.', 'Video from the Poetio collection.', 'Vidéo de la collection Poetio.')}`,
+      `${video.title} — ${pick(language, 'Video din colecția Poetio.', 'Video from the Poetio collection.', 'Vidéo de la collection Poetio.', 'Video aus der Poetio-Sammlung.')}`,
     ),
-    path: contentPath('video', video.id) + pick(language, '', '?lang=en-US', '?lang=fr'),
+    path: contentPath('video', video.id) + pick(language, '', '?lang=en-US', '?lang=fr', '?lang=de'),
     image: previewImage(video.file_id),
     language,
     updated: video.updated_at,

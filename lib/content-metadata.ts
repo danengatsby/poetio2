@@ -42,7 +42,7 @@ export function contentMetadata({
       description,
       url,
       siteName: 'Poetio',
-      locale: pick(language, 'ro_RO', 'en_US', 'fr_FR'),
+      locale: pick(language, 'ro_RO', 'en_US', 'fr_FR', 'de_DE'),
       images: [{ url: siteOrigin + image, alt: title }],
       ...(video
         ? { type: 'video.other' as const, videos: [{ url: siteOrigin + video }] }
@@ -76,11 +76,16 @@ export const siteIntro = {
     description:
       'Une collection de poèmes sur la lumière, les souvenirs et les petites choses que l’on remarque à peine. Entrez et restez le temps d’un poème.',
   },
+  de: {
+    title: 'Poetio — Ein Moment zum Innehalten',
+    description:
+      'Eine Sammlung von Gedichten über Licht, Erinnerungen und die kleinen Dinge, die wir beinahe übersehen. Treten Sie ein und bleiben Sie für ein Gedicht.',
+  },
 } as const;
 
 /** The address of a page in a site language (Romanian has no parameter). */
 export const languagePath = (path: string, language: SiteLanguage) =>
-  path + pick(language, '', '?lang=en-US', '?lang=fr');
+  path + pick(language, '', '?lang=en-US', '?lang=fr', '?lang=de');
 
 /** Canonical address, language versions and sharing preview of a collection page (/, /carti, /video, /autor). */
 export function pageMetadata({
@@ -102,14 +107,14 @@ export function pageMetadata({
     description,
     alternates: {
       canonical: url(language),
-      languages: { ro: url('ro'), 'en-US': url('en-US'), fr: url('fr') },
+      languages: { ro: url('ro'), 'en-US': url('en-US'), fr: url('fr'), de: url('de') },
     },
     openGraph: {
       title,
       description,
       url: url(language),
       siteName: 'Poetio',
-      locale: pick(language, 'ro_RO', 'en_US', 'fr_FR'),
+      locale: pick(language, 'ro_RO', 'en_US', 'fr_FR', 'de_DE'),
       type: 'website',
       images: [{ ...image, url: siteOrigin + image.url, alt: title }],
     },

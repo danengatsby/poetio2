@@ -52,12 +52,20 @@ export default function ContentDetail({
   const share = (
     <div className="content-share">
       <button type="button" className="secondary-button" onClick={() => void copy()}>
-        {pick(language, 'Copiază linkul', 'Copy link', 'Copier le lien')}
+        {pick(language, 'Copiază linkul', 'Copy link', 'Copier le lien', 'Link kopieren')}
       </button>
-      <span role="status">{copied ? pick(language, 'Link copiat.', 'Link copied.', 'Lien copié.') : ''}</span>
+      <span role="status">
+        {copied ? pick(language, 'Link copiat.', 'Link copied.', 'Lien copié.', 'Link kopiert.') : ''}
+      </span>
       {manualLink && (
         <label>
-          {pick(language, 'Copiază manual linkul', 'Copy the link manually', 'Copiez le lien manuellement')}
+          {pick(
+            language,
+            'Copiază manual linkul',
+            'Copy the link manually',
+            'Copiez le lien manuellement',
+            'Link manuell kopieren',
+          )}
           <input readOnly type="url" value={manualLink} onFocus={event => event.currentTarget.select()} />
         </label>
       )}
@@ -66,12 +74,13 @@ export default function ContentDetail({
   return (
     <>
       <a className="skip-link" href="#main">
-        {pick(language, 'Mergi la conținut', 'Skip to content', 'Aller au contenu')}
+        {pick(language, 'Mergi la conținut', 'Skip to content', 'Aller au contenu', 'Zum Inhalt springen')}
       </a>
       <SiteHeader language={language} onLanguageChange={changeLanguage} videoPage={!!video} poemPage={!!poem} />
       <main id="main" className="content-detail shell" lang={language}>
         <a className="content-back" href={collectionPath}>
-          ← {pick(language, 'Înapoi la colecție', 'Back to collection', 'Retour à la collection')}
+          ←{' '}
+          {pick(language, 'Înapoi la colecție', 'Back to collection', 'Retour à la collection', 'Zurück zur Sammlung')}
         </a>
         {poem ? (
           <PoemReading poem={poem} language={language}>
@@ -97,6 +106,7 @@ export default function ContentDetail({
                   'Ce ți-a transmis acest video?',
                   'What did this video bring to mind?',
                   'Qu’est-ce que cette vidéo vous a évoqué\u00a0?',
+                  'Woran hat Sie dieses Video erinnert?',
                 )
               : undefined
           }
@@ -108,7 +118,13 @@ export default function ContentDetail({
         </a>
         <p>
           <a href={collectionPath}>
-            {pick(language, 'Înapoi la colecție', 'Back to collection', 'Retour à la collection')}
+            {pick(
+              language,
+              'Înapoi la colecție',
+              'Back to collection',
+              'Retour à la collection',
+              'Zurück zur Sammlung',
+            )}
           </a>{' '}
           · <LegalLinks language={language} />
         </p>

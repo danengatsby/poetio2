@@ -45,7 +45,7 @@ export default function BooksView({
         {book ? (
           <>
             <a className="book-back" href={withSiteLanguage('/carti', language)}>
-              ← {pick(language, 'Toate cărțile', 'All books', 'Tous les livres')}
+              ← {pick(language, 'Toate cărțile', 'All books', 'Tous les livres', 'Alle Bücher')}
             </a>
             <BookPresentation book={book} language={language} />
             <div className="book-comments">
@@ -58,6 +58,7 @@ export default function BooksView({
                   'Ce ți-a transmis această carte? Lasă câteva gânduri.',
                   'What did this book bring to mind? Share a few thoughts.',
                   'Qu’est-ce que ce livre vous a évoqué\u00a0? Partagez quelques pensées.',
+                  'Woran hat Sie dieses Buch erinnert? Teilen Sie ein paar Gedanken.',
                 )}
               />
             </div>
@@ -68,14 +69,28 @@ export default function BooksView({
             <div className="section-heading">
               <div>
                 <p className="eyebrow">
-                  {pick(language, 'Pagini de descoperit', 'Pages to discover', 'Des pages à découvrir')}
+                  {pick(
+                    language,
+                    'Pagini de descoperit',
+                    'Pages to discover',
+                    'Des pages à découvrir',
+                    'Seiten zum Entdecken',
+                  )}
                 </p>
                 <h1>
-                  {pick(language, 'Cărți', 'Books', 'Livres')}
+                  {pick(language, 'Cărți', 'Books', 'Livres', 'Bücher')}
                   <span className="count">({String(books.length).padStart(2, '0')})</span>
                 </h1>
               </div>
-              <p>{pick(language, 'Un răgaz pentru lectură.', 'A moment to read.', 'Un moment pour lire.')}</p>
+              <p>
+                {pick(
+                  language,
+                  'Un răgaz pentru lectură.',
+                  'A moment to read.',
+                  'Un moment pour lire.',
+                  'Ein Moment zum Lesen.',
+                )}
+              </p>
             </div>
             {failed ? (
               <div className="collection-empty" role="alert">
@@ -85,6 +100,7 @@ export default function BooksView({
                     'Cărțile nu pot fi încărcate momentan.',
                     'Books could not be loaded right now.',
                     'Les livres n’ont pas pu être chargés pour le moment.',
+                    'Die Bücher konnten gerade nicht geladen werden.',
                   )}
                 </p>
                 <a className="secondary-button" href={withSiteLanguage('/carti', language)}>
@@ -107,7 +123,13 @@ export default function BooksView({
                     </h2>
                     <p>
                       {item.description ||
-                        pick(language, 'Deschide pentru a citi.', 'Open to read.', 'Ouvrir pour lire.')}
+                        pick(
+                          language,
+                          'Deschide pentru a citi.',
+                          'Open to read.',
+                          'Ouvrir pour lire.',
+                          'Zum Lesen öffnen.',
+                        )}
                     </p>
                     <div className="card-bottom">
                       <span>
@@ -117,9 +139,9 @@ export default function BooksView({
                       <a
                         className="book-read-link"
                         href={withSiteLanguage(`/carti/${item.id}`, language)}
-                        aria-label={`${pick(language, 'Citește', 'Read', 'Lire')}: ${item.title}`}
+                        aria-label={`${pick(language, 'Citește', 'Read', 'Lire', 'Lesen')}: ${item.title}`}
                       >
-                        {pick(language, 'Citește', 'Read', 'Lire')} ↗
+                        {pick(language, 'Citește', 'Read', 'Lire', 'Lesen')} ↗
                       </a>
                     </div>
                   </article>
@@ -133,11 +155,18 @@ export default function BooksView({
                     'Prima carte va apărea aici în curând.',
                     'The first book will appear here soon.',
                     'Le premier livre apparaîtra bientôt ici.',
+                    'Das erste Buch erscheint bald hier.',
                   )}
                 </p>
                 {canAdmin && (
                   <a className="primary-button" href="/admin/carti">
-                    {pick(language, 'Adaugă prima carte', 'Add the first book', 'Ajouter le premier livre')}
+                    {pick(
+                      language,
+                      'Adaugă prima carte',
+                      'Add the first book',
+                      'Ajouter le premier livre',
+                      'Das erste Buch hinzufügen',
+                    )}
                   </a>
                 )}
               </div>

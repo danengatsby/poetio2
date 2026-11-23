@@ -12,7 +12,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
-import type { Poem, PoemInput } from '@/lib/poem-types';
+import { type Poem, type PoemInput, EXTRA_LANGUAGES, type ExtraLanguage } from '@/lib/poem-types';
 import { otherLanguage } from '@/lib/poem-languages';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { defaultPoemImage, poemImage, IMAGE_TYPES, MAX_IMAGE_BYTES } from '@/lib/poem-images';
@@ -37,6 +37,8 @@ import { useTranslationStatus } from './use-translation-status';
 import { adminPoemListUrl, type AdminPoemCollection } from '@/lib/poem-admin-list';
 
 type Draft = PoemInput & { id: string; revision: number; isNew: boolean };
+/** How the editor names each language with its own version. */
+const VERSION_NAME: Record<ExtraLanguage, string> = { fr: 'franceză', de: 'germană' };
 const blank = (): Draft => ({
   id: crypto.randomUUID(),
   title: '',
@@ -52,6 +54,10 @@ const blank = (): Draft => ({
   fr_theme: '',
   fr_content: '',
   fr_provenance: null,
+  de_title: '',
+  de_theme: '',
+  de_content: '',
+  de_provenance: null,
   image_id: null,
   audio_ro_id: null,
   audio_en_id: null,
@@ -73,6 +79,10 @@ const fromPoem = (poem: Poem): Draft => ({
   fr_theme: poem.fr_theme || '',
   fr_content: poem.fr_content || '',
   fr_provenance: poem.fr_provenance ?? null,
+  de_title: poem.de_title || '',
+  de_theme: poem.de_theme || '',
+  de_content: poem.de_content || '',
+  de_provenance: poem.de_provenance ?? null,
   image_id: poem.image_id,
   audio_ro_id: poem.audio_ro_id,
   audio_en_id: poem.audio_en_id,
@@ -200,19 +210,27 @@ export default function Admin({
       'Asocierea traducerii nu poate fi verificată în acest browser. Reîncarcă pagina sau salvează fără traducere.',
   }[translationState];
   const saveOriginalOnly = translateOnSave && !translationReady;
-  // The French version (fr_*), shown when the site is in French.
-  const frenchState = useTranslationStatus(draft, 'fr');
-  const frenchBlocked = frenchState !== 'ready' && frenchState !== 'missing';
-  const frenchMessage = {
-    checking: 'Se verifică asocierea versiunii în franceză…',
-    missing: 'Nu există o versiune în franceză; site-ul în franceză arată originalul.',
-    incomplete: 'Completează titlul și textul în franceză, apoi confirmă revizuirea, sau golește câmpurile.',
-    unreviewed: 'Versiunea în franceză nu este confirmată pentru originalul actual. Verific-o și confirmă revizuirea.',
-    stale: 'Originalul s-a schimbat. Verifică versiunea în franceză și confirmă din nou, sau golește câmpurile.',
-    edited: 'Versiunea în franceză a fost modificată. Confirmă revizuirea pentru originalul actual.',
-    ready: 'Versiunea în franceză este asociată originalului actual.',
-    error: 'Asocierea versiunii în franceză nu poate fi verificată în acest browser. Reîncarcă pagina.',
-  }[frenchState];
+  // The French and German versions (fr_*, de_*), shown when the site is in that language.
+  const versionStates: Record<ExtraLanguage, ReturnType<typeof useTranslationStatus>> = {
+    fr: useTranslationStatus(draft, 'fr'),
+    de: useTranslationStatus(draft, 'de'),
+  };
+  const versionMessage = (language: ExtraLanguage) => {
+    const name = VERSION_NAME[language];
+    return {
+      checking: `Se verifică asocierea versiunii în ${name}…`,
+      missing: `Nu există o versiune în ${name}; site-ul în ${name} arată originalul.`,
+      incomplete: `Completează titlul și textul în ${name}, apoi confirmă revizuirea, sau golește câmpurile.`,
+      unreviewed: `Versiunea în ${name} nu este confirmată pentru originalul actual. Verific-o și confirmă revizuirea.`,
+      stale: `Originalul s-a schimbat. Verifică versiunea în ${name} și confirmă din nou, sau golește câmpurile.`,
+      edited: `Versiunea în ${name} a fost modificată. Confirmă revizuirea pentru originalul actual.`,
+      ready: `Versiunea în ${name} este asociată originalului actual.`,
+      error: `Asocierea versiunii în ${name} nu poate fi verificată în acest browser. Reîncarcă pagina.`,
+    }[versionStates[language]];
+  };
+  const blockedVersion = EXTRA_LANGUAGES.find(
+    language => versionStates[language] !== 'ready' && versionStates[language] !== 'missing',
+  );
 
   function reportError(error: unknown, fallback: string) {
     setError(error instanceof Error ? error.message : fallback);
@@ -425,15 +443,15 @@ export default function Admin({
       setBusy(false);
     }
   }
-  async function confirmFrench() {
-    if (!draft || locked || !draft.fr_title?.trim() || !draft.fr_content?.trim()) return;
+  async function confirmVersion(language: ExtraLanguage) {
+    if (!draft || locked || !draft[`${language}_title`]?.trim() || !draft[`${language}_content`]?.trim()) return;
     setBusy(true);
     setError('');
     setSuccess('');
     try {
-      const provenance = await translationProvenance(draft, 'manual', 'fr');
-      setDraft({ ...draft, fr_provenance: provenance });
-      setSuccess('Revizuirea versiunii în franceză este confirmată. Poemul nu a fost încă publicat.');
+      const provenance = await translationProvenance(draft, 'manual', language);
+      setDraft({ ...draft, [`${language}_provenance`]: provenance });
+      setSuccess(`Revizuirea versiunii în ${VERSION_NAME[language]} este confirmată. Poemul nu a fost încă publicat.`);
     } catch {
       setError('Revizuirea nu poate fi înregistrată în acest browser. Reîncarcă pagina.');
     } finally {
@@ -443,8 +461,8 @@ export default function Admin({
   async function save(event: React.FormEvent, originalOnly = false) {
     event.preventDefault();
     if (!draft || locked) return;
-    if (frenchBlocked) {
-      setError(frenchMessage);
+    if (blockedVersion) {
+      setError(versionMessage(blockedVersion));
       return;
     }
     if (missingMedia.length) {
@@ -1057,63 +1075,71 @@ export default function Admin({
                       </button>
                     )}
                   </section>
-                  <section className="translation-editor" aria-labelledby="french-editor-title">
-                    <h3 id="french-editor-title">Varianta în franceză</h3>
-                    <p className="field-help">
-                      Apare când cititorul alege FR. Fără ea, site-ul în franceză arată originalul. După orice
-                      modificare a originalului sau a textului în franceză, confirmă din nou revizuirea.
-                    </p>
-                    <label>
-                      Titlul în franceză
-                      <input
-                        lang="fr"
-                        value={draft.fr_title || ''}
-                        onChange={event => update('fr_title', event.target.value)}
-                        maxLength={180}
-                        placeholder="Titre en français"
-                      />
-                    </label>
-                    <label>
-                      Tema în franceză <span className="optional-label">(opțional)</span>
-                      <input
-                        lang="fr"
-                        value={draft.fr_theme || ''}
-                        onChange={event => update('fr_theme', event.target.value)}
-                        maxLength={80}
-                        placeholder="Thème en français"
-                      />
-                    </label>
-                    <label>
-                      Textul în franceză
-                      <textarea
-                        lang="fr"
-                        value={draft.fr_content || ''}
-                        onChange={event => update('fr_content', event.target.value)}
-                        maxLength={30000}
-                        rows={12}
-                        placeholder="La version française du poème, vers et strophes compris."
-                      />
-                    </label>
-                    <p className="field-help" role="status">
-                      {frenchMessage}
-                    </p>
-                    {frenchState !== 'ready' && frenchState !== 'missing' && (
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        disabled={
-                          locked ||
-                          !draft.title.trim() ||
-                          !draft.content.trim() ||
-                          !draft.fr_title?.trim() ||
-                          !draft.fr_content?.trim()
-                        }
-                        onClick={() => void confirmFrench()}
+                  {EXTRA_LANGUAGES.map(language => {
+                    const name = VERSION_NAME[language];
+                    const state = versionStates[language];
+                    return (
+                      <section
+                        key={language}
+                        className="translation-editor"
+                        aria-labelledby={`${language}-editor-title`}
                       >
-                        Confirm: versiunea în franceză corespunde originalului actual
-                      </button>
-                    )}
-                  </section>
+                        <h3 id={`${language}-editor-title`}>Varianta în {name}</h3>
+                        <p className="field-help">
+                          Apare când cititorul alege {language.toUpperCase()}. Fără ea, site-ul în {name} arată
+                          originalul. După orice modificare a originalului sau a acestui text, confirmă din nou
+                          revizuirea.
+                        </p>
+                        <label>
+                          Titlul în {name}
+                          <input
+                            lang={language}
+                            value={draft[`${language}_title`] || ''}
+                            onChange={event => update(`${language}_title`, event.target.value)}
+                            maxLength={180}
+                          />
+                        </label>
+                        <label>
+                          Tema în {name} <span className="optional-label">(opțional)</span>
+                          <input
+                            lang={language}
+                            value={draft[`${language}_theme`] || ''}
+                            onChange={event => update(`${language}_theme`, event.target.value)}
+                            maxLength={80}
+                          />
+                        </label>
+                        <label>
+                          Textul în {name}
+                          <textarea
+                            lang={language}
+                            value={draft[`${language}_content`] || ''}
+                            onChange={event => update(`${language}_content`, event.target.value)}
+                            maxLength={30000}
+                            rows={12}
+                          />
+                        </label>
+                        <p className="field-help" role="status">
+                          {versionMessage(language)}
+                        </p>
+                        {state !== 'ready' && state !== 'missing' && (
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            disabled={
+                              locked ||
+                              !draft.title.trim() ||
+                              !draft.content.trim() ||
+                              !draft[`${language}_title`]?.trim() ||
+                              !draft[`${language}_content`]?.trim()
+                            }
+                            onClick={() => void confirmVersion(language)}
+                          >
+                            Confirm: versiunea în {name} corespunde originalului actual
+                          </button>
+                        )}
+                      </section>
+                    );
+                  })}
                 </fieldset>
                 {missingMedia.length > 0 && (
                   <section className="book-missing-files" aria-label="Fișiere de recuperat">

@@ -22,13 +22,26 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
   }
 
   let content;
-  if (!inBrowser) content = <p>{pick(language, 'Se încarcă coșul…', 'Loading your cart…', 'Chargement du panier…')}</p>;
+  if (!inBrowser)
+    content = (
+      <p>
+        {pick(language, 'Se încarcă coșul…', 'Loading your cart…', 'Chargement du panier…', 'Warenkorb wird geladen…')}
+      </p>
+    );
   else if (!items.length)
     content = (
       <div className="shop-empty shop-panel">
-        <p>{pick(language, 'Coșul tău este gol.', 'Your cart is empty.', 'Votre panier est vide.')}</p>
+        <p>
+          {pick(
+            language,
+            'Coșul tău este gol.',
+            'Your cart is empty.',
+            'Votre panier est vide.',
+            'Ihr Warenkorb ist leer.',
+          )}
+        </p>
         <a className="shop-button" href={withSiteLanguage('/carti', language)}>
-          {pick(language, 'Vezi cărțile', 'Browse the books', 'Voir les livres')}
+          {pick(language, 'Vezi cărțile', 'Browse the books', 'Voir les livres', 'Bücher ansehen')}
         </a>
       </div>
     );
@@ -39,17 +52,27 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
           {state.message}
         </p>
         <button type="button" className="shop-link-button" onClick={clearCart}>
-          {pick(language, 'Golește coșul', 'Empty the cart', 'Vider le panier')}
+          {pick(language, 'Golește coșul', 'Empty the cart', 'Vider le panier', 'Warenkorb leeren')}
         </button>
       </div>
     );
   else if (state.status === 'loading')
-    content = <p>{pick(language, 'Se verifică prețurile…', 'Checking prices…', 'Vérification des prix…')}</p>;
+    content = (
+      <p>
+        {pick(
+          language,
+          'Se verifică prețurile…',
+          'Checking prices…',
+          'Vérification des prix…',
+          'Preise werden geprüft…',
+        )}
+      </p>
+    );
   else {
     const { quote, shop } = state;
     content = (
       <div className="shop-layout">
-        <section aria-label={pick(language, 'Produse', 'Items', 'Articles')}>
+        <section aria-label={pick(language, 'Produse', 'Items', 'Articles', 'Artikel')}>
           <ul className="shop-lines">
             {quote.lines.map(line => {
               const index = items.findIndex(item => item.book_id === line.book_id && item.cover === line.cover);
@@ -61,7 +84,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
                 <ShopLine key={`${line.book_id}:${line.cover}`} line={line} language={language}>
                   <div className="shop-line-actions">
                     <label>
-                      {pick(language, 'Cantitate: ', 'Quantity: ', 'Quantité\u00a0: ')}
+                      {pick(language, 'Cantitate: ', 'Quantity: ', 'Quantité\u00a0: ', 'Menge: ')}
                       <select
                         value={items[index]?.quantity ?? line.quantity}
                         onChange={event => setQuantity(index, Number(event.target.value))}
@@ -74,7 +97,7 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
                       </select>
                     </label>
                     <button type="button" className="shop-link-button" onClick={() => remove(index)}>
-                      {pick(language, 'Șterge', 'Delete', 'Supprimer')}
+                      {pick(language, 'Șterge', 'Delete', 'Supprimer', 'Entfernen')}
                       <span className="sr-only">: {line.title}</span>
                     </button>
                   </div>
@@ -83,7 +106,10 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
             })}
           </ul>
         </section>
-        <aside className="shop-panel shop-summary" aria-label={pick(language, 'Sumar', 'Summary', 'Récapitulatif')}>
+        <aside
+          className="shop-panel shop-summary"
+          aria-label={pick(language, 'Sumar', 'Summary', 'Récapitulatif', 'Übersicht')}
+        >
           <ShopTotals quote={quote} language={language} />
           {!shop.ready && (
             <p className="shop-alert">
@@ -92,16 +118,17 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
                 'Comenzile online se deschid în curând.',
                 'Online orders open soon.',
                 'Les commandes en ligne ouvrent bientôt.',
+                'Online-Bestellungen sind bald möglich.',
               )}
             </p>
           )}
           {quote.ok ? (
             <a className="shop-button" href={withSiteLanguage('/comanda', language)}>
-              {pick(language, 'Finalizează comanda', 'Proceed to checkout', 'Passer la commande')}
+              {pick(language, 'Finalizează comanda', 'Proceed to checkout', 'Passer la commande', 'Zur Kasse')}
             </a>
           ) : (
             <button type="button" className="shop-button" disabled>
-              {pick(language, 'Finalizează comanda', 'Proceed to checkout', 'Passer la commande')}
+              {pick(language, 'Finalizează comanda', 'Proceed to checkout', 'Passer la commande', 'Zur Kasse')}
             </button>
           )}
         </aside>
@@ -114,10 +141,10 @@ export default function CartView({ initialLanguage }: { initialLanguage: SiteLan
       language={language}
       onLanguageChange={changeLanguage}
       cartCurrent
-      back={{ href: withSiteLanguage('/carti', language), label: pick(language, 'Cărți', 'Books', 'Livres') }}
+      back={{ href: withSiteLanguage('/carti', language), label: pick(language, 'Cărți', 'Books', 'Livres', 'Bücher') }}
     >
       <h1 className="shop-title">
-        {pick(language, 'Coșul de cumpărături', 'Shopping cart', 'Panier')}
+        {pick(language, 'Coșul de cumpărături', 'Shopping cart', 'Panier', 'Warenkorb')}
         {inBrowser && count > 0 && ` (${count})`}
       </h1>
       {content}

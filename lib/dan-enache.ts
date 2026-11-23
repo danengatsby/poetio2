@@ -7,7 +7,7 @@ type Biography = {
   sections: { id: string; title: string; paragraphs: string[] }[];
 };
 
-// Full text supplied by the author, with complete Romanian and French translations.
+// Full text supplied by the author, with complete Romanian, French and German translations.
 // The supplied encoding typo "Ia?i" is rendered as "Iași" in both languages.
 export const danEnacheBiography: Record<SiteLanguage, Biography> = {
   ro: {
@@ -147,6 +147,56 @@ export const danEnacheBiography: Record<SiteLanguage, Biography> = {
         title: 'Conclusion',
         paragraphs: [
           'Dan Enache demeure une figure lumineuse de la poésie roumaine, son œuvre étant une tapisserie chatoyante de magie, de mélancolie, de mysticisme, de rêves oniriques et de profondeur philosophique. Son style poético-philosophique unique éveille l’émotion et remue l’âme, afin que sa voix continue de résonner dans les annales de l’histoire littéraire et invite les générations futures à l’accompagner dans l’exploration d’infinis paysages intérieurs.',
+        ],
+      },
+    ],
+  },
+  de: {
+    profile: [
+      { label: 'Name', value: 'Dan Enache' },
+      { label: 'Nationalität', value: 'Rumänisch' },
+      {
+        label: 'Tätigkeit',
+        value: 'Dichter, Mystiker, Philosoph, romantischer Schriftsteller, esoterischer und onirischer Dichter',
+      },
+    ],
+    sections: [
+      {
+        id: 'early-life',
+        title: 'Kindheit und Ausbildung',
+        paragraphs: [
+          'Geboren in der ätherischen Landschaft der Moldau, in der mystischen Stadt Iași, wuchs Dan Enache zwischen sanften Hügeln und alten Klöstern auf, in Landschaften voll betörender Schönheit und mystischer Ruhe. Diese frühe Verbundenheit mit zeitlosen Naturbildern und einem reichen kulturellen Erbe beflügelte seine Vorstellungskraft und prägte seine dichterische Empfindsamkeit tief. Enaches Neigung zum Mystischen, Esoterischen und Traumhaften erwachte in diesen prägenden Jahren, als er durch Landschaften voller Volkskunde und Legenden streifte.',
+          'Enaches Ausbildung verband herkömmliche Schulbildung mit autodidaktischem Erkunden. Er studierte Informationstechnologie an der Politehnica-Universität Bukarest und vertiefte sich in die strukturierte Logik und die Kreativität der Informatik. Doch erst sein einsamer, tiefer Dialog mit der Natur und mit metaphysischen Texten prägte seinen geistigen und spirituellen Weg wirklich.',
+        ],
+      },
+      {
+        id: 'poetic-career',
+        title: 'Dichterischer Werdegang',
+        paragraphs: [
+          'Dan Enache hat sich als eigenständige dichterische Stimme der rumänischen Literatur etabliert; sein Werk zeichnet sich durch ein feines Geflecht aus Mystik, Melancholie, philosophischem Fragen und onirischer Esoterik aus. Sein unverwechselbarer Stil verbindet das Poetische und das Philosophische in einem harmonischen Tanz und schafft Verse, die zugleich den Verstand anregen und das Gefühl berühren. Seine oft weit ausgreifende, fließende Lyrik übersteigt das Alltägliche und dringt in die Bereiche des Ätherischen und Esoterischen vor. Enaches Erzähltechnik folgt dem Bewusstseinsstrom und fängt das Flüchtige und Vergängliche menschlicher Erfahrung ein.',
+          'Enaches erster Gedichtband, „BEYOND THE REAL“, machte die Leser mit seinem einzigartigen poetisch-philosophischen Stil bekannt — einer Verbindung aus Romantik, mystischen Betrachtungen, existenziellen Gedanken und onirischen Elementen. Dieses Werk gab den Ton für seine weiteren Bände vor, in denen seine Stimme zu einer harmonischen Verbindung des Magischen und des Philosophischen, des Melancholischen und des Mystischen reifte.',
+        ],
+      },
+      {
+        id: 'themes',
+        title: 'Themen und Wirkung',
+        paragraphs: [
+          'Enaches Lyrik durchziehen wiederkehrende Themen: die innere Erkundung, die Suche nach Wahrheit und die Spannung zwischen Individualität und gesellschaftlichen Normen. Sein Werk fordert die Leser auf, hinter die äußere Fassade der Wirklichkeit zu blicken, und lädt zu tiefer Selbstbetrachtung und zur Rückkehr zu sich selbst ein. Die Verbindung von Licht und Schatten, der Gegensatz von Illusion und Wirklichkeit und das Wechselspiel von Stille und Klang sind stets gegenwärtige Motive seines Schreibens.',
+          'Die philosophischen Grundlagen von Enaches Werk zeigen sich in seiner Auseinandersetzung mit modernen existenziellen Fragen, dem Überdruss des heutigen Lebens und der Suche nach Sinn in einem scheinbar gleichgültigen Universum. Auf einzigartige Weise verflicht er diese gewichtigen Themen mit einer Aura aus Mystik, Romantik und onirischer Esoterik, sodass seine Lyrik zugleich geistig anregend und bewegend ist.',
+        ],
+      },
+      {
+        id: 'legacy',
+        title: 'Vermächtnis',
+        paragraphs: [
+          'Dan Enache fesselt und inspiriert seine Leser weiterhin mit seinen betörend schönen, traumhaften Versen. Seine Beiträge zur rumänischen Literatur haben einen Raum geschaffen, in dem sich das Mystische und das Philosophische begegnen, und bieten eine tiefe, eigenständige Erkundung der menschlichen Existenz. Enaches Werk bezeugt die Kraft der Dichtung, das Sichtbare zu überschreiten, und lädt uns zu einer innigeren Verbindung mit den unsichtbaren, gefühlten, geträumten und vorgestellten Bereichen des Daseins ein.',
+        ],
+      },
+      {
+        id: 'conclusion',
+        title: 'Schluss',
+        paragraphs: [
+          'Dan Enache bleibt eine leuchtende Gestalt der rumänischen Lyrik; sein Werk ist ein schimmerndes Gewebe aus Magie, Melancholie, Mystik, onirischen Träumen und philosophischer Tiefe. Sein einzigartiger poetisch-philosophischer Stil weckt Gefühle und bewegt die Seele, sodass seine Stimme in der Literaturgeschichte weiterklingen und künftige Generationen einladen wird, ihn bei der Erkundung unendlicher innerer Landschaften zu begleiten.',
         ],
       },
     ],

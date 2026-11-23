@@ -46,7 +46,7 @@ export default function PoemAudioPlayer({
         controls
         preload="metadata"
         src={source}
-        aria-label={`${pick(language, 'Ascultă: ', 'Listen to: ', 'Écouter\u00a0: ')}${title}`}
+        aria-label={`${pick(language, 'Ascultă: ', 'Listen to: ', 'Écouter\u00a0: ', 'Anhören: ')}${title}`}
         aria-disabled={!source || undefined}
         aria-describedby={!source || failed ? `${id}-status` : undefined}
         onLoadedMetadata={() => {
@@ -65,8 +65,15 @@ export default function PoemAudioPlayer({
                 'Audio încărcat. Ascultă pentru a verifica înregistrarea.',
                 'Audio loaded. Play it to check the recording.',
                 'Audio chargé. Écoutez-le pour vérifier l’enregistrement.',
+                'Audio geladen. Spielen Sie es ab, um die Aufnahme zu prüfen.',
               )
-            : pick(language, 'Se verifică încărcarea audio…', 'Loading audio…', 'Chargement de l’audio…')}
+            : pick(
+                language,
+                'Se verifică încărcarea audio…',
+                'Loading audio…',
+                'Chargement de l’audio…',
+                'Audio wird geladen…',
+              )}
         </p>
       )}
       {!source && (
@@ -76,6 +83,7 @@ export default function PoemAudioPlayer({
             `Înregistrarea în ${recording === 'ro' ? 'română' : 'engleză'} nu a fost încă adăugată.`,
             `${recording === 'ro' ? 'A Romanian' : 'An English'} recording has not been added yet.`,
             `L’enregistrement en ${recording === 'ro' ? 'roumain' : 'anglais'} n’a pas encore été ajouté.`,
+            `Eine ${recording === 'ro' ? 'rumänische' : 'englische'} Aufnahme wurde noch nicht hinzugefügt.`,
           )}
         </p>
       )}
@@ -86,9 +94,10 @@ export default function PoemAudioPlayer({
             'Înregistrarea nu poate fi redată. Reîncearcă sau descarcă fișierul.',
             'This recording cannot be played. Try again or download the file.',
             'Cet enregistrement ne peut pas être lu. Réessayez ou téléchargez le fichier.',
+            'Diese Aufnahme kann nicht abgespielt werden. Versuchen Sie es erneut oder laden Sie die Datei herunter.',
           )}{' '}
           <a href={source} download>
-            {pick(language, 'Descarcă audio', 'Download audio', 'Télécharger l’audio')}
+            {pick(language, 'Descarcă audio', 'Download audio', 'Télécharger l’audio', 'Audio herunterladen')}
           </a>
         </p>
       )}

@@ -36,9 +36,10 @@ export function formatBookPrice(value: string | null | undefined, language: Site
   const stored = normalizeBookPrice(value);
   if (!stored) return null;
   const [amount, currency] = stored.split(' ');
-  return new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR'), { style: 'currency', currency }).format(
-    Number(amount),
-  );
+  return new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR', 'de-DE'), {
+    style: 'currency',
+    currency,
+  }).format(Number(amount));
 }
 
 /** The formatted price split for display with raised cents: "$", "10", "00", "". */
@@ -46,7 +47,7 @@ export function bookPriceDisplay(value: string | null | undefined, language: Sit
   const stored = normalizeBookPrice(value);
   if (!stored) return null;
   const [amount, currency] = stored.split(' ');
-  const parts = new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR'), {
+  const parts = new Intl.NumberFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR', 'de-DE'), {
     style: 'currency',
     currency,
   }).formatToParts(Number(amount));

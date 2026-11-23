@@ -20,6 +20,13 @@ const frenchStatus: Record<OrderStatus, string> = {
   delivered: 'Livrée',
   cancelled: 'Annulée',
 };
+const germanStatus: Record<OrderStatus, string> = {
+  new: 'Eingegangen',
+  confirmed: 'Bestätigt',
+  shipped: 'Versandt',
+  delivered: 'Zugestellt',
+  cancelled: 'Storniert',
+};
 
 export default function OrderView({
   initialLanguage,
@@ -35,7 +42,7 @@ export default function OrderView({
   const [language, changeLanguage] = useShopLanguage(initialLanguage);
   const money = (cents: number) => formatMoney(cents, order.currency, language);
   const open = order.status === 'new' || order.status === 'confirmed';
-  const placed = new Intl.DateTimeFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR'), {
+  const placed = new Intl.DateTimeFormat(pick(language, 'ro-RO', 'en-US', 'fr-FR', 'de-DE'), {
     dateStyle: 'long',
     timeStyle: 'short',
     timeZone: 'Europe/Bucharest',
@@ -57,6 +64,7 @@ export default function OrderView({
               `Comanda nr. ${order.number} a fost anulată.`,
               `Order no. ${order.number} was cancelled.`,
               `La commande n°\u00a0${order.number} a été annulée.`,
+              `Bestellung Nr. ${order.number} wurde storniert.`,
             )}
           </p>
         ) : (
@@ -66,6 +74,7 @@ export default function OrderView({
               `Mulțumim! Comanda nr. ${order.number} a fost înregistrată.`,
               `Thank you! Order no. ${order.number} has been placed.`,
               `Merci\u00a0! La commande n°\u00a0${order.number} a bien été passée.`,
+              `Vielen Dank! Bestellung Nr. ${order.number} ist eingegangen.`,
             )}
           </p>
         )}
@@ -75,18 +84,27 @@ export default function OrderView({
             `Comanda nr. ${order.number}`,
             `Order no. ${order.number}`,
             `Commande n°\u00a0${order.number}`,
+            `Bestellung Nr. ${order.number}`,
           )}
         </h1>
         <dl className="shop-details">
-          <dt>{pick(language, 'Plasată', 'Placed', 'Passée le')}</dt>
+          <dt>{pick(language, 'Plasată', 'Placed', 'Passée le', 'Aufgegeben am')}</dt>
           <dd>{placed}</dd>
-          <dt>{pick(language, 'Stare', 'Status', 'Statut')}</dt>
+          <dt>{pick(language, 'Stare', 'Status', 'Statut', 'Status')}</dt>
           <dd>
-            <strong>{pick(language, statusLabel, englishStatus, frenchStatus)[order.status]}</strong>
+            <strong>{pick(language, statusLabel, englishStatus, frenchStatus, germanStatus)[order.status]}</strong>
           </dd>
           {open && (
             <>
-              <dt>{pick(language, 'Livrare estimată', 'Estimated delivery', 'Livraison estimée')}</dt>
+              <dt>
+                {pick(
+                  language,
+                  'Livrare estimată',
+                  'Estimated delivery',
+                  'Livraison estimée',
+                  'Voraussichtliche Lieferung',
+                )}
+              </dt>
               <dd>
                 {delivery[language]}
                 {order.payment_method === 'transfer' &&
@@ -95,11 +113,12 @@ export default function OrderView({
                     ' (după primirea plății)',
                     ' (after the payment arrives)',
                     ' (après réception du paiement)',
+                    ' (nach Zahlungseingang)',
                   )}
               </dd>
             </>
           )}
-          <dt>{pick(language, 'Plată', 'Payment', 'Paiement')}</dt>
+          <dt>{pick(language, 'Plată', 'Payment', 'Paiement', 'Zahlung')}</dt>
           <dd>{paymentLabel(order.payment_method, language)}</dd>
         </dl>
         <p className="shop-note">
@@ -108,31 +127,40 @@ export default function OrderView({
             'Păstrează linkul acestei pagini: îl poți deschide oricând pentru a vedea starea comenzii.',
             'Keep the link to this page: you can open it any time to see the status of your order.',
             'Conservez le lien de cette page\u00a0: vous pouvez l’ouvrir à tout moment pour suivre votre commande.',
+            'Bewahren Sie den Link zu dieser Seite auf: Sie können ihn jederzeit öffnen, um den Status Ihrer Bestellung zu sehen.',
           )}
         </p>
 
         {open && order.payment_method === 'transfer' && (
           <section className="shop-panel" aria-labelledby="payment-title">
             <h2 id="payment-title">
-              {pick(language, 'Plata prin transfer bancar', 'Bank transfer', 'Virement bancaire')}
+              {pick(language, 'Plata prin transfer bancar', 'Bank transfer', 'Virement bancaire', 'Banküberweisung')}
             </h2>
             <dl className="shop-details">
-              <dt>{pick(language, 'Beneficiar', 'Beneficiary', 'Bénéficiaire')}</dt>
+              <dt>{pick(language, 'Beneficiar', 'Beneficiary', 'Bénéficiaire', 'Empfänger')}</dt>
               <dd>{shop.transfer_beneficiary || shop.seller_name}</dd>
               <dt>IBAN</dt>
               <dd className="shop-iban">{shop.transfer_iban.replace(/(.{4})/g, '$1 ').trim()}</dd>
               {shop.transfer_bank && (
                 <>
-                  <dt>{pick(language, 'Banca', 'Bank', 'Banque')}</dt>
+                  <dt>{pick(language, 'Banca', 'Bank', 'Banque', 'Bank')}</dt>
                   <dd>{shop.transfer_bank}</dd>
                 </>
               )}
-              <dt>{pick(language, 'Suma', 'Amount', 'Montant')}</dt>
+              <dt>{pick(language, 'Suma', 'Amount', 'Montant', 'Betrag')}</dt>
               <dd>
                 <strong>{money(order.total_cents)}</strong>
               </dd>
-              <dt>{pick(language, 'Detalii plată', 'Reference', 'Référence')}</dt>
-              <dd>{pick(language, `Comanda ${order.number}`, `Order ${order.number}`, `Commande ${order.number}`)}</dd>
+              <dt>{pick(language, 'Detalii plată', 'Reference', 'Référence', 'Verwendungszweck')}</dt>
+              <dd>
+                {pick(
+                  language,
+                  `Comanda ${order.number}`,
+                  `Order ${order.number}`,
+                  `Commande ${order.number}`,
+                  `Bestellung ${order.number}`,
+                )}
+              </dd>
             </dl>
             <p className="shop-note">
               {pick(
@@ -140,6 +168,7 @@ export default function OrderView({
                 'Expediem cărțile după ce plata ajunge în cont.',
                 'We ship the books once the payment reaches the account.',
                 'Nous expédions les livres dès que le paiement est crédité sur le compte.',
+                'Wir versenden die Bücher, sobald die Zahlung auf dem Konto eingegangen ist.',
               )}
             </p>
           </section>
@@ -151,11 +180,12 @@ export default function OrderView({
               `Plătești ${money(order.total_cents)} curierului, când primești coletul.`,
               `You pay ${money(order.total_cents)} to the courier when the parcel arrives.`,
               `Vous payez ${money(order.total_cents)} au livreur à la réception du colis.`,
+              `Sie zahlen ${money(order.total_cents)} bei Lieferung an den Kurier.`,
             )}
           </p>
         )}
 
-        <h2>{pick(language, 'Produse', 'Items', 'Articles')}</h2>
+        <h2>{pick(language, 'Produse', 'Items', 'Articles', 'Artikel')}</h2>
         <ul className="shop-lines">
           {lines.map(line => (
             <ShopLine key={`${line.book_id}:${line.cover}`} line={line} language={language} heading="h3" />
@@ -165,7 +195,7 @@ export default function OrderView({
           <ShopTotals quote={{ ...order, lines }} language={language} />
         </div>
 
-        <h2>{pick(language, 'Livrare la', 'Delivery to', 'Livraison à')}</h2>
+        <h2>{pick(language, 'Livrare la', 'Delivery to', 'Livraison à', 'Lieferung an')}</h2>
         <p>
           {order.customer_name}
           <br />
@@ -177,7 +207,13 @@ export default function OrderView({
         </p>
 
         <h2>
-          {pick(language, 'Întrebări despre comandă', 'Questions about your order', 'Questions sur votre commande')}
+          {pick(
+            language,
+            'Întrebări despre comandă',
+            'Questions about your order',
+            'Questions sur votre commande',
+            'Fragen zu Ihrer Bestellung',
+          )}
         </h2>
         <p>
           {shop.seller_name}
@@ -198,7 +234,7 @@ export default function OrderView({
         </p>
         <p>
           <a href={withSiteLanguage('/carti', language)}>
-            {pick(language, 'Înapoi la cărți', 'Back to the books', 'Retour aux livres')}
+            {pick(language, 'Înapoi la cărți', 'Back to the books', 'Retour aux livres', 'Zurück zu den Büchern')}
           </a>
         </p>
       </div>

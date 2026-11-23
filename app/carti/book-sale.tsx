@@ -72,7 +72,7 @@ export default function BookSale({
   const soldOut = stock === 0;
   const maxQuantity = Math.max(1, Math.min(MAX_ITEM_QUANTITY, stock ?? MAX_ITEM_QUANTITY));
   const shipping = amountCents(shop.shipping_amount) ?? 0;
-  const bookLanguageName = BOOK_LANGUAGES[bookLanguage]?.[pick(language, 'ro', 'en', 'fr')];
+  const bookLanguageName = BOOK_LANGUAGES[bookLanguage]?.[pick(language, 'ro', 'en', 'fr', 'de')];
   const readHref = withSiteLanguage(`/carti/${book.id}`, language);
 
   useEffect(() => {
@@ -103,8 +103,8 @@ export default function BookSale({
   }
   const variantLabel = (item: (typeof variants)[number]) =>
     variants.length > 1
-      ? `${pick(language, 'Coperta', 'Cover', 'Couverture')} ${item.cover}`
-      : pick(language, 'Carte tipărită', 'Printed book', 'Livre imprimé');
+      ? `${pick(language, 'Coperta', 'Cover', 'Couverture', 'Umschlag')} ${item.cover}`
+      : pick(language, 'Carte tipărită', 'Printed book', 'Livre imprimé', 'Gedrucktes Buch');
   function add() {
     if (!variant) return;
     addToCart({ book_id: book.id, cover: variant.cover, quantity });
@@ -117,7 +117,7 @@ export default function BookSale({
       )
     : '#';
   const stockLine = soldOut
-    ? { className: 'shop-stock-out', text: pick(language, 'Stoc epuizat', 'Out of stock', 'Épuisé') }
+    ? { className: 'shop-stock-out', text: pick(language, 'Stoc epuizat', 'Out of stock', 'Épuisé', 'Nicht vorrätig') }
     : stock !== null && stock <= 5
       ? {
           className: 'shop-stock-low',
@@ -126,9 +126,10 @@ export default function BookSale({
             `Doar ${stock} ${stock === 1 ? 'exemplar' : 'exemplare'} în stoc`,
             `Only ${stock} left in stock`,
             `Plus que ${stock} en stock`,
+            `Nur noch ${stock} auf Lager`,
           ),
         }
-      : { className: 'shop-stock-in', text: pick(language, 'În stoc', 'In stock', 'En stock') };
+      : { className: 'shop-stock-in', text: pick(language, 'În stoc', 'In stock', 'En stock', 'Auf Lager') };
 
   return (
     <>
@@ -139,28 +140,33 @@ export default function BookSale({
       <main id="main" className="book-sale shell" lang={language}>
         <div className="shop-bar">
           <a className="book-back" href={readHref}>
-            ← {pick(language, 'Înapoi la carte', 'Back to the book', 'Retour au livre')}
+            ← {pick(language, 'Înapoi la carte', 'Back to the book', 'Retour au livre', 'Zurück zum Buch')}
           </a>
           <CartLink language={language} />
         </div>
         <div className="book-sale-layout">
           <header className="book-sale-heading">
-            <h1 className="book-sale-title">{book.title || pick(language, 'Fără titlu', 'Untitled', 'Sans titre')}</h1>
+            <h1 className="book-sale-title">
+              {book.title || pick(language, 'Fără titlu', 'Untitled', 'Sans titre', 'Ohne Titel')}
+            </h1>
             <p className="book-sale-byline">
               {book.author && (
                 <>
-                  {pick(language, 'de', 'by', 'de')} <strong>{book.author}</strong> (
-                  {pick(language, 'Autor', 'Author', 'Auteur')})
+                  {pick(language, 'de', 'by', 'de', 'von')} <strong>{book.author}</strong> (
+                  {pick(language, 'Autor', 'Author', 'Auteur', 'Autor')})
                   <span className="book-sale-divider" aria-hidden="true" />
                 </>
               )}
               Format:{' '}
               <span className="book-sale-format-name">
-                {pick(language, 'Carte tipărită', 'Printed book', 'Livre imprimé')}
+                {pick(language, 'Carte tipărită', 'Printed book', 'Livre imprimé', 'Gedrucktes Buch')}
               </span>
             </p>
           </header>
-          <section className="book-sale-gallery" aria-label={pick(language, 'Coperți', 'Covers', 'Couvertures')}>
+          <section
+            className="book-sale-gallery"
+            aria-label={pick(language, 'Coperți', 'Covers', 'Couvertures', 'Umschläge')}
+          >
             {selected ? (
               <img
                 key={selected.id}
@@ -169,7 +175,7 @@ export default function BookSale({
                 sizes="(max-width: 760px) 72vw, 300px"
                 width={300}
                 height={400}
-                alt={`${pick(language, 'Coperta', 'Cover', 'Couverture')} ${selected.cover}: ${book.title}`}
+                alt={`${pick(language, 'Coperta', 'Cover', 'Couverture', 'Umschlag')} ${selected.cover}: ${book.title}`}
               />
             ) : (
               <span className="book-cover book-cover-placeholder book-sale-cover">
@@ -182,14 +188,20 @@ export default function BookSale({
               <div
                 className="book-sale-thumbs"
                 role="group"
-                aria-label={pick(language, 'Alege coperta', 'Choose a cover', 'Choisissez une couverture')}
+                aria-label={pick(
+                  language,
+                  'Alege coperta',
+                  'Choose a cover',
+                  'Choisissez une couverture',
+                  'Wählen Sie einen Umschlag',
+                )}
               >
                 {covers.map(item => (
                   <button
                     key={item.cover}
                     type="button"
                     aria-pressed={item.cover === selected?.cover}
-                    aria-label={`${pick(language, 'Coperta', 'Cover', 'Couverture')} ${item.cover}`}
+                    aria-label={`${pick(language, 'Coperta', 'Cover', 'Couverture', 'Umschlag')} ${item.cover}`}
                     onClick={() => choose(item.cover)}
                   >
                     <img src={`/api/images/${item.id}?w=320`} width={60} height={80} alt="" />
@@ -198,7 +210,7 @@ export default function BookSale({
               </div>
             )}
             <a className="book-sale-pill book-sale-sample" href={readHref}>
-              {pick(language, 'Citește un fragment', 'Read sample', 'Lire un extrait')}
+              {pick(language, 'Citește un fragment', 'Read sample', 'Lire un extrait', 'Leseprobe')}
             </a>
           </section>
 
@@ -226,8 +238,8 @@ export default function BookSale({
                       <ChevronDown size={16} aria-hidden="true" />
                     )}
                     {expanded
-                      ? pick(language, 'Citește mai puțin', 'Read less', 'Réduire')
-                      : pick(language, 'Citește mai mult', 'Read more', 'Lire la suite')}
+                      ? pick(language, 'Citește mai puțin', 'Read less', 'Réduire', 'Weniger anzeigen')
+                      : pick(language, 'Citește mai mult', 'Read more', 'Lire la suite', 'Mehr lesen')}
                   </button>
                 )}
               </>
@@ -235,7 +247,7 @@ export default function BookSale({
             <dl className="book-sale-facts">
               {pages && (
                 <div>
-                  <dt>{pick(language, 'Lungime', 'Print length', 'Nombre de pages')}</dt>
+                  <dt>{pick(language, 'Lungime', 'Print length', 'Nombre de pages', 'Seitenzahl')}</dt>
                   <dd>
                     <FileText size={22} aria-hidden="true" />
                     <strong>
@@ -245,21 +257,30 @@ export default function BookSale({
                         pages === 1 ? 'pagină' : 'pagini',
                         pages === 1 ? 'page' : 'pages',
                         pages > 1 ? 'pages' : 'page',
+                        pages === 1 ? 'Seite' : 'Seiten',
                       )}
                     </strong>
                   </dd>
                 </div>
               )}
               <div>
-                <dt>{pick(language, 'Lectură', 'Reading', 'Lecture')}</dt>
+                <dt>{pick(language, 'Lectură', 'Reading', 'Lecture', 'Lesen')}</dt>
                 <dd>
                   <BookOpen size={22} aria-hidden="true" />
-                  <strong>{pick(language, 'Gratuit pe Poetio', 'Free on Poetio', 'Gratuit sur Poetio')}</strong>
+                  <strong>
+                    {pick(
+                      language,
+                      'Gratuit pe Poetio',
+                      'Free on Poetio',
+                      'Gratuit sur Poetio',
+                      'Kostenlos auf Poetio',
+                    )}
+                  </strong>
                 </dd>
               </div>
               {bookLanguageName && (
                 <div>
-                  <dt>{pick(language, 'Limba', 'Language', 'Langue')}</dt>
+                  <dt>{pick(language, 'Limba', 'Language', 'Langue', 'Sprache')}</dt>
                   <dd>
                     <Languages size={22} aria-hidden="true" />
                     <strong>{bookLanguageName}</strong>
@@ -269,13 +290,13 @@ export default function BookSale({
             </dl>
           </section>
 
-          <aside className="book-sale-buy" aria-label={pick(language, 'Cumpărare', 'Purchase', 'Achat')}>
+          <aside className="book-sale-buy" aria-label={pick(language, 'Cumpărare', 'Purchase', 'Achat', 'Kauf')}>
             {variant ? (
               <>
                 <div
                   className="book-sale-formats"
                   role="group"
-                  aria-label={pick(language, 'Variante', 'Formats', 'Formats')}
+                  aria-label={pick(language, 'Variante', 'Formats', 'Formats', 'Formate')}
                 >
                   {variants.map(item => (
                     <button
@@ -301,6 +322,7 @@ export default function BookSale({
                   'Cartea nu este încă de vânzare.',
                   'This book is not for sale yet.',
                   'Ce livre n’est pas encore en vente.',
+                  'Dieses Buch ist noch nicht erhältlich.',
                 )}
               </p>
             )}
@@ -313,19 +335,26 @@ export default function BookSale({
                         `+ ${formatMoney(shipping, shop.currency, language)} livrare`,
                         `+ ${formatMoney(shipping, shop.currency, language)} delivery`,
                         `+ ${formatMoney(shipping, shop.currency, language)} de livraison`,
+                        `+ ${formatMoney(shipping, shop.currency, language)} Versand`,
                       )
-                    : pick(language, 'Livrare gratuită', 'Free delivery', 'Livraison gratuite')}
+                    : pick(language, 'Livrare gratuită', 'Free delivery', 'Livraison gratuite', 'Kostenloser Versand')}
                 </p>
                 {!soldOut && (
                   <p className="book-sale-delivery">
-                    {pick(language, 'Livrare estimată: ', 'Estimated delivery: ', 'Livraison estimée\u00a0: ')}
+                    {pick(
+                      language,
+                      'Livrare estimată: ',
+                      'Estimated delivery: ',
+                      'Livraison estimée\u00a0: ',
+                      'Voraussichtliche Lieferung: ',
+                    )}
                     <strong>{delivery[language]}</strong>
                   </p>
                 )}
                 <p className={`shop-stock ${stockLine.className}`}>{stockLine.text}</p>
                 {!soldOut && (
                   <label className="shop-quantity">
-                    {pick(language, 'Cantitate:', 'Quantity:', 'Quantité\u00a0:')}
+                    {pick(language, 'Cantitate:', 'Quantity:', 'Quantité\u00a0:', 'Menge:')}
                     <select
                       value={quantity}
                       onChange={event => {
@@ -342,38 +371,44 @@ export default function BookSale({
                   </label>
                 )}
                 <button type="button" className="shop-button" disabled={soldOut} onClick={add}>
-                  {pick(language, 'Adaugă în coș', 'Add to cart', 'Ajouter au panier')}
+                  {pick(language, 'Adaugă în coș', 'Add to cart', 'Ajouter au panier', 'In den Warenkorb')}
                 </button>
                 {soldOut ? (
                   <button type="button" className="shop-button shop-button-orange" disabled>
-                    {pick(language, 'Cumpără acum', 'Buy now', 'Acheter maintenant')}
+                    {pick(language, 'Cumpără acum', 'Buy now', 'Acheter maintenant', 'Jetzt kaufen')}
                   </button>
                 ) : (
                   <a className="shop-button shop-button-orange" href={buyNowHref}>
-                    {pick(language, 'Cumpără acum', 'Buy now', 'Acheter maintenant')}
+                    {pick(language, 'Cumpără acum', 'Buy now', 'Acheter maintenant', 'Jetzt kaufen')}
                   </a>
                 )}
                 <p role="status" className="shop-status">
                   {added && (
                     <>
-                      {pick(language, 'Adăugat în coș. ', 'Added to cart. ', 'Ajouté au panier. ')}
+                      {pick(
+                        language,
+                        'Adăugat în coș. ',
+                        'Added to cart. ',
+                        'Ajouté au panier. ',
+                        'In den Warenkorb gelegt. ',
+                      )}
                       <a href={withSiteLanguage('/cos', language)}>
-                        {pick(language, 'Vezi coșul', 'View cart', 'Voir le panier')}
+                        {pick(language, 'Vezi coșul', 'View cart', 'Voir le panier', 'Warenkorb ansehen')}
                       </a>
                     </>
                   )}
                 </p>
                 <dl className="book-sale-terms">
                   <div>
-                    <dt>{pick(language, 'Expediat de', 'Ships from', 'Expédié depuis')}</dt>
+                    <dt>{pick(language, 'Expediat de', 'Ships from', 'Expédié depuis', 'Versand aus')}</dt>
                     <dd>{shop.seller_name}</dd>
                   </div>
                   <div>
-                    <dt>{pick(language, 'Vândut de', 'Sold by', 'Vendu par')}</dt>
+                    <dt>{pick(language, 'Vândut de', 'Sold by', 'Vendu par', 'Verkauft von')}</dt>
                     <dd>{shop.seller_name}</dd>
                   </div>
                   <div>
-                    <dt>{pick(language, 'Retur', 'Returns', 'Retours')}</dt>
+                    <dt>{pick(language, 'Retur', 'Returns', 'Retours', 'Rückgabe')}</dt>
                     <dd>
                       <a href={withSiteLanguage('/termeni#retur', language)}>
                         {pick(
@@ -381,12 +416,13 @@ export default function BookSale({
                           '14 zile de la primire',
                           'Within 14 days of receipt',
                           'Sous 14\u00a0jours après réception',
+                          'Innerhalb von 14 Tagen nach Erhalt',
                         )}
                       </a>
                     </dd>
                   </div>
                   <div>
-                    <dt>{pick(language, 'Plată', 'Payment', 'Paiement')}</dt>
+                    <dt>{pick(language, 'Plată', 'Payment', 'Paiement', 'Zahlung')}</dt>
                     <dd>{shop.payment_methods.map(method => paymentLabel(method, language)).join(' · ')}</dd>
                   </div>
                 </dl>
@@ -400,25 +436,33 @@ export default function BookSale({
                         'Comenzile online se deschid în curând.',
                         'Online orders open soon.',
                         'Les commandes en ligne ouvrent bientôt.',
+                        'Online-Bestellungen sind bald möglich.',
                       )
                     : pick(
                         language,
                         'O poți citi gratuit pe Poetio.',
                         'You can read it free on Poetio.',
                         'Vous pouvez le lire gratuitement sur Poetio.',
+                        'Sie können es kostenlos auf Poetio lesen.',
                       )}
                 </p>
                 <a className="book-sale-pill book-sale-read" href={readHref}>
-                  {pick(language, 'Citește gratuit pe Poetio', 'Read free on Poetio', 'Lire gratuitement sur Poetio')}
+                  {pick(
+                    language,
+                    'Citește gratuit pe Poetio',
+                    'Read free on Poetio',
+                    'Lire gratuitement sur Poetio',
+                    'Kostenlos auf Poetio lesen',
+                  )}
                 </a>
               </>
             )}
             <button type="button" className="book-sale-share" onClick={() => void copyLink()}>
               <Link2 size={18} aria-hidden="true" />
-              {pick(language, 'Copiază linkul', 'Copy link', 'Copier le lien')}
+              {pick(language, 'Copiază linkul', 'Copy link', 'Copier le lien', 'Link kopieren')}
             </button>
             <span role="status" className="book-sale-status">
-              {copied ? pick(language, 'Link copiat.', 'Link copied.', 'Lien copié.') : ''}
+              {copied ? pick(language, 'Link copiat.', 'Link copied.', 'Lien copié.', 'Link kopiert.') : ''}
             </span>
           </aside>
         </div>

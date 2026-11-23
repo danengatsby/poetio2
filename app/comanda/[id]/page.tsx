@@ -12,7 +12,13 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const language = await requestLanguage();
   return {
-    title: pick(language, 'Comanda ta — Poetio', 'Your order — Poetio', 'Votre commande — Poetio'),
+    title: pick(
+      language,
+      'Comanda ta — Poetio',
+      'Your order — Poetio',
+      'Votre commande — Poetio',
+      'Ihre Bestellung — Poetio',
+    ),
     robots: { index: false, follow: false },
     // The link carries the order key; keep it out of other sites' logs.
     referrer: 'no-referrer',
@@ -39,6 +45,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
         ro: deliveryWindow(placed, settings, 'ro'),
         'en-US': deliveryWindow(placed, settings, 'en-US'),
         fr: deliveryWindow(placed, settings, 'fr'),
+        de: deliveryWindow(placed, settings, 'de'),
       }}
     />
   );

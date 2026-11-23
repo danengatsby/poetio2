@@ -16,6 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'Termeni și condiții — Poetio',
       'Terms and conditions — Poetio',
       'Conditions générales de vente — Poetio',
+      'AGB — Poetio',
     ),
   };
 }

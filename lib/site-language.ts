@@ -2,24 +2,25 @@ import type { SiteLanguage } from './poem-types';
 
 export const SITE_LANGUAGE_COOKIE = 'poetio-language';
 export const SITE_LANGUAGE_HEADER = 'x-poetio-language';
-export const SITE_LANGUAGES: SiteLanguage[] = ['ro', 'en-US', 'fr'];
+export const SITE_LANGUAGES: SiteLanguage[] = ['ro', 'en-US', 'fr', 'de'];
 
-const isSiteLanguage = (value: unknown): value is SiteLanguage => value === 'ro' || value === 'en-US' || value === 'fr';
+const isSiteLanguage = (value: unknown): value is SiteLanguage =>
+  value === 'ro' || value === 'en-US' || value === 'fr' || value === 'de';
 
 export function siteLanguage(value?: string | null, preference?: string | null): SiteLanguage {
   if (isSiteLanguage(value)) return value;
   return isSiteLanguage(preference) ? preference : 'ro';
 }
 
-/** The Romanian, American English or French text, for the site's language. */
-export function pick<T>(language: SiteLanguage, ro: T, en: T, fr: T): T {
-  return language === 'ro' ? ro : language === 'fr' ? fr : en;
+/** The Romanian, American English, French or German text, for the site's language. */
+export function pick<T>(language: SiteLanguage, ro: T, en: T, fr: T, de: T): T {
+  return language === 'ro' ? ro : language === 'fr' ? fr : language === 'de' ? de : en;
 }
 
 /** Locale for dates and numbers. */
-export const siteLocale = (language: SiteLanguage) => pick(language, 'ro', 'en-US', 'fr-FR');
+export const siteLocale = (language: SiteLanguage) => pick(language, 'ro', 'en-US', 'fr-FR', 'de-DE');
 /** Open Graph locale. */
-export const ogLocale = (language: SiteLanguage) => pick(language, 'ro_RO', 'en_US', 'fr_FR');
+export const ogLocale = (language: SiteLanguage) => pick(language, 'ro_RO', 'en_US', 'fr_FR', 'de_DE');
 
 export function withSiteLanguage(href: string, language: SiteLanguage) {
   const url = new URL(href, 'https://poetio.invalid');
@@ -154,5 +155,42 @@ export const siteCopy = {
     count: (n: number) => `${n} ${n <= 1 ? 'poème' : 'poèmes'}`,
     lineCount: (n: number) => `${n} vers`,
     readBy: (title: string, author: string) => `Lire «\u00a0${title}\u00a0», de ${author}`,
+  },
+  de: {
+    skip: 'Zu den Gedichten springen',
+    home: 'Poetio — Startseite',
+    note: 'Eine unabhängige Gedichtsammlung',
+    navigation: 'Hauptnavigation',
+    administration: 'Verwaltung',
+    poems: 'Gedichte',
+    author: 'Autor',
+    tagline: 'Worte für die Augenblicke dazwischen',
+    edition: 'Eine kleine Sammlung · Nr.\u00a001',
+    takeTime: 'Nehmen Sie sich Zeit',
+    collection: 'Die Sammlung',
+    slowly: 'Manches liest man besser langsam.',
+    poetry: 'Lyrik',
+    empty: 'Das nächste Gedicht wartet noch darauf, geschrieben zu werden.',
+    addFirst: 'Das erste Gedicht hinzufügen',
+    closing: 'Lassen Sie ein wenig Raum',
+    closingFor: 'für',
+    unwritten: 'das Ungeschriebene.',
+    footer: 'Ein Moment zum Durchatmen.',
+    back: 'Nach oben',
+    close: 'Gedicht schließen',
+    previous: '← Vorheriges',
+    next: 'Nächstes Gedicht →',
+    poemLanguage: 'Sprache des Gedichts',
+    originalRomanian: 'Rumänisches Original',
+    originalEnglish: 'Englisches Original',
+    missing: 'Die deutsche Fassung wurde noch nicht hinzugefügt.',
+    readOriginal: 'Original lesen',
+    addTranslation: 'Die deutsche Fassung in der Verwaltung hinzufügen',
+    unavailableTitle: 'Die Gedichte kommen wieder.',
+    unavailable: 'Die Sammlung konnte nicht geladen werden. Versuchen Sie es gleich noch einmal.',
+    retry: 'Erneut versuchen',
+    count: (n: number) => `${n} ${n === 1 ? 'Gedicht' : 'Gedichte'}`,
+    lineCount: (n: number) => `${n} ${n === 1 ? 'Vers' : 'Verse'}`,
+    readBy: (title: string, author: string) => `„${title}“ von ${author} lesen`,
   },
 };

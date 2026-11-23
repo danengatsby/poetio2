@@ -109,6 +109,24 @@
     padding: 0.4rem 0.5rem;
   }
 }
+/* Four languages do not fit beside the wordmark on a phone: they get a row of their own. */
+@media (max-width: 440px) {
+  .public-header {
+    grid-template-columns: 1fr auto;
+  }
+  .public-header > .site-options {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .public-header > .site-language-menu {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: start;
+  }
+  .public-header .header-nav {
+    grid-row: 3;
+  }
+}
 @media (max-width: 360px) {
   .public-header {
     column-gap: 0.4rem;

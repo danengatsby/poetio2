@@ -86,14 +86,14 @@ export default function BookTextView({ previewText, fileId, page, language, size
       <div
         className="book-text-tools"
         role="group"
-        aria-label={pick(language, 'Dimensiunea textului', 'Text size', 'Taille du texte')}
+        aria-label={pick(language, 'Dimensiunea textului', 'Text size', 'Taille du texte', 'Textgröße')}
       >
         <button
           className="secondary-button"
           type="button"
           onClick={() => onSizeChange(Math.max(bookTextSize.min, size - bookTextSize.step))}
           disabled={size <= bookTextSize.min}
-          aria-label={pick(language, 'Micșorează textul', 'Decrease text size', 'Réduire le texte')}
+          aria-label={pick(language, 'Micșorează textul', 'Decrease text size', 'Réduire le texte', 'Text verkleinern')}
         >
           A−
         </button>
@@ -103,7 +103,7 @@ export default function BookTextView({ previewText, fileId, page, language, size
           type="button"
           onClick={() => onSizeChange(Math.min(bookTextSize.max, size + bookTextSize.step))}
           disabled={size >= bookTextSize.max}
-          aria-label={pick(language, 'Mărește textul', 'Increase text size', 'Agrandir le texte')}
+          aria-label={pick(language, 'Mărește textul', 'Increase text size', 'Agrandir le texte', 'Text vergrößern')}
         >
           A+
         </button>
@@ -115,7 +115,13 @@ export default function BookTextView({ previewText, fileId, page, language, size
           void search(query);
         }}
         role="search"
-        aria-label={pick(language, 'Caută în carte', 'Search this book', 'Rechercher dans ce livre')}
+        aria-label={pick(
+          language,
+          'Caută în carte',
+          'Search this book',
+          'Rechercher dans ce livre',
+          'In diesem Buch suchen',
+        )}
       >
         <label>
           {previewText
@@ -124,8 +130,15 @@ export default function BookTextView({ previewText, fileId, page, language, size
                 'Caută în pagina previzualizată',
                 'Search the previewed page',
                 'Rechercher dans la page affichée',
+                'Auf der angezeigten Seite suchen',
               )
-            : pick(language, 'Caută în textul cărții', 'Search the book text', 'Rechercher dans le texte du livre')}
+            : pick(
+                language,
+                'Caută în textul cărții',
+                'Search the book text',
+                'Rechercher dans le texte du livre',
+                'Im Buchtext suchen',
+              )}
           <input
             type="search"
             minLength={2}
@@ -136,7 +149,7 @@ export default function BookTextView({ previewText, fileId, page, language, size
           />
         </label>
         <button className="secondary-button" disabled={busy} type="submit">
-          {pick(language, 'Caută', 'Search', 'Rechercher')}
+          {pick(language, 'Caută', 'Search', 'Rechercher', 'Suchen')}
         </button>
         {busy && (
           <button
@@ -147,7 +160,7 @@ export default function BookTextView({ previewText, fileId, page, language, size
               setBusy(false);
             }}
           >
-            {pick(language, 'Oprește căutarea', 'Stop searching', 'Arrêter la recherche')}
+            {pick(language, 'Oprește căutarea', 'Stop searching', 'Arrêter la recherche', 'Suche beenden')}
           </button>
         )}
       </form>
@@ -159,10 +172,11 @@ export default function BookTextView({ previewText, fileId, page, language, size
               'Căutarea nu poate fi încărcată momentan. Textul paginii rămâne disponibil.',
               'Search could not be loaded. You can still read the current page.',
               'La recherche n’a pas pu être chargée. Vous pouvez toujours lire la page actuelle.',
+              'Die Suche konnte nicht geladen werden. Sie können die aktuelle Seite weiterhin lesen.',
             )}
           </p>
           <button type="button" className="secondary-button" onClick={() => void search(searched)}>
-            {pick(language, 'Reîncearcă', 'Try again', 'Réessayer')}
+            {pick(language, 'Reîncearcă', 'Try again', 'Réessayer', 'Erneut versuchen')}
           </button>
         </div>
       )}
@@ -175,6 +189,7 @@ export default function BookTextView({ previewText, fileId, page, language, size
                   `Se pregătește căutarea: ${result.scanned} din ${result.pages} pagini. ${result.total} pagini găsite până acum.`,
                   `Preparing search: ${result.scanned} of ${result.pages} pages. ${result.total} matching pages so far.`,
                   `Préparation de la recherche\u00a0: ${result.scanned} pages sur ${result.pages}. ${result.total} pages correspondantes pour l’instant.`,
+                  `Suche wird vorbereitet: ${result.scanned} von ${result.pages} Seiten. Bisher ${result.total} passende Seiten.`,
                 )
               : result.status === 'error'
                 ? pick(
@@ -182,12 +197,14 @@ export default function BookTextView({ previewText, fileId, page, language, size
                     'Pregătirea căutării s-a întrerupt. Rezultatele sunt incomplete.',
                     'Search preparation stopped. Results are incomplete.',
                     'Préparation de la recherche interrompue. Les résultats sont incomplets.',
+                    'Vorbereitung der Suche abgebrochen. Die Ergebnisse sind unvollständig.',
                   )
                 : pick(
                     language,
                     `${result.total} pagini găsite.`,
                     `${result.total} matching pages.`,
                     `${result.total} pages correspondantes.`,
+                    `${result.total} passende Seiten.`,
                   )}
           </p>
           {result.unavailable > 0 && (
@@ -197,6 +214,7 @@ export default function BookTextView({ previewText, fileId, page, language, size
                 `Text indisponibil pentru ${result.unavailable} pagini; rezultatele sunt incomplete.`,
                 `Text unavailable for ${result.unavailable} pages; results are incomplete.`,
                 `Texte indisponible pour ${result.unavailable} pages\u00a0; les résultats sont incomplets.`,
+                `Text für ${result.unavailable} Seiten nicht verfügbar; die Ergebnisse sind unvollständig.`,
               )}
             </p>
           )}
@@ -207,6 +225,7 @@ export default function BookTextView({ previewText, fileId, page, language, size
                 'Reîncearcă paginile indisponibile',
                 'Retry unavailable pages',
                 'Réessayer les pages indisponibles',
+                'Nicht verfügbare Seiten erneut laden',
               )}
             </button>
           )}
@@ -223,7 +242,7 @@ export default function BookTextView({ previewText, fileId, page, language, size
                   }}
                 >
                   <strong>
-                    {pick(language, 'Pagina', 'Page', 'Page')} {item.page}
+                    {pick(language, 'Pagina', 'Page', 'Page', 'Seite')} {item.page}
                   </strong>{' '}
                   — {item.excerpt}
                 </button>
@@ -231,14 +250,22 @@ export default function BookTextView({ previewText, fileId, page, language, size
             ))}
           </ol>
           {(result.offset > 0 || result.hasMore) && (
-            <nav aria-label={pick(language, 'Paginile rezultatelor', 'Search result pages', 'Pages de résultats')}>
+            <nav
+              aria-label={pick(
+                language,
+                'Paginile rezultatelor',
+                'Search result pages',
+                'Pages de résultats',
+                'Seiten der Suchergebnisse',
+              )}
+            >
               <button
                 type="button"
                 className="secondary-button"
                 disabled={busy || result.offset === 0}
                 onClick={() => void search(searched, Math.max(0, result.offset - 20))}
               >
-                {pick(language, 'Anterioarele', 'Previous results', 'Résultats précédents')}
+                {pick(language, 'Anterioarele', 'Previous results', 'Résultats précédents', 'Vorherige Ergebnisse')}
               </button>
               <button
                 type="button"
@@ -246,7 +273,7 @@ export default function BookTextView({ previewText, fileId, page, language, size
                 disabled={busy || !result.hasMore}
                 onClick={() => void search(searched, result.offset + 20)}
               >
-                {pick(language, 'Următoarele', 'Next results', 'Résultats suivants')}
+                {pick(language, 'Următoarele', 'Next results', 'Résultats suivants', 'Nächste Ergebnisse')}
               </button>
             </nav>
           )}
@@ -324,6 +351,7 @@ function TextPage({
             'Textul nu poate fi încărcat momentan. Reîncearcă sau consultă pagina originală.',
             'Text could not be loaded. Try again or use the original page.',
             'Le texte n’a pas pu être chargé. Réessayez ou utilisez la page originale.',
+            'Der Text konnte nicht geladen werden. Versuchen Sie es erneut oder nutzen Sie die Originalseite.',
           )}
         </p>
         <button
@@ -334,7 +362,7 @@ function TextPage({
             setRetry(value => value + 1);
           }}
         >
-          {pick(language, 'Reîncearcă textul', 'Retry text', 'Recharger le texte')}
+          {pick(language, 'Reîncearcă textul', 'Retry text', 'Recharger le texte', 'Text erneut laden')}
         </button>
       </div>
     );
@@ -346,6 +374,7 @@ function TextPage({
           'Se pregătește textul paginii… Pentru scanări poate dura mai mult.',
           'Preparing page text… Scanned pages may take longer.',
           'Préparation du texte de la page… Les pages numérisées peuvent prendre plus de temps.',
+          'Seitentext wird vorbereitet… Gescannte Seiten können länger dauern.',
         )}
       </p>
     );
@@ -367,7 +396,7 @@ function TextPageContent({
   return (
     <article className="book-text-page" aria-labelledby="book-text-heading">
       <h3 id="book-text-heading" tabIndex={-1}>
-        {pick(language, 'Pagina', 'Page', 'Page')} {page}
+        {pick(language, 'Pagina', 'Page', 'Page', 'Seite')} {page}
       </h3>
       <p className="book-reader-note">
         {data.reviewed
@@ -376,21 +405,30 @@ function TextPageContent({
               'Text verificat de administrator.',
               'Text reviewed by the administrator.',
               'Texte vérifié par l’administrateur.',
+              'Vom Administrator geprüfter Text.',
             )
           : data.source === 'edited'
-            ? pick(language, 'Transcriere neverificată.', 'Unreviewed transcription.', 'Transcription non vérifiée.')
+            ? pick(
+                language,
+                'Transcriere neverificată.',
+                'Unreviewed transcription.',
+                'Transcription non vérifiée.',
+                'Ungeprüfte Transkription.',
+              )
             : data.source === 'ocr'
               ? pick(
                   language,
                   'Text recunoscut automat din imagine, neverificat. Pot exista greșeli sau omisiuni.',
                   'Unreviewed text recognized from the image. Errors or omissions may remain.',
                   'Texte non vérifié, reconnu à partir de l’image. Il peut contenir des erreurs ou des omissions.',
+                  'Ungeprüfter, aus dem Bild erkannter Text. Fehler oder Auslassungen sind möglich.',
                 )
               : pick(
                   language,
                   'Text extras automat, neverificat. Ordinea de lectură poate necesita corectare.',
                   'Unreviewed extracted text. Reading order may need correction.',
                   'Texte extrait non vérifié. L’ordre de lecture peut nécessiter une correction.',
+                  'Ungeprüfter extrahierter Text. Die Lesereihenfolge muss eventuell korrigiert werden.',
                 )}
       </p>
       {data.text ? (
@@ -412,6 +450,7 @@ function TextPageContent({
             'Nu s-a putut recunoaște text pe această pagină. Consultă originalul; pagina poate necesita transcriere sau descriere manuală.',
             'No text could be recognized on this page. Use the original; a manual transcription or description may be needed.',
             'Aucun texte n’a pu être reconnu sur cette page. Utilisez l’original\u00a0; une transcription ou une description manuelle peut être nécessaire.',
+            'Auf dieser Seite konnte kein Text erkannt werden. Nutzen Sie das Original; eventuell ist eine manuelle Transkription oder Beschreibung nötig.',
           )}
         </p>
       )}

@@ -19,6 +19,10 @@ export const fixturePoems = [
     fr_theme: 'Lumière d’essai',
     fr_content:
       'La rencontre au bosquet\na des pas de feuille et d’eau.\n\nDans le labyrinthe du soir\nnous nous trouvons sans carte.',
+    de_title: 'Die Begegnung im Hain',
+    de_theme: 'Probelicht',
+    de_content:
+      'Die Begegnung im Hain\nhat Schritte aus Laub und Wasser.\n\nIm Labyrinth des Abends\nfinden wir uns ohne Karte.',
   },
   {
     title: 'Seara la margine'.normalize('NFD'),

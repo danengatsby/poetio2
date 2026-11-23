@@ -64,6 +64,7 @@ for (const file of [
   'lib/access',
   'lib/poem-images',
   'lib/poem-languages',
+  'lib/poem-types',
   'lib/translate-poem',
 ]) {
   mkdirSync(join(output, file.split('/')[0]), { recursive: true });

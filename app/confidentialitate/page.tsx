@@ -10,7 +10,15 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const language = await requestLanguage();
-  return { title: pick(language, 'Confidențialitate — Poetio', 'Privacy — Poetio', 'Confidentialité — Poetio') };
+  return {
+    title: pick(
+      language,
+      'Confidențialitate — Poetio',
+      'Privacy — Poetio',
+      'Confidentialité — Poetio',
+      'Datenschutz — Poetio',
+    ),
+  };
 }
 
 export default async function PrivacyPage() {

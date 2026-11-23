@@ -1,4 +1,10 @@
-import type { Poem, PoemInput, PoemWithCommentCount } from '../lib/poem-types';
+import {
+  EXTRA_LANGUAGES,
+  type ExtraLanguage,
+  type Poem,
+  type PoemInput,
+  type PoemWithCommentCount,
+} from '../lib/poem-types';
 import { AppError } from '../lib/access';
 import { writeIndexedPoem } from './poem-search-index';
 import { seedPoems } from './seed-poems';
@@ -9,10 +15,12 @@ import { AUDIO_FIELDS } from '../lib/poem-audio';
 import { parseTranslationProvenance, sourceKey, translatedKey, translationStatus } from '../lib/translation-provenance';
 import type { MediaValidator } from './media-validation';
 
-type StoredPoem = Omit<Poem, 'translation_provenance' | 'fr_provenance'> & {
+type VersionProvenance = `${ExtraLanguage}_provenance`;
+type StoredPoem = Omit<Poem, 'translation_provenance' | VersionProvenance> & {
   translation_provenance: string | null;
-  fr_provenance?: string | null;
-};
+} & Partial<Record<VersionProvenance, string | null>>;
+/** The language names used in error messages. */
+const LANGUAGE_NAME: Record<ExtraLanguage, string> = { fr: 'franceză', de: 'germană' };
 function parseStored(value: string | null | undefined) {
   try {
     return parseTranslationProvenance(JSON.parse(value || 'null'));
@@ -23,28 +31,48 @@ function parseStored(value: string | null | undefined) {
 }
 function readPoem<T extends StoredPoem>(
   row: T,
-): Omit<T, 'translation_provenance' | 'fr_provenance'> & Pick<Poem, 'translation_provenance' | 'fr_provenance'> {
+): Omit<T, 'translation_provenance' | VersionProvenance> & Pick<Poem, 'translation_provenance' | VersionProvenance> {
   return {
     ...row,
     translation_provenance: parseStored(row.translation_provenance),
     fr_provenance: parseStored(row.fr_provenance),
+    de_provenance: parseStored(row.de_provenance),
   };
 }
 const storedProvenance = (poem: PoemInput) =>
   poem.translation_provenance ? JSON.stringify(poem.translation_provenance) : null;
-const storedFrench = (poem: PoemInput) => (poem.fr_provenance ? JSON.stringify(poem.fr_provenance) : null);
+const storedVersion = (poem: PoemInput, language: ExtraLanguage) => {
+  const provenance = poem[`${language}_provenance`];
+  return provenance ? JSON.stringify(provenance) : null;
+};
+const VERSION_FIELDS = EXTRA_LANGUAGES.flatMap(language => [
+  `${language}_title` as const,
+  `${language}_theme` as const,
+  `${language}_content` as const,
+]);
 
-/** The French version must be checked against the current original, like the translation. */
-async function requireCurrentFrench(input: PoemInput) {
-  const status = await translationStatus(input, 'fr');
-  if (status === 'missing') return { ...input, fr_title: null, fr_theme: null, fr_content: null, fr_provenance: null };
-  if (status === 'ready') return input;
-  throw new AppError(
-    409,
-    status === 'incomplete'
-      ? 'Completează atât titlul, cât și textul în franceză, sau lasă ambele câmpuri goale.'
-      : 'Versiunea în franceză nu este verificată pentru originalul actual. Confirmă revizuirea sau salveaz-o goală.',
-  );
+/** A language's own version (French, German) must be checked against the current original, like the translation. */
+async function requireCurrentVersions(input: PoemInput) {
+  let result = input;
+  for (const language of EXTRA_LANGUAGES) {
+    const status = await translationStatus(result, language);
+    if (status === 'missing')
+      result = {
+        ...result,
+        [`${language}_title`]: null,
+        [`${language}_theme`]: null,
+        [`${language}_content`]: null,
+        [`${language}_provenance`]: null,
+      };
+    else if (status !== 'ready')
+      throw new AppError(
+        409,
+        status === 'incomplete'
+          ? `Completează atât titlul, cât și textul în ${LANGUAGE_NAME[language]}, sau lasă ambele câmpuri goale.`
+          : `Versiunea în ${LANGUAGE_NAME[language]} nu este verificată pentru originalul actual. Confirmă revizuirea sau salveaz-o goală.`,
+      );
+  }
+  return result;
 }
 
 async function requireCurrentTranslation(input: PoemInput, current?: Poem) {
@@ -206,25 +234,34 @@ export function validateInput(value: unknown): PoemInput {
     if (obj.translation_provenance !== null && !input.translation_provenance)
       throw new AppError(400, 'Asocierea traducerii este nevalidă.');
   }
-  const frenchKeys = ['fr_title', 'fr_theme', 'fr_content'] as const;
-  if (frenchKeys.some(key => obj[key] !== undefined)) {
-    for (const key of frenchKeys) {
-      if (obj[key] != null && typeof obj[key] !== 'string')
-        throw new AppError(400, 'Completează câmpurile în franceză sau lasă-le goale.');
-      const value =
-        typeof obj[key] === 'string' ? (key === 'fr_content' ? obj[key].replace(/\r\n?/g, '\n') : obj[key].trim()) : '';
-      const max = key === 'fr_content' ? 30000 : key === 'fr_title' ? 180 : 80;
-      if (value.length > max) throw new AppError(400, `Câmpul în franceză depășește limita de ${max} de caractere.`);
-      input[key] = value.trim() ? value : null;
+  for (const language of EXTRA_LANGUAGES) {
+    const name = LANGUAGE_NAME[language];
+    const [titleKey, themeKey, contentKey, provenanceKey] = [
+      `${language}_title`,
+      `${language}_theme`,
+      `${language}_content`,
+      `${language}_provenance`,
+    ] as const;
+    const keys = [titleKey, themeKey, contentKey];
+    if (keys.some(key => obj[key] !== undefined)) {
+      for (const key of keys) {
+        if (obj[key] != null && typeof obj[key] !== 'string')
+          throw new AppError(400, `Completează câmpurile în ${name} sau lasă-le goale.`);
+        const value =
+          typeof obj[key] === 'string' ? (key === contentKey ? obj[key].replace(/\r\n?/g, '\n') : obj[key].trim()) : '';
+        const max = key === contentKey ? 30000 : key === titleKey ? 180 : 80;
+        if (value.length > max) throw new AppError(400, `Câmpul în ${name} depășește limita de ${max} de caractere.`);
+        input[key] = value.trim() ? value : null;
+      }
+      if (Boolean(input[titleKey]) !== Boolean(input[contentKey]))
+        throw new AppError(400, `Completează atât titlul, cât și textul în ${name}, sau lasă ambele câmpuri goale.`);
+      if (!input[contentKey]) input[themeKey] = null;
     }
-    if (Boolean(input.fr_title) !== Boolean(input.fr_content))
-      throw new AppError(400, 'Completează atât titlul, cât și textul în franceză, sau lasă ambele câmpuri goale.');
-    if (!input.fr_content) input.fr_theme = null;
-  }
-  if (obj.fr_provenance !== undefined) {
-    input.fr_provenance = parseTranslationProvenance(obj.fr_provenance);
-    if (obj.fr_provenance !== null && !input.fr_provenance)
-      throw new AppError(400, 'Asocierea versiunii în franceză este nevalidă.');
+    if (obj[provenanceKey] !== undefined) {
+      input[provenanceKey] = parseTranslationProvenance(obj[provenanceKey]);
+      if (obj[provenanceKey] !== null && !input[provenanceKey])
+        throw new AppError(400, `Asocierea versiunii în ${name} este nevalidă.`);
+    }
   }
   return input;
 }
@@ -250,7 +287,7 @@ export async function getPoem(db: Database, id: string) {
 export async function createPoem(db: Database, id: string, input: PoemInput, validator?: MediaValidator) {
   validateId(id);
   if (id.startsWith('original-')) throw new AppError(400, 'Identificator rezervat.');
-  input = await requireCurrentFrench(await requireCurrentTranslation(input));
+  input = await requireCurrentVersions(await requireCurrentTranslation(input));
   await ensureInitialPoems(db);
   await ensureLanguageVariants(db);
   await requireAvailableImage(db, input.image_id);
@@ -258,7 +295,7 @@ export async function createPoem(db: Database, id: string, input: PoemInput, val
   const now = Date.now();
   const insert = db
     .prepare(
-      'INSERT INTO poems (id, title, author, theme, content, source_language, translated_title, translated_theme, translated_content, translation_provenance, fr_title, fr_theme, fr_content, fr_provenance, image_id, audio_ro_id, audio_en_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT(id) DO NOTHING',
+      'INSERT INTO poems (id, title, author, theme, content, source_language, translated_title, translated_theme, translated_content, translation_provenance, fr_title, fr_theme, fr_content, fr_provenance, de_title, de_theme, de_content, de_provenance, image_id, audio_ro_id, audio_en_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT(id) DO NOTHING',
     )
     .bind(
       id,
@@ -271,10 +308,12 @@ export async function createPoem(db: Database, id: string, input: PoemInput, val
       input.translated_theme ?? null,
       input.translated_content ?? null,
       storedProvenance(input),
-      input.fr_title ?? null,
-      input.fr_theme ?? null,
-      input.fr_content ?? null,
-      storedFrench(input),
+      ...EXTRA_LANGUAGES.flatMap(language => [
+        input[`${language}_title`] ?? null,
+        input[`${language}_theme`] ?? null,
+        input[`${language}_content`] ?? null,
+        storedVersion(input, language),
+      ]),
       input.image_id ?? null,
       input.audio_ro_id ?? null,
       input.audio_en_id ?? null,
@@ -284,7 +323,10 @@ export async function createPoem(db: Database, id: string, input: PoemInput, val
   await writeIndexedPoem(db, insert, id, input);
   const poem = await getPoem(db, id);
   if (!poem) throw new Error('Inserted poem unavailable');
-  if (storedProvenance(poem) !== storedProvenance(input) || storedFrench(poem) !== storedFrench(input))
+  if (
+    storedProvenance(poem) !== storedProvenance(input) ||
+    EXTRA_LANGUAGES.some(language => storedVersion(poem, language) !== storedVersion(input, language))
+  )
     throw new AppError(409, 'Acest poem a fost deja salvat cu altă asociere a traducerii. Reîncarcă lista.');
   if (
     AUDIO_FIELDS.some(field => poem[field] !== (input[field] ?? null)) ||
@@ -297,9 +339,7 @@ export async function createPoem(db: Database, id: string, input: PoemInput, val
     poem.translated_title !== (input.translated_title ?? null) ||
     poem.translated_theme !== (input.translated_theme ?? null) ||
     poem.translated_content !== (input.translated_content ?? null) ||
-    (poem.fr_title ?? null) !== (input.fr_title ?? null) ||
-    (poem.fr_theme ?? null) !== (input.fr_theme ?? null) ||
-    (poem.fr_content ?? null) !== (input.fr_content ?? null)
+    VERSION_FIELDS.some(field => (poem[field] ?? null) !== (input[field] ?? null))
   )
     throw new AppError(409, 'Acest poem a fost deja salvat cu alt conținut. Reîncarcă lista înainte de a continua.');
   return poem;
@@ -357,27 +397,21 @@ export async function updatePoem(
     current,
   );
   const provenance = storedProvenance(paired);
-  // The French version follows the same rule: kept when an older client leaves it out,
+  // Each language's own version follows the same rule: kept when an older client leaves it out,
   // dropped when the original changes without it.
-  const frenchProvided = input.fr_content !== undefined;
-  const keepFrench = (field: 'fr_title' | 'fr_theme' | 'fr_content') =>
-    frenchProvided ? (input[field] ?? null) : sourceChanged ? null : (current[field] ?? null);
-  const french = await requireCurrentFrench({
-    ...paired,
-    fr_title: keepFrench('fr_title'),
-    fr_theme: keepFrench('fr_theme'),
-    fr_content: keepFrench('fr_content'),
-    fr_provenance:
-      input.fr_provenance === undefined
-        ? sourceChanged
-          ? null
-          : (current.fr_provenance ?? null)
-        : input.fr_provenance,
-  });
-  const frenchProvenance = storedFrench(french);
+  const kept: PoemInput = { ...paired };
+  for (const language of EXTRA_LANGUAGES) {
+    const provided = input[`${language}_content`] !== undefined;
+    for (const field of [`${language}_title`, `${language}_theme`, `${language}_content`] as const)
+      kept[field] = provided ? (input[field] ?? null) : sourceChanged ? null : (current[field] ?? null);
+    const provenance = input[`${language}_provenance`];
+    kept[`${language}_provenance`] =
+      provenance === undefined ? (sourceChanged ? null : (current[`${language}_provenance`] ?? null)) : provenance;
+  }
+  const versions = await requireCurrentVersions(kept);
   const update = db
     .prepare(
-      'UPDATE poems SET title = ?, author = ?, theme = ?, content = ?, source_language = ?, translated_title = ?, translated_theme = ?, translated_content = ?, translation_provenance = ?, fr_title = ?, fr_theme = ?, fr_content = ?, fr_provenance = ?, image_id = CASE WHEN ? = 1 THEN ? ELSE image_id END, audio_ro_id = CASE WHEN ? = 1 THEN ? ELSE audio_ro_id END, audio_en_id = CASE WHEN ? = 1 THEN ? ELSE audio_en_id END, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?',
+      'UPDATE poems SET title = ?, author = ?, theme = ?, content = ?, source_language = ?, translated_title = ?, translated_theme = ?, translated_content = ?, translation_provenance = ?, fr_title = ?, fr_theme = ?, fr_content = ?, fr_provenance = ?, de_title = ?, de_theme = ?, de_content = ?, de_provenance = ?, image_id = CASE WHEN ? = 1 THEN ? ELSE image_id END, audio_ro_id = CASE WHEN ? = 1 THEN ? ELSE audio_ro_id END, audio_en_id = CASE WHEN ? = 1 THEN ? ELSE audio_en_id END, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?',
     )
     .bind(
       input.title,
@@ -389,10 +423,12 @@ export async function updatePoem(
       translatedTheme,
       translatedContent,
       provenance,
-      french.fr_title ?? null,
-      french.fr_theme ?? null,
-      french.fr_content ?? null,
-      frenchProvenance,
+      ...EXTRA_LANGUAGES.flatMap(language => [
+        versions[`${language}_title`] ?? null,
+        versions[`${language}_theme`] ?? null,
+        versions[`${language}_content`] ?? null,
+        storedVersion(versions, language),
+      ]),
       input.image_id === undefined ? 0 : 1,
       input.image_id ?? null,
       input.audio_ro_id === undefined ? 0 : 1,
@@ -408,9 +444,7 @@ export async function updatePoem(
     translated_title: translatedTitle,
     translated_theme: translatedTheme,
     translated_content: translatedContent,
-    fr_title: french.fr_title ?? null,
-    fr_theme: french.fr_theme ?? null,
-    fr_content: french.fr_content ?? null,
+    ...Object.fromEntries(VERSION_FIELDS.map(field => [field, versions[field] ?? null])),
   });
   const poem = await getPoem(db, id);
   if (!poem) throw new AppError(404, 'Poemul a fost șters. Poți copia textul și crea un poem nou.');
@@ -428,9 +462,8 @@ export async function updatePoem(
       poem.translated_title === translatedTitle &&
       poem.translated_theme === translatedTheme &&
       poem.translated_content === translatedContent &&
-      storedFrench(poem) === frenchProvenance &&
-      (poem.fr_title ?? null) === (french.fr_title ?? null) &&
-      (poem.fr_content ?? null) === (french.fr_content ?? null)
+      EXTRA_LANGUAGES.every(language => storedVersion(poem, language) === storedVersion(versions, language)) &&
+      VERSION_FIELDS.every(field => (poem[field] ?? null) === (versions[field] ?? null))
     )
       return poem;
     throw new AppError(

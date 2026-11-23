@@ -21,6 +21,10 @@ export const poemFieldLabels = {
   fr_theme: 'Tema în franceză',
   fr_content: 'Textul în franceză',
   fr_provenance: 'Revizuirea versiunii în franceză',
+  de_title: 'Titlul în germană',
+  de_theme: 'Tema în germană',
+  de_content: 'Textul în germană',
+  de_provenance: 'Revizuirea versiunii în germană',
 } satisfies Record<keyof PoemInput, string>;
 export type PoemField = keyof typeof poemFieldLabels;
 

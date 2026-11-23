@@ -143,3 +143,50 @@ test('the French version is checked, kept by clients that omit it, and dropped w
   assert.equal(JSON.parse(history.snapshot).fr_title, 'La roue de fumée');
   assert.equal(JSON.parse(history.snapshot).fr_provenance.origin, 'automatic');
 });
+
+test('a poem keeps French and German versions side by side, each checked on its own', async t => {
+  const db = await store(t);
+  const id = crypto.randomUUID();
+  const german = {
+    de_title: 'Das Rad aus Rauch',
+    de_theme: 'Liebe',
+    de_content: 'Ich bin gefangen im Rad des Lebens\nseit einer Weile.',
+  };
+  const both = { ...original, ...french, ...german };
+  const input = {
+    ...both,
+    translation_provenance: await translationProvenance(both, 'manual'),
+    fr_provenance: await translationProvenance(both, 'automatic', 'fr'),
+    de_provenance: await translationProvenance(both, 'automatic', 'de'),
+  };
+  const saved = await poems.createPoem(db, id, poems.validateInput(input));
+  assert.equal(saved.de_title, 'Das Rad aus Rauch');
+  assert.equal(await translationStatus(saved, 'de'), 'ready');
+  assert.equal(await translationStatus(saved, 'fr'), 'ready');
+  assert.equal(poemVersion(saved, 'de').content, german.de_content);
+  assert.equal(poemVersion(saved, 'fr').title, 'La roue de fumée');
+  const card = (await listPoemCards(db, { lang: 'de' }, 'de')).poems[0];
+  assert.deepEqual([card.title, card.theme, card.language], ['Das Rad aus Rauch', 'Liebe', 'de']);
+  assert.equal((await listPoemCards(db, { lang: 'de', q: 'gefangen' }, 'de')).total, 1);
+  assert.equal((await listPoemCards(db, { lang: 'de', theme: 'Liebe' }, 'de')).total, 1);
+  assert.equal((await listPoemCards(db, { lang: 'de', translation: 'without' }, 'de')).total, 0);
+  // A German provenance cannot vouch for a changed German text, and French is not affected.
+  await assert.rejects(
+    async () => poems.updatePoem(db, id, saved.revision, poems.validateInput({ ...input, de_content: 'Anderer Text' })),
+    { status: 409, message: /germană/ },
+  );
+  const withoutGerman = await poems.updatePoem(
+    db,
+    id,
+    saved.revision,
+    poems.validateInput({ ...input, de_title: '', de_theme: '', de_content: '', de_provenance: null }),
+  );
+  assert.equal(withoutGerman.de_title, null);
+  assert.equal(withoutGerman.fr_title, 'La roue de fumée');
+  assert.equal(poemVersion(withoutGerman, 'de'), null);
+  const history = await db
+    .prepare('SELECT snapshot FROM content_history WHERE entity_id = ? AND revision = ?')
+    .bind(id, saved.revision)
+    .first();
+  assert.equal(JSON.parse(history.snapshot).de_title, 'Das Rad aus Rauch');
+});

@@ -6,6 +6,7 @@ export function commentCountLabel(count: number, language: SiteLanguage) {
     `${count} ${count === 1 ? 'comentariu' : 'comentarii'}`,
     `${count} ${count === 1 ? 'comment' : 'comments'}`,
     `${count} ${count > 1 ? 'commentaires' : 'commentaire'}`,
+    `${count} ${count === 1 ? 'Kommentar' : 'Kommentare'}`,
   );
 }
 
