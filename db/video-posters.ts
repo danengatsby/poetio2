@@ -1,5 +1,6 @@
 import { isOwnerEmail } from '../lib/access';
 import { etagMatches } from './audio';
+import { PUBLIC_IMAGE_CACHE } from './image-serving';
 import type { Database } from './poems';
 import { getVideoFile, validVideoFileId, type StoredVideoFile } from './video-files';
 
@@ -24,7 +25,7 @@ export async function serveVideoPoster(
   const etag = `"${file.content_hash}-poster-v1"`;
   const headers = new Headers({
     'Content-Type': 'image/jpeg',
-    'Cache-Control': owner ? 'private, no-store' : 'private, no-cache',
+    'Cache-Control': owner ? 'private, no-store' : PUBLIC_IMAGE_CACHE,
     ETag: etag,
     'X-Content-Type-Options': 'nosniff',
   });

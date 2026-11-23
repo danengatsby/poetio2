@@ -4,6 +4,10 @@ import type { Database } from './poems';
 
 export type ImageRenderer = { render(file: StoredImage, width: number): Promise<Uint8Array> };
 const widths = [320, 480, 640, 960, 1280];
+// Images are stored under a new id when replaced, so a visitor's browser may keep one
+// for a day without asking, then show it at once while it checks again in the background.
+// The check (an ETag 304) still confirms the image is attached to published content.
+export const PUBLIC_IMAGE_CACHE = 'private, max-age=86400, stale-while-revalidate=604800';
 const missing = () => new Response('Not found', { status: 404, headers: { 'Cache-Control': 'private, no-store' } });
 
 export async function serveImage(
@@ -31,7 +35,7 @@ export async function serveImage(
   const etag = `"${image.content_hash}${optimized ? `-webp-v1-${width}` : ''}"`;
   const headers = new Headers({
     'Content-Type': optimized ? 'image/webp' : image.content_type,
-    'Cache-Control': owner ? 'private, no-store' : 'private, no-cache',
+    'Cache-Control': owner ? 'private, no-store' : PUBLIC_IMAGE_CACHE,
     ETag: etag,
     'X-Content-Type-Options': 'nosniff',
   });

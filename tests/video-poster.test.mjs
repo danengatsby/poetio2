@@ -134,6 +134,7 @@ for (const file of [
   'db/video-files',
   'db/audio',
   'db/images',
+  'db/image-serving',
   'db/image-validation',
   'db/media-validation',
   'lib/access',
@@ -207,7 +208,7 @@ test('a still is public only while its film is published, and is revalidated rat
   const response = await read();
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('Content-Type'), 'image/jpeg');
-  assert.equal(response.headers.get('Cache-Control'), 'private, no-cache');
+  assert.equal(response.headers.get('Cache-Control'), 'private, max-age=86400, stale-while-revalidate=604800');
   assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff');
   assert.equal(response.headers.get('Content-Length'), String(still.length));
   assert.deepEqual(Buffer.from(await response.arrayBuffer()), still);

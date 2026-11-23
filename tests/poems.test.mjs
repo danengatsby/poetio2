@@ -1764,7 +1764,7 @@ test('image revalidation checks visibility before 304 and keeps private previews
     const etag = response.headers.get('ETag');
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('Content-Type'), 'image/webp');
-    assert.equal(response.headers.get('Cache-Control'), 'private, no-cache');
+    assert.equal(response.headers.get('Cache-Control'), 'private, max-age=86400, stale-while-revalidate=604800');
     assert.deepEqual(new Uint8Array(await response.arrayBuffer()), derivative);
     const previousRenders = renders;
     const cached = await read({ 'If-None-Match': '"different", W/' + etag });
