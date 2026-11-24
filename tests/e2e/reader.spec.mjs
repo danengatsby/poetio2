@@ -88,7 +88,12 @@ test('collection pages have a canonical address and a sharing preview; favicon.i
 test('the home page opens on the collection and a counted theme leads to another reading', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.locator('main').getByRole('heading').first()).toHaveText(/Colecția/);
+  for (const text of ['Fără grabă', 'Colecția', 'Unele lucruri se citesc pe îndelete.']) {
+    await expect(page.locator('main').getByText(text, { exact: text !== 'Colecția' })).toHaveCount(0);
+  }
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    await page.locator('.collection-titles [aria-current]').innerText(),
+  );
   await expect(page.getByRole('link', { name: 'Citește poemul', exact: true })).toHaveCount(0);
   const search = page.getByRole('search');
   await expect(search).toBeHidden();

@@ -11,8 +11,6 @@ import SiteHeader from './site-header';
 import './collection.css';
 import LegalLinks from './legal-links';
 
-const number = (n: number) => String(n).padStart(2, '0');
-
 export default function Showcase({
   collection,
   canAdmin,
@@ -75,17 +73,7 @@ export default function Showcase({
             <SiteLogo />
           </div>
         )}
-        <section id="collection" className="collection shell" aria-labelledby="collection-title">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">{copy.takeTime}</p>
-              <h1 id="collection-title">
-                {copy.collection}
-                <span className="count">({number(total)})</span>
-              </h1>
-            </div>
-            <p>{copy.slowly}</p>
-          </div>
+        <section id="collection" className="collection shell" aria-label={copy.poems}>
           <details className="filter-disclosure" ref={disclosure} open={filtered}>
             <summary>{searchLabel}</summary>
             <form
@@ -250,9 +238,9 @@ export default function Showcase({
                 aria-labelledby="selected-poem-title"
                 tabIndex={0}
               >
-                <h2 id="selected-poem-title" lang={selected.language}>
+                <h1 id="selected-poem-title" lang={selected.language}>
                   {selected.title}
-                </h2>
+                </h1>
                 <div className="collection-byline">
                   <span>{selected.author}</span>
                   {selected.theme && <span lang={selected.language}>{selected.theme}</span>}

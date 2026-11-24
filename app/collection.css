@@ -91,7 +91,7 @@
 .collection-detail {
   padding: 0.5rem 0.25rem;
 }
-.collection-detail h2 {
+.collection-detail h1 {
   margin: 0 0 0.5rem;
   font: 400 clamp(1.3rem, 2.5vw, 2.25rem)/1.22 var(--serif);
 }
