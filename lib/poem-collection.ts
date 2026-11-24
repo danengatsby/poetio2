@@ -7,6 +7,7 @@ export type CollectionParams = Record<string, string | string[] | undefined>;
 export type CollectionFilters = {
   q: string;
   theme: string;
+  topic?: string;
   translation: 'all' | 'with' | 'without';
   language: SiteLanguage;
 };
@@ -24,6 +25,7 @@ export type PoemCard = {
 };
 export type PoemCollection = {
   poems: PoemCard[];
+  themes: { label: string; key: string; count: number }[];
   filters: CollectionFilters;
   total: number;
   page: number;
@@ -39,7 +41,8 @@ export function collectionQuery(params: CollectionParams, fallback: SiteLanguage
   const translation = value('translation');
   const filters: CollectionFilters = {
     q: Array.from(value('q').trim().normalize('NFC')).slice(0, 120).join(''),
-    theme: Array.from(value('theme').trim().normalize('NFC')).slice(0, 80).join(''),
+    theme: params.topic === undefined ? Array.from(value('theme').trim().normalize('NFC')).slice(0, 80).join('') : '',
+    topic: Array.from(value('topic').trim().normalize('NFC')).slice(0, 80).join(''),
     translation: translation === 'with' || translation === 'without' ? translation : 'all',
     language: siteLanguage(language, fallback),
   };
@@ -49,7 +52,8 @@ export function collectionQuery(params: CollectionParams, fallback: SiteLanguage
 export function collectionHref(filters: CollectionFilters, page = 1) {
   const query = new URLSearchParams({ lang: filters.language });
   if (filters.q) query.set('q', filters.q);
-  if (filters.theme) query.set('theme', filters.theme);
+  if (filters.topic) query.set('topic', filters.topic);
+  else if (filters.theme) query.set('theme', filters.theme);
   if (filters.translation !== 'all') query.set('translation', filters.translation);
   if (page > 1) query.set('page', String(page));
   return '/?' + query.toString() + '#collection';
@@ -62,7 +66,12 @@ export function collectionReturnHref(value: string | undefined, language: SiteLa
     const url = new URL(value, 'https://collection.invalid');
     if (!value.startsWith('/') || url.origin !== 'https://collection.invalid' || url.pathname !== '/') return fallback;
     const query = collectionQuery(Object.fromEntries(url.searchParams), language);
-    return collectionHref({ ...query.filters, language }, query.page);
+    const filters = query.filters;
+    if (filters.language !== language && filters.topic) {
+      filters.theme = filters.topic;
+      filters.topic = '';
+    }
+    return collectionHref({ ...filters, language }, query.page);
   } catch {
     return fallback;
   }

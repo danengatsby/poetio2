@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { nextPoem } from '@/db/poem-collection';
 import { getPoemDb } from '@/db/binding';
 import { getPoem, validateId } from '@/db/poems';
 import { poemVersion } from '@/lib/poem-languages';
@@ -41,6 +42,7 @@ export async function generateMetadata(props: Props) {
 }
 export default async function PoemPage(props: Props) {
   const { poem, language, backHref } = await read(props);
+  const recommendation = await nextPoem(getPoemDb(), poem, language);
   const version = poemVersion(poem, language) ?? poem;
   return (
     <>
@@ -62,7 +64,7 @@ export default async function PoemPage(props: Props) {
           }),
         }}
       />
-      <ContentDetail poem={poem} language={language} backHref={backHref} />
+      <ContentDetail poem={poem} language={language} backHref={backHref} recommendation={recommendation} />
     </>
   );
 }

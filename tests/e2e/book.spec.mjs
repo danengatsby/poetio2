@@ -181,3 +181,20 @@ test.describe('editor', () => {
     expect((await save()).price_2).toBe(null);
   });
 });
+
+test('library offers online reading and the priced printed edition under the title', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/carti');
+  const card = page.locator('.book-card').filter({ hasText: fixtureBook.record.title });
+  await expect(card.locator('p')).toHaveText(fixtureBook.record.description.split('\n')[0]);
+  const read = card.getByRole('link', { name: 'Citește online' });
+  const buy = card.getByRole('link', { name: /Cumpără cartea tipărită.*10,00.*USD/ });
+  await expect(read).toBeInViewport({ ratio: 1 });
+  await expect(buy).toBeInViewport({ ratio: 1 });
+  await read.click();
+  await expect(page).toHaveURL(/#lectura$/);
+  await expect(page.locator('#lectura')).toBeInViewport();
+  await page.goBack();
+  await buy.click();
+  await expect(page.locator('.book-sale-amount')).toHaveAttribute('aria-label', '10,00\u00a0USD');
+});

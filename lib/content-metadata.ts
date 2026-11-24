@@ -4,6 +4,10 @@ import { pick, SITE_LANGUAGES } from './site-language';
 export const siteOrigin = 'https://poetio.cloud';
 export const contentPath = (kind: 'poem' | 'video' | 'book', id: string) =>
   `${kind === 'poem' ? '/poeme' : kind === 'book' ? '/carti' : '/video'}/${encodeURIComponent(id)}`;
+export function poemHref(id: string, language: SiteLanguage, returnTo: string) {
+  return contentPath('poem', id) + '?' + new URLSearchParams({ lang: language, returnTo });
+}
+
 export function excerpt(text: string, fallback: string) {
   const plain = text.replace(/\s+/g, ' ').trim();
   return plain ? (plain.length > 157 ? plain.slice(0, 157).trimEnd() + '…' : plain) : fallback;

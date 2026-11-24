@@ -83,3 +83,41 @@ test('collection pages have a canonical address and a sharing preview; favicon.i
   await expect(page.locator('link[rel="icon"][href="/favicon.ico"]')).toHaveCount(1);
   await expect(page.locator('link[rel="icon"][href="/favicon.svg"]')).toHaveCount(1);
 });
+
+test('first screen opens a poem and a counted theme leads to another reading', async ({ page }) => {
+  for (const size of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(size);
+    await page.goto('/');
+    const feature = page.locator('.opening-poem');
+    await expect(feature.locator('p')).toBeInViewport({ ratio: 1 });
+    const read = feature.getByRole('link', { name: 'Citește poemul' });
+    await expect(read).toBeInViewport({ ratio: 1 });
+    const title = await feature.getByRole('heading').innerText();
+    await read.click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
+  }
+  await page.goto('/');
+  const search = page.getByRole('search');
+  await expect(search).toBeHidden();
+  await page.getByText('Caută în colecție', { exact: true }).click();
+  const themes = search.getByRole('combobox', { name: 'Temă', exact: true });
+  await themes.selectOption({ label: 'Lumină de probă (2)' });
+  await search.getByRole('button', { name: 'Caută', exact: true }).click();
+  const cards = page.locator('[data-poem-id]');
+  await expect(cards).toHaveCount(2);
+  const collection = page.url();
+  await cards.first().click();
+  const first = page.url();
+  const next = page.locator('.next-poem a');
+  await expect(page.locator('.next-poem')).toContainText('Mai citește din tema');
+  const title = (await next.innerText()).replace(/ →$/, '');
+  await next.click();
+  await expect(page).not.toHaveURL(first);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
+  await page.locator('.content-back').click();
+  await expect(cards).toHaveCount(2);
+  expect(new URL(page.url()).searchParams.get('topic')).toBe(new URL(collection).searchParams.get('topic'));
+});

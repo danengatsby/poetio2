@@ -9,10 +9,14 @@ import { pick, rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/si
 import SiteHeader from '../site-header';
 import BookPresentation from './book-presentation';
 import BookCovers from './book-covers';
+import { bookSalePath, type SaleVariant } from '@/lib/book-sale';
+import { formatBookPrice } from '@/lib/book-price';
 import { ReaderComments } from '../poem-comments';
 import { commentCountLabel } from '@/lib/poem-comments';
 import './books.css';
 import LegalLinks from '../legal-links';
+
+export type LibraryBook = BookWithCommentCount & { offer?: SaleVariant };
 
 export default function BooksView({
   books = [],
@@ -21,7 +25,7 @@ export default function BooksView({
   canAdmin = false,
   failed = false,
 }: {
-  books?: BookWithCommentCount[];
+  books?: LibraryBook[];
   book?: Book;
   initialLanguage: SiteLanguage;
   canAdmin?: boolean;
@@ -126,42 +130,51 @@ export default function BooksView({
               </div>
             ) : books.length ? (
               <div className="poem-grid book-grid">
-                {books.map((item, index) => (
+                {books.map(item => (
                   <article className="poem-card book-card" key={item.id}>
-                    <BookCovers book={item} language={language} compact />
-                    <span className="card-meta">
-                      <span>{String(index + 1).padStart(2, '0')}</span>
-                      <span>PDF</span>
-                    </span>
                     <h2>
                       <a className="book-title-link" href={withSiteLanguage(`/carti/${item.id}`, language)}>
                         {item.title}
                       </a>
                     </h2>
-                    <p>
-                      {item.description ||
-                        pick(
+                    <div className="library-actions">
+                      <a className="book-read-link" href={withSiteLanguage(`/carti/${item.id}#lectura`, language)}>
+                        {pick(
                           language,
-                          'Deschide pentru a citi.',
-                          'Open to read.',
-                          'Ouvrir pour lire.',
-                          'Zum Lesen öffnen.',
-                          'Abrir para leer.',
-                          'Apri per leggere.',
+                          'Citește online',
+                          'Read online',
+                          'Lire en ligne',
+                          'Online lesen',
+                          'Leer en línea',
+                          'Leggi online',
                         )}
-                    </p>
+                      </a>
+                      {item.offer && (
+                        <a
+                          className="book-read-link"
+                          href={withSiteLanguage(bookSalePath(item.id, item.offer.cover), language)}
+                        >
+                          {pick(
+                            language,
+                            'Cumpără cartea tipărită',
+                            'Buy the printed book',
+                            'Acheter le livre imprimé',
+                            'Gedrucktes Buch kaufen',
+                            'Comprar el libro impreso',
+                            'Acquista il libro stampato',
+                          )}
+                          {' · '}
+                          {formatBookPrice(item.offer.price, language)}
+                        </a>
+                      )}
+                    </div>
+                    <BookCovers book={item} language={language} compact />
+                    {item.description && <p>{item.description}</p>}
                     <div className="card-bottom">
                       <span>
                         {item.author || 'Poetio'}
                         <span className="card-comment-count">{commentCountLabel(item.comment_count, language)}</span>
                       </span>
-                      <a
-                        className="book-read-link"
-                        href={withSiteLanguage(`/carti/${item.id}`, language)}
-                        aria-label={`${pick(language, 'Citește', 'Read', 'Lire', 'Lesen', 'Leer', 'Leggi')}: ${item.title}`}
-                      >
-                        {pick(language, 'Citește', 'Read', 'Lire', 'Lesen', 'Leer', 'Leggi')} ↗
-                      </a>
                     </div>
                   </article>
                 ))}

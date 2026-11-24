@@ -373,6 +373,7 @@ function Reader({ fileId, title, language = 'ro', preview = false, previewText }
   }
   return (
     <section
+      id={preview ? undefined : 'lectura'}
       className="book-reader protected-book-reader"
       data-layout={layout}
       aria-label={pick(

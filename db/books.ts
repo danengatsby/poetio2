@@ -66,14 +66,14 @@ async function requireFile(db: Database, id: string, validator?: BookValidator) 
   if (!file || !isOwnerEmail(file.owner_email)) throw new AppError(400, 'Încarcă fișierul PDF înainte de salvare.');
   await requireReadyBook(file, validator);
 }
-export async function listBooks(db: Database): Promise<BookWithCommentCount[]> {
+export async function listBooks(db: Database): Promise<(BookWithCommentCount & { sold_out: number })[]> {
   return (
     await db
       .prepare(
-        `SELECT books.*, (SELECT COUNT(*) FROM book_comments WHERE book_id = books.id AND status = 'approved') AS comment_count
-    FROM books ORDER BY created_at DESC, id DESC`,
+        `SELECT books.*, coalesce(book_shop.stock = 0, 0) AS sold_out, (SELECT COUNT(*) FROM book_comments WHERE book_id = books.id AND status = 'approved') AS comment_count
+    FROM books LEFT JOIN book_shop ON book_shop.book_id = books.id ORDER BY books.created_at DESC, books.id DESC`,
       )
-      .all<BookWithCommentCount>()
+      .all<BookWithCommentCount & { sold_out: number }>()
   ).results;
 }
 export function getBook(db: Database, id: string) {

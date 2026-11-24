@@ -85,7 +85,7 @@ const moderation = require(join(output, 'db/comment-moderation.js'));
 const editorial = require(join(output, 'db/editorial.js'));
 const service = require(join(output, 'db/poems.js'));
 const { listAdminPoems } = require(join(output, 'db/poem-admin-list.js'));
-const { listPoemCards } = require(join(output, 'db/poem-collection.js'));
+const { listPoemCards, nextPoem } = require(join(output, 'db/poem-collection.js'));
 const { collectionQuery, collectionHref, collectionReturnHref } = require(join(output, 'lib/poem-collection.js'));
 const books = require(join(output, 'db/books.js'));
 const bookFiles = require(join(output, 'db/book-files.js'));
@@ -2208,6 +2208,33 @@ test('public collection pages stay bounded in SQL and cover tied timestamps once
       .all();
     assert.match(JSON.stringify(plan), /idx_poems_collection_order/);
     assert.doesNotMatch(JSON.stringify(plan), /TEMP B-TREE/);
+  } finally {
+    db.close();
+  }
+});
+
+test('theme counts include later pages and reflect the other active filters', async () => {
+  const { db, ids } = await collectionFixture();
+  try {
+    const collection = await listPoemCards(db);
+    assert.deepEqual(
+      collection.themes.map(({ key, count }) => [key, count]),
+      [
+        ['memorie', 14],
+        ['lumina', 13],
+      ],
+    );
+    const selected = await listPoemCards(db, { topic: 'lumina', translation: 'without' });
+    assert.equal(selected.total, 13);
+    assert.equal(selected.themes[0].count, selected.total);
+    assert.deepEqual((await listPoemCards(db, { topic: 'lum' })).poems, []);
+    assert.equal((await listPoemCards(db, { theme: 'lum' })).total, 13);
+    assert.equal((await listPoemCards(db, { theme: 'lum', topic: '' })).total, 27);
+    const last = await nextPoem(db, { id: ids[26], created_at: 6 }, 'ro');
+    assert.equal(last.id, ids[0]);
+    assert.equal(last.theme, 'Memorie');
+    await db.prepare('DELETE FROM poems WHERE id <> ?').bind(ids[0]).run();
+    assert.equal(await nextPoem(db, { id: ids[0], created_at: 0 }, 'ro'), null);
   } finally {
     db.close();
   }

@@ -2,7 +2,8 @@
 // Document navigation also updates localized metadata.
 import type { Poem, SiteLanguage } from '@/lib/poem-types';
 import { videoPosterPath, type Video } from '@/lib/video-types';
-import { contentPath } from '@/lib/content-metadata';
+import { collectionReturnHref, type PoemCard } from '@/lib/poem-collection';
+import { contentPath, poemHref } from '@/lib/content-metadata';
 import { pick, rememberSiteLanguage, withSiteLanguage } from '@/lib/site-language';
 import SiteHeader from './site-header';
 import PoemReading from './poem-reading';
@@ -18,11 +19,13 @@ export default function ContentDetail({
   video,
   language,
   backHref,
+  recommendation,
 }: {
   poem?: Poem;
   video?: Video;
   language: SiteLanguage;
   backHref?: string;
+  recommendation?: Pick<PoemCard, 'id' | 'title' | 'language' | 'theme'> | null;
 }) {
   const [copied, setCopied] = useState(false);
   const [manualLink, setManualLink] = useState('');
@@ -35,7 +38,7 @@ export default function ContentDetail({
   function changeLanguage(locale: SiteLanguage) {
     rememberSiteLanguage(locale);
     const query = new URLSearchParams({ lang: locale });
-    if (poem && backHref) query.set('returnTo', withSiteLanguage(backHref, locale));
+    if (poem && backHref) query.set('returnTo', collectionReturnHref(backHref, locale));
     window.location.assign(path + '?' + query.toString());
   }
   async function copy() {
@@ -131,6 +134,40 @@ export default function ContentDetail({
           >
             {share}
           </VideoReading>
+        )}
+        {recommendation && (
+          <aside className="next-poem">
+            <p>
+              {recommendation.theme
+                ? pick(
+                    language,
+                    'Mai citește din tema',
+                    'More on the theme',
+                    'À lire sur le thème',
+                    'Mehr zum Thema',
+                    'Más sobre el tema',
+                    'Altre poesie sul tema',
+                  )
+                : pick(
+                    language,
+                    'Mai citește',
+                    'Read next',
+                    'À lire ensuite',
+                    'Weiterlesen',
+                    'Sigue leyendo',
+                    'Continua a leggere',
+                  )}
+              {recommendation.theme && (
+                <>
+                  {' '}
+                  «<span lang={recommendation.language}>{recommendation.theme}</span>»
+                </>
+              )}
+            </p>
+            <a lang={recommendation.language} href={poemHref(recommendation.id, language, collectionPath)}>
+              {recommendation.title} →
+            </a>
+          </aside>
         )}
         <ReaderComments
           endpoint={`/api/${poem ? 'poems' : 'videos'}/${item.id}/comments`}

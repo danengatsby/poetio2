@@ -97,7 +97,7 @@ export default function BookCovers({
             />
             <span className="book-cover-caption">
               <span>{label}</span>
-              {sale && (
+              {sale && !compact && (
                 <span className="book-cover-buy">
                   {buyable
                     ? pick(language, 'Cumpără', 'Buy', 'Acheter', 'Kaufen', 'Comprar', 'Acquista')

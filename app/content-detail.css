@@ -70,3 +70,17 @@
     padding-inline: 0;
   }
 }
+.next-poem {
+  margin: 2rem auto;
+  padding-block: 1rem;
+  border-block: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.next-poem p {
+  margin: 0 0 0.4rem;
+}
+.next-poem a {
+  color: var(--blue);
+  font: 1.3rem/1.4 var(--serif);
+  text-decoration: underline;
+}
