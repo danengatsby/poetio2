@@ -346,15 +346,10 @@ function CollectionPagination({ filters, page, pages }: Pick<PoemCollection, 'fi
         </a>
       )}
       <span aria-current="page">
-        {pick(
-          language,
-          `Pagina ${page} din ${pages}`,
-          `Page ${page} of ${pages}`,
-          `Page ${page} sur ${pages}`,
-          `Seite ${page} von ${pages}`,
-          `Página ${page} de ${pages}`,
-          `Pagina ${page} di ${pages}`,
-        )}
+        <strong>
+          {pick(language, 'Pagina', 'Page', 'Page', 'Seite', 'Página', 'Pagina')} {page}
+        </strong>{' '}
+        {pick(language, 'din', 'of', 'sur', 'von', 'de', 'di')} {pages}
       </span>
       {page < pages && (
         <a className="secondary-button" rel="next" href={collectionPageHref(filters, page + 1)}>
