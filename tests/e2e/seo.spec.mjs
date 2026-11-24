@@ -8,7 +8,7 @@ const KETTLE = 'The kettle';
 const SITE = 'https://poetio.cloud';
 
 async function poemId(page, title) {
-  await page.goto('/');
+  await page.goto('/?' + new URLSearchParams({ q: title }));
   const card = page.locator('.collection-titles').getByRole('link', { name: title, exact: title !== KETTLE });
   return card.getAttribute('data-poem-id');
 }

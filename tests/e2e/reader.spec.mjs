@@ -119,7 +119,7 @@ test('the home page opens on the collection and a counted theme leads to another
 });
 
 test('choosing a title updates the highlighted item and the single reading panel', async ({ page }) => {
-  await page.goto('/?lang=ro');
+  await page.goto('/?' + new URLSearchParams({ lang: 'ro', theme: fixturePoems[0].theme }));
   const links = page.locator('.collection-titles a');
   const article = page.locator('#selected-poem');
   await expect(links.first()).toHaveAttribute('aria-current', 'true');
@@ -151,4 +151,20 @@ test('choosing a title updates the highlighted item and the single reading panel
   await expect(page.locator('h1')).toHaveText(second.title);
   await page.locator('.content-back').click();
   await expect(select(second)).toHaveAttribute('aria-current', 'true');
+});
+
+test('the public reader shows seven poems at a time and returns to the same first page', async ({ page }) => {
+  await page.goto('/');
+  const links = page.locator('.collection-titles [data-poem-id]');
+  await expect(links).toHaveCount(7);
+  const first = await poemIds(page);
+  await page.locator('.collection-pagination [rel=next]').click();
+  await expect(page.locator('.collection-results')).toHaveText(/^8–/);
+  const second = await poemIds(page);
+  expect(second.length).toBeGreaterThan(0);
+  expect(second.length).toBeLessThanOrEqual(7);
+  expect(second.filter(id => first.includes(id))).toEqual([]);
+  await expect(links.first()).toHaveAttribute('aria-current', 'true');
+  await page.locator('.collection-pagination [rel=prev]').click();
+  expect(await poemIds(page)).toEqual(first);
 });

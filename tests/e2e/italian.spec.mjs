@@ -3,7 +3,7 @@ import { expect, test } from './test.mjs';
 import { fixtureBook } from './fixture.mjs';
 
 test('the language selector switches the collection to Italian', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?' + new URLSearchParams({ theme: 'Lumină de probă' }));
   await page.getByRole('radio', { name: 'Italiano' }).first().click();
   await expect(page).toHaveURL(/lang=it/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'it');
