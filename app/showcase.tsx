@@ -1,11 +1,9 @@
 'use client';
 // GET navigation keeps the reading selection in the URL.
 import { useEffect, useRef, useState } from 'react';
-import { poemHref } from '@/lib/content-metadata';
 import { collectionHref, POEM_PAGE_SIZE, type PoemCollection } from '@/lib/poem-collection';
 import type { SiteLanguage } from '@/lib/poem-types';
 import { pick, rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
-import { commentCountLabel } from '@/lib/poem-comments';
 import SiteLogo from './site-logo';
 import SiteHeader from './site-header';
 import './collection.css';
@@ -251,22 +249,6 @@ export default function Showcase({
                 <p className="collection-verses" lang={selected.language}>
                   {selected.content}
                 </p>
-                <a
-                  className="collection-detail-link"
-                  href={poemHref(selected.id, language, collectionHref(filters, page, selected.id))}
-                >
-                  {pick(
-                    language,
-                    'Pagina poemului',
-                    'Poem page',
-                    'Page du poème',
-                    'Gedichtseite',
-                    'Página del poema',
-                    'Pagina della poesia',
-                  )}
-                  {' · '}
-                  {commentCountLabel(selected.comment_count, language)}
-                </a>
               </article>
             </div>
           ) : (

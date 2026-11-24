@@ -1,5 +1,5 @@
 // The site in French: the selector, the interface, poems with and without a French version, and the shop texts.
-import { expect, test } from './test.mjs';
+import { expect, openSelectedPoemPage, test } from './test.mjs';
 import { fixtureBook } from './fixture.mjs';
 
 test('the language selector switches the collection to French and remembers it', async ({ page }) => {
@@ -28,7 +28,7 @@ test('the language selector switches the collection to French and remembers it',
 test('a French poem page shows the French version, its metadata and French comments', async ({ page }) => {
   await page.goto('/?lang=fr');
   await page.locator('a.poem-card', { hasText: 'La rencontre au bosquet' }).click();
-  await page.locator('.collection-detail-link').click();
+  await openSelectedPoemPage(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('La rencontre au bosquet');
   await expect(page.locator('.poem-reading-text')).toContainText('nous nous trouvons sans carte.');
   await expect(page.locator('.poem-reading-text')).toHaveAttribute('lang', 'fr');
@@ -49,7 +49,7 @@ test('a poem without a French version shows its original with a note', async ({ 
     .locator('.collection-titles')
     .getByRole('link', { name: /^The kettle/ })
     .click();
-  await page.locator('.collection-detail-link').click();
+  await openSelectedPoemPage(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^The kettle/);
   await expect(page.getByText('Traduction indisponible ; voici l’original.')).toBeVisible();
   await expect(page.locator('.poem-reading-text')).toHaveAttribute('lang', 'en-US');

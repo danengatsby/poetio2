@@ -1,5 +1,5 @@
 // The site in German: the selector, the interface, poems with and without a German version, and the shop texts.
-import { expect, test } from './test.mjs';
+import { expect, openSelectedPoemPage, test } from './test.mjs';
 import { fixtureBook } from './fixture.mjs';
 
 test('the language selector switches the collection to German', async ({ page }) => {
@@ -21,7 +21,7 @@ test('the language selector switches the collection to German', async ({ page })
 test('a German poem page shows the German version and German comments', async ({ page }) => {
   await page.goto('/?lang=de');
   await page.locator('a.poem-card', { hasText: 'Die Begegnung im Hain' }).click();
-  await page.locator('.collection-detail-link').click();
+  await openSelectedPoemPage(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Die Begegnung im Hain');
   await expect(page.locator('.poem-reading-text')).toContainText('finden wir uns ohne Karte.');
   await expect(page.locator('.poem-reading-text')).toHaveAttribute('lang', 'de');
@@ -40,7 +40,7 @@ test('a poem without a German version shows its original with a note', async ({ 
     .locator('.collection-titles')
     .getByRole('link', { name: /^The kettle/ })
     .click();
-  await page.locator('.collection-detail-link').click();
+  await openSelectedPoemPage(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^The kettle/);
   await expect(page.getByText('Übersetzung nicht verfügbar; das Original wird angezeigt.')).toBeVisible();
 });

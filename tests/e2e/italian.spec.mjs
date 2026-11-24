@@ -1,5 +1,5 @@
 // The site in Italian: the selector, the interface, poems with and without an Italian version, and the shop texts.
-import { expect, test } from './test.mjs';
+import { expect, openSelectedPoemPage, test } from './test.mjs';
 import { fixtureBook } from './fixture.mjs';
 
 test('the language selector switches the collection to Italian', async ({ page }) => {
@@ -19,7 +19,7 @@ test('the language selector switches the collection to Italian', async ({ page }
 test('an Italian poem page shows the Italian version', async ({ page }) => {
   await page.goto('/?lang=it');
   await page.locator('a.poem-card', { hasText: 'L’incontro nel boschetto' }).click();
-  await page.locator('.collection-detail-link').click();
+  await openSelectedPoemPage(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('L’incontro nel boschetto');
   await expect(page.locator('.poem-reading-text')).toContainText('ci troviamo senza mappa.');
   await expect(page.locator('.poem-reading-text')).toHaveAttribute('lang', 'it');
@@ -34,7 +34,7 @@ test('a poem without an Italian version shows its original with a note', async (
     .locator('.collection-titles')
     .getByRole('link', { name: /^The kettle/ })
     .click();
-  await page.locator('.collection-detail-link').click();
+  await openSelectedPoemPage(page);
   await expect(page.getByText('Traduzione non disponibile; viene mostrato l’originale.')).toBeVisible();
 });
 

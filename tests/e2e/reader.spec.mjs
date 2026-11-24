@@ -1,4 +1,4 @@
-import { expect, test } from './test.mjs';
+import { expect, openSelectedPoemPage, test } from './test.mjs';
 import { fixturePoems } from './fixture.mjs';
 
 const meeting = 'Întâlnirea din crâng';
@@ -22,7 +22,7 @@ test('finds the same poems whether the query is composed, decomposed or unaccent
 
 test('keeps the chosen language and search when returning to the collection', async ({ page }) => {
   await page.goto('/?' + new URLSearchParams({ lang: 'ro', q: 'labirintul' }) + '#collection');
-  await page.locator('.collection-detail-link').click();
+  await openSelectedPoemPage(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(meeting);
 
   await page.getByRole('radio', { name: 'English (US)' }).click();
@@ -40,7 +40,7 @@ test('keeps the chosen language and search when returning to the collection', as
 test('copies a link that holds only the poem and its language', async ({ page, context, baseURL }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: baseURL });
   await page.goto('/?' + new URLSearchParams({ lang: 'ro', q: 'labirintul' }) + '#collection');
-  await page.locator('.collection-detail-link').click();
+  await openSelectedPoemPage(page);
   await page.getByRole('radio', { name: 'English (US)' }).click();
   await expect(page).toHaveURL(/[?&]lang=en-US/);
   const id = new URL(page.url()).pathname.split('/').at(-1);
@@ -105,7 +105,7 @@ test('the home page opens on the collection and a counted theme leads to another
   await expect(cards).toHaveCount(2);
   const collection = page.url();
   await cards.first().click();
-  await page.locator('.collection-detail-link').click();
+  await openSelectedPoemPage(page);
   const first = page.url();
   const next = page.locator('.next-poem a');
   await expect(page.locator('.next-poem')).toContainText('Mai citește din tema');
@@ -147,7 +147,8 @@ test('choosing a title updates the highlighted item and the single reading panel
   await page.reload();
   await expect(article.getByRole('heading')).toHaveText(second.title);
   await expect(select(second)).toHaveAttribute('aria-current', 'true');
-  await article.getByRole('link').click();
+  await expect(article.getByRole('link')).toHaveCount(0);
+  await openSelectedPoemPage(page);
   await expect(page.locator('h1')).toHaveText(second.title);
   await page.locator('.content-back').click();
   await expect(select(second)).toHaveAttribute('aria-current', 'true');

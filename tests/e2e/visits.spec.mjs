@@ -1,4 +1,4 @@
-import { expect, test } from './test.mjs';
+import { expect, openSelectedPoemPage, test } from './test.mjs';
 import { OWNER_EMAIL, fixtureBook } from './fixture.mjs';
 
 // tests/e2e/server.mjs installs MaxMind's test database, where these addresses
@@ -22,7 +22,7 @@ test('a reader’s pages appear in /admin/vizite with IP and place; the owner’
   expect((await report).status()).toBe(204);
   // Moving to a poem inside the site is the second page of the same visit.
   report = reported(page);
-  await page.locator('.collection-detail-link').click();
+  await openSelectedPoemPage(page);
   await expect(page).toHaveURL(/\/poeme\//);
   expect((await report).status()).toBe(204);
   await reader.close();

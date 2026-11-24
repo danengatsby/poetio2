@@ -1,5 +1,5 @@
 // The site in Spanish: the selector, the interface, poems with and without a Spanish version, and the shop texts.
-import { expect, test } from './test.mjs';
+import { expect, openSelectedPoemPage, test } from './test.mjs';
 import { fixtureBook } from './fixture.mjs';
 
 test('the language selector switches the collection to Spanish', async ({ page }) => {
@@ -19,7 +19,7 @@ test('the language selector switches the collection to Spanish', async ({ page }
 test('a Spanish poem page shows the Spanish version', async ({ page }) => {
   await page.goto('/?lang=es');
   await page.locator('a.poem-card', { hasText: 'El encuentro en la arboleda' }).click();
-  await page.locator('.collection-detail-link').click();
+  await openSelectedPoemPage(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('El encuentro en la arboleda');
   await expect(page.locator('.poem-reading-text')).toContainText('nos encontramos sin mapa.');
   await expect(page.locator('.poem-reading-text')).toHaveAttribute('lang', 'es');
@@ -34,7 +34,7 @@ test('a poem without a Spanish version shows its original with a note', async ({
     .locator('.collection-titles')
     .getByRole('link', { name: /^The kettle/ })
     .click();
-  await page.locator('.collection-detail-link').click();
+  await openSelectedPoemPage(page);
   await expect(page.getByText('Traducción no disponible; se muestra el original.')).toBeVisible();
 });
 
