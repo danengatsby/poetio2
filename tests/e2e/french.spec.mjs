@@ -45,6 +45,10 @@ test('a French poem page shows the French version, its metadata and French comme
 test('a poem without a French version shows its original with a note', async ({ page }) => {
   // English original without a French version (tests/e2e/editor.spec.mjs may have renamed it).
   await page.goto('/?lang=fr&q=kettle');
+  await page
+    .locator('.collection-titles')
+    .getByRole('link', { name: /^The kettle/ })
+    .click();
   await page.locator('.collection-detail-link').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^The kettle/);
   await expect(page.getByText('Traduction indisponible ; voici l’original.')).toBeVisible();

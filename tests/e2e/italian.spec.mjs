@@ -30,6 +30,10 @@ test('an Italian poem page shows the Italian version', async ({ page }) => {
 
 test('a poem without an Italian version shows its original with a note', async ({ page }) => {
   await page.goto('/?lang=it&q=kettle');
+  await page
+    .locator('.collection-titles')
+    .getByRole('link', { name: /^The kettle/ })
+    .click();
   await page.locator('.collection-detail-link').click();
   await expect(page.getByText('Traduzione non disponibile; viene mostrato l’originale.')).toBeVisible();
 });

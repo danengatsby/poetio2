@@ -36,6 +36,10 @@ test('a German poem page shows the German version and German comments', async ({
 
 test('a poem without a German version shows its original with a note', async ({ page }) => {
   await page.goto('/?lang=de&q=kettle');
+  await page
+    .locator('.collection-titles')
+    .getByRole('link', { name: /^The kettle/ })
+    .click();
   await page.locator('.collection-detail-link').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^The kettle/);
   await expect(page.getByText('Übersetzung nicht verfügbar; das Original wird angezeigt.')).toBeVisible();
