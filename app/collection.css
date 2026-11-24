@@ -72,24 +72,13 @@
     justify-content: center;
   }
 }
-.opening-poem {
+.collection-logo {
   padding-block: clamp(1rem, 3vw, 2.5rem);
   border-bottom: 1px solid var(--line);
-  overflow-wrap: anywhere;
 }
-.opening-poem > .homepage-logo {
+.collection-logo > .homepage-logo {
   width: min(44vw, 14rem);
-  margin: 0 0 1rem;
-}
-.opening-poem h2 {
   margin: 0;
-  font: 400 clamp(1.65rem, 4vw, 3.25rem)/1.12 var(--serif);
-}
-.opening-poem > p {
-  max-width: 60ch;
-  white-space: pre-line;
-  font: 400 1.1rem/1.5 var(--serif);
-  margin: 0.75rem 0 1rem;
 }
 .filter-disclosure summary {
   cursor: pointer;

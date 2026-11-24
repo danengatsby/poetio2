@@ -20,7 +20,6 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
     copy = siteCopy[language];
   const filtered = Boolean(filters.q || filters.theme || filters.topic || filters.translation !== 'all');
   const reset = collectionHref({ ...filters, q: '', theme: '', topic: '', translation: 'all' });
-  const feature = !filtered && page === 1 ? poems[0] : undefined;
   const back = collectionHref(filters, page);
   const disclosure = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
@@ -54,26 +53,11 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
       </a>
       <SiteHeader language={language} onLanguageChange={changeLanguage} />
       <main id="main" lang={language}>
-        {feature ? (
-          <section className="opening-poem shell" aria-labelledby="opening-title">
+        {!filtered && page === 1 && poems.length > 0 && (
+          <div className="collection-logo shell">
             <SiteLogo />
-            <h2 id="opening-title" lang={feature.language}>
-              {feature.title}
-            </h2>
-            <p lang={feature.language}>{feature.excerpt}</p>
-            <a className="primary-button" href={poemHref(feature.id, language, back)}>
-              {pick(
-                language,
-                'Citește poemul',
-                'Read the poem',
-                'Lire le poème',
-                'Gedicht lesen',
-                'Leer el poema',
-                'Leggi la poesia',
-              )}
-            </a>
-          </section>
-        ) : null}
+          </div>
+        )}
         <section id="collection" className="collection shell" aria-labelledby="collection-title">
           <div className="section-heading">
             <div>
