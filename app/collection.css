@@ -53,34 +53,59 @@
   font-size: 0.875rem;
   color: var(--text-muted);
 }
-.collection-poems {
-  border-top: 1px solid var(--ink);
-}
-.collection-poem {
+.collection-reader {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 2.3fr);
   align-items: start;
-  gap: clamp(0.75rem, 4vw, 4rem);
-  padding-block: clamp(1.5rem, 3vw, 3rem);
-  border-bottom: 1px solid var(--line);
+  gap: clamp(0.65rem, 3vw, 3rem);
+  border-block: 1px solid var(--line);
+  padding-block: 1rem;
   overflow-wrap: anywhere;
 }
-/* Backup restore checks also use this title link to identify each published poem. */
-.collection-poem > a.poem-card {
-  display: grid;
-  gap: 0.3rem;
-  padding: 0;
+.collection-titles,
+.collection-detail {
+  max-height: 75vh;
+  max-height: 75svh;
+  overflow: auto;
+}
+.collection-titles {
+  border-inline-end: 1px solid var(--line);
+}
+.collection-titles > a.poem-card {
+  display: block;
   border: 0;
+  border-inline-start: 3px solid transparent;
+  padding: 0.75rem clamp(0.35rem, 1vw, 1rem);
+  min-height: 44px;
+  font: 400 clamp(0.95rem, 1.5vw, 1.3rem)/1.35 var(--serif);
+}
+.collection-titles > a.poem-card:hover {
+  background: var(--tint);
+}
+.collection-titles > a.poem-card[aria-current] {
+  background: var(--tint);
+  color: var(--blue);
+  border-inline-start-color: currentColor;
+  font-weight: bold;
+}
+.collection-detail {
+  padding: 0.5rem 0.25rem;
+}
+.collection-detail h2 {
+  margin: 0 0 0.5rem;
+  font: 400 clamp(1.3rem, 2.5vw, 2.25rem)/1.22 var(--serif);
+}
+.collection-byline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin-bottom: 1.25rem;
   color: var(--text-muted);
-  background: transparent;
-  font: 0.8125rem/1.45 var(--sans);
+  font-size: 0.875rem;
 }
-.collection-poem h2 {
-  margin: 0 0 0.4rem;
-  color: var(--ink);
-  font: 400 clamp(1.05rem, 2.5vw, 2.25rem)/1.22 var(--serif);
-}
-.collection-poem a:is(:hover, :focus-visible) h2 {
+.collection-detail-link {
+  display: inline-block;
+  padding-block: 1rem;
   color: var(--blue);
   text-decoration: underline;
 }

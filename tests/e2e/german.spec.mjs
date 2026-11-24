@@ -8,11 +8,11 @@ test('the language selector switches the collection to German', async ({ page })
   await expect(page).toHaveURL(/lang=de/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'de');
   const german = page.locator('a.poem-card', { hasText: 'Die Begegnung im Hain' });
-  await expect(german).toContainText('Probelicht');
-  await expect(german.locator('h2')).toHaveAttribute('lang', 'de');
-  await expect(page.locator('a.poem-card', { hasText: 'Seara la margine'.normalize('NFD') })).toContainText(
-    'Rumänisches Original',
-  );
+  await german.click();
+  await expect(page.locator('#selected-poem')).toContainText('Probelicht');
+  await expect(german).toHaveAttribute('lang', 'de');
+  await page.locator('a.poem-card', { hasText: 'Seara la margine'.normalize('NFD') }).click();
+  await expect(page.locator('#selected-poem')).toContainText('Rumänisches Original');
   await expect(page.getByRole('search', { name: 'Sammlung durchsuchen' })).toBeVisible();
   const cookies = await page.context().cookies();
   expect(cookies.find(cookie => cookie.name === 'poetio-language')?.value).toBe('de');
@@ -21,6 +21,7 @@ test('the language selector switches the collection to German', async ({ page })
 test('a German poem page shows the German version and German comments', async ({ page }) => {
   await page.goto('/?lang=de');
   await page.locator('a.poem-card', { hasText: 'Die Begegnung im Hain' }).click();
+  await page.locator('.collection-detail-link').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Die Begegnung im Hain');
   await expect(page.locator('.poem-reading-text')).toContainText('finden wir uns ohne Karte.');
   await expect(page.locator('.poem-reading-text')).toHaveAttribute('lang', 'de');
@@ -35,7 +36,7 @@ test('a German poem page shows the German version and German comments', async ({
 
 test('a poem without a German version shows its original with a note', async ({ page }) => {
   await page.goto('/?lang=de&q=kettle');
-  await page.getByRole('link', { name: /^„The kettle/ }).click();
+  await page.locator('.collection-detail-link').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^The kettle/);
   await expect(page.getByText('Übersetzung nicht verfügbar; das Original wird angezeigt.')).toBeVisible();
 });

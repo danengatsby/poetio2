@@ -11,11 +11,11 @@ test('the language selector switches the collection to French and remembers it',
   await expect(page.getByRole('radio', { name: 'Français' }).first()).toHaveAttribute('aria-checked', 'true');
   // A poem with a French version is shown in French; one without is marked as the original.
   const french = page.locator('a.poem-card', { hasText: 'La rencontre au bosquet' });
-  await expect(french).toContainText('Lumière d’essai');
-  await expect(french.locator('h2')).toHaveAttribute('lang', 'fr');
-  await expect(page.locator('a.poem-card', { hasText: 'Seara la margine'.normalize('NFD') })).toContainText(
-    'Original en roumain',
-  );
+  await french.click();
+  await expect(page.locator('#selected-poem')).toContainText('Lumière d’essai');
+  await expect(french).toHaveAttribute('lang', 'fr');
+  await page.locator('a.poem-card', { hasText: 'Seara la margine'.normalize('NFD') }).click();
+  await expect(page.locator('#selected-poem')).toContainText('Original en roumain');
   await expect(page.getByRole('search', { name: 'Rechercher dans la collection' })).toBeVisible();
   await expect(page.getByRole('searchbox', { name: 'Rechercher dans les titres et les textes' })).toBeVisible();
   // The choice is kept without the parameter.
@@ -28,6 +28,7 @@ test('the language selector switches the collection to French and remembers it',
 test('a French poem page shows the French version, its metadata and French comments', async ({ page }) => {
   await page.goto('/?lang=fr');
   await page.locator('a.poem-card', { hasText: 'La rencontre au bosquet' }).click();
+  await page.locator('.collection-detail-link').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('La rencontre au bosquet');
   await expect(page.locator('.poem-reading-text')).toContainText('nous nous trouvons sans carte.');
   await expect(page.locator('.poem-reading-text')).toHaveAttribute('lang', 'fr');
@@ -44,7 +45,7 @@ test('a French poem page shows the French version, its metadata and French comme
 test('a poem without a French version shows its original with a note', async ({ page }) => {
   // English original without a French version (tests/e2e/editor.spec.mjs may have renamed it).
   await page.goto('/?lang=fr&q=kettle');
-  await page.getByRole('link', { name: /^Lire « The kettle/ }).click();
+  await page.locator('.collection-detail-link').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^The kettle/);
   await expect(page.getByText('Traduction indisponible ; voici l’original.')).toBeVisible();
   await expect(page.locator('.poem-reading-text')).toHaveAttribute('lang', 'en-US');

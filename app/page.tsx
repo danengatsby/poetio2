@@ -44,5 +44,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<Col
         )}
       </main>
     );
-  return <Showcase collection={collection} canAdmin={canAdmin} />;
+  return (
+    <Showcase
+      collection={collection}
+      canAdmin={canAdmin}
+      initialPoem={typeof params.poem === 'string' ? params.poem : undefined}
+    />
+  );
 }

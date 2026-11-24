@@ -22,7 +22,7 @@ test('finds the same poems whether the query is composed, decomposed or unaccent
 
 test('keeps the chosen language and search when returning to the collection', async ({ page }) => {
   await page.goto('/?' + new URLSearchParams({ lang: 'ro', q: 'labirintul' }) + '#collection');
-  await page.locator('[data-poem-id]').first().click();
+  await page.locator('.collection-detail-link').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(meeting);
 
   await page.getByRole('radio', { name: 'English (US)' }).click();
@@ -40,7 +40,7 @@ test('keeps the chosen language and search when returning to the collection', as
 test('copies a link that holds only the poem and its language', async ({ page, context, baseURL }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: baseURL });
   await page.goto('/?' + new URLSearchParams({ lang: 'ro', q: 'labirintul' }) + '#collection');
-  await page.locator('[data-poem-id]').first().click();
+  await page.locator('.collection-detail-link').click();
   await page.getByRole('radio', { name: 'English (US)' }).click();
   await expect(page).toHaveURL(/[?&]lang=en-US/);
   const id = new URL(page.url()).pathname.split('/').at(-1);
@@ -100,6 +100,7 @@ test('the home page opens on the collection and a counted theme leads to another
   await expect(cards).toHaveCount(2);
   const collection = page.url();
   await cards.first().click();
+  await page.locator('.collection-detail-link').click();
   const first = page.url();
   const next = page.locator('.next-poem a');
   await expect(page.locator('.next-poem')).toContainText('Mai citește din tema');
@@ -112,22 +113,37 @@ test('the home page opens on the collection and a counted theme leads to another
   expect(new URL(page.url()).searchParams.get('topic')).toBe(new URL(collection).searchParams.get('topic'));
 });
 
-test('the title and the complete poem occupy separate columns on phone and desktop', async ({ page }) => {
-  const poem = fixturePoems[0];
+test('choosing a title updates the highlighted item and the single reading panel', async ({ page }) => {
   await page.goto('/?lang=ro');
-  const row = page.getByRole('article', { name: poem.title, exact: true });
-  const title = row.getByRole('heading', { name: poem.title, exact: true });
-  const verses = row.locator('.collection-verses');
-  expect(await verses.textContent()).toBe(poem.content);
+  const links = page.locator('.collection-titles a');
+  const article = page.locator('#selected-poem');
+  await expect(links.first()).toHaveAttribute('aria-current', 'true');
+  await expect(article.getByRole('heading')).toHaveText(await links.first().innerText());
+  const [first, second] = fixturePoems;
+  const select = poem => links.filter({ hasText: poem.title });
+  await select(first).click();
+  await expect(article.getByRole('heading')).toHaveText(first.title);
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    const left = await title.boundingBox();
-    const right = await verses.boundingBox();
+    const left = await page.locator('.collection-titles').boundingBox();
+    const right = await article.boundingBox();
     expect(left.x + left.width).toBeLessThan(right.x);
-    expect(Math.abs(left.y - right.y)).toBeLessThan(1);
     expect(right.x + right.width).toBeLessThanOrEqual(width);
-    expect(await verses.evaluate(el => getComputedStyle(el).whiteSpace)).toBe('pre-wrap');
   }
-  await row.getByRole('link').click();
-  await expect(page.locator('h1')).toHaveText(poem.title);
+  await select(second).focus();
+  await page.keyboard.press('Enter');
+  await expect(select(second)).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator('.collection-verses')).toHaveCount(1);
+  expect(await page.locator('.collection-verses').textContent()).toBe(second.content);
+  await expect(page.locator('.collection-titles [aria-current]')).toHaveCount(1);
+  await page.goBack();
+  await expect(select(first)).toHaveAttribute('aria-current', 'true');
+  await page.goForward();
+  await page.reload();
+  await expect(article.getByRole('heading')).toHaveText(second.title);
+  await expect(select(second)).toHaveAttribute('aria-current', 'true');
+  await article.getByRole('link').click();
+  await expect(page.locator('h1')).toHaveText(second.title);
+  await page.locator('.content-back').click();
+  await expect(select(second)).toHaveAttribute('aria-current', 'true');
 });

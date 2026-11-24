@@ -9,7 +9,7 @@ const SITE = 'https://poetio.cloud';
 
 async function poemId(page, title) {
   await page.goto('/');
-  const card = page.locator('a.poem-card').filter({ has: page.locator('h2', { hasText: title }) });
+  const card = page.locator('.collection-titles').getByRole('link', { name: title, exact: true });
   return card.getAttribute('data-poem-id');
 }
 

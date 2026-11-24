@@ -1,6 +1,6 @@
 'use client';
 // GET navigation keeps the reading selection in the URL.
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { poemHref } from '@/lib/content-metadata';
 import { collectionHref, POEM_PAGE_SIZE, type PoemCollection } from '@/lib/poem-collection';
 import type { SiteLanguage } from '@/lib/poem-types';
@@ -13,13 +13,27 @@ import LegalLinks from './legal-links';
 
 const number = (n: number) => String(n).padStart(2, '0');
 
-export default function Showcase({ collection, canAdmin }: { collection: PoemCollection; canAdmin: boolean }) {
+export default function Showcase({
+  collection,
+  canAdmin,
+  initialPoem,
+}: {
+  collection: PoemCollection;
+  canAdmin: boolean;
+  initialPoem?: string;
+}) {
   const { poems, themes, filters, page, pages, total } = collection;
   const language = filters.language,
     copy = siteCopy[language];
   const filtered = Boolean(filters.q || filters.theme || filters.topic || filters.translation !== 'all');
   const reset = collectionHref({ ...filters, q: '', theme: '', topic: '', translation: 'all' });
-  const back = collectionHref(filters, page);
+  const [selectedId, setSelectedId] = useState(initialPoem);
+  const selected = poems.find(poem => poem.id === selectedId) ?? poems[0];
+  useEffect(() => {
+    const restore = () => setSelectedId(new URL(location.href).searchParams.get('poem') ?? undefined);
+    window.addEventListener('popstate', restore);
+    return () => window.removeEventListener('popstate', restore);
+  }, []);
   const disclosure = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const desktop = window.matchMedia('(min-width: 761px)');
@@ -42,7 +56,11 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
   function changeLanguage(value: SiteLanguage) {
     rememberSiteLanguage(value);
     window.location.assign(
-      collectionHref({ ...filters, topic: '', theme: filters.topic || filters.theme, language: value }, page),
+      collectionHref(
+        { ...filters, topic: '', theme: filters.topic || filters.theme, language: value },
+        page,
+        selectedId,
+      ),
     );
   }
   return (
@@ -189,31 +207,79 @@ export default function Showcase({ collection, canAdmin }: { collection: PoemCol
                 )
               : pick(language, '0 poeme', '0 poems', '0 poème', '0 Gedichte', '0 poemas', '0 poesie')}
           </p>
-          {poems.length ? (
-            <div className="collection-poems">
-              {poems.map(poem => (
-                <article className="collection-poem" key={poem.id} aria-labelledby={`title-${poem.id}`}>
+          {selected ? (
+            <div className="collection-reader" id="collection-reader">
+              <nav
+                className="collection-titles"
+                aria-label={pick(
+                  language,
+                  'Titlurile poemelor',
+                  'Poem titles',
+                  'Titres des poèmes',
+                  'Gedichttitel',
+                  'Títulos de los poemas',
+                  'Titoli delle poesie',
+                )}
+              >
+                {poems.map(poem => (
                   <a
                     className="poem-card"
                     data-poem-id={poem.id}
-                    href={poemHref(poem.id, language, back)}
-                    aria-label={copy.readBy(poem.title, poem.author)}
+                    key={poem.id}
+                    href={collectionHref(filters, page, poem.id)}
+                    lang={poem.language}
+                    aria-current={poem.id === selected.id ? 'true' : undefined}
+                    aria-controls="selected-poem"
+                    onClick={event => {
+                      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+                        return;
+                      event.preventDefault();
+                      if (poem.id === selected.id) return;
+                      window.history.pushState(window.history.state, '', event.currentTarget.href);
+                      setSelectedId(poem.id);
+                    }}
                   >
-                    <h2 id={`title-${poem.id}`} lang={poem.language}>
-                      {poem.title}
-                    </h2>
-                    <span>{poem.author}</span>
-                    {poem.theme && <span lang={poem.language}>{poem.theme}</span>}
-                    {poem.language !== language && (
-                      <span>{poem.source_language === 'ro' ? copy.originalRomanian : copy.originalEnglish}</span>
-                    )}
-                    <span>{commentCountLabel(poem.comment_count, language)}</span>
+                    {poem.title}
                   </a>
-                  <p className="collection-verses" lang={poem.language}>
-                    {poem.content}
-                  </p>
-                </article>
-              ))}
+                ))}
+              </nav>
+              <article
+                key={selected.id}
+                id="selected-poem"
+                className="collection-detail"
+                aria-labelledby="selected-poem-title"
+                tabIndex={0}
+              >
+                <h2 id="selected-poem-title" lang={selected.language}>
+                  {selected.title}
+                </h2>
+                <div className="collection-byline">
+                  <span>{selected.author}</span>
+                  {selected.theme && <span lang={selected.language}>{selected.theme}</span>}
+                  {selected.language !== language && (
+                    <span>{selected.source_language === 'ro' ? copy.originalRomanian : copy.originalEnglish}</span>
+                  )}
+                </div>
+                <p className="collection-verses" lang={selected.language}>
+                  {selected.content}
+                </p>
+                <a
+                  className="collection-detail-link"
+                  href={poemHref(selected.id, language, collectionHref(filters, page, selected.id))}
+                >
+                  {pick(
+                    language,
+                    'Pagina poemului',
+                    'Poem page',
+                    'Page du poème',
+                    'Gedichtseite',
+                    'Página del poema',
+                    'Pagina della poesia',
+                  )}
+                  {' · '}
+                  {commentCountLabel(selected.comment_count, language)}
+                </a>
+              </article>
             </div>
           ) : (
             <div className="collection-empty">

@@ -8,17 +8,18 @@ test('the language selector switches the collection to Italian', async ({ page }
   await expect(page).toHaveURL(/lang=it/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'it');
   const italian = page.locator('a.poem-card', { hasText: 'L’incontro nel boschetto' });
-  await expect(italian).toContainText('Luce di prova');
-  await expect(italian.locator('h2')).toHaveAttribute('lang', 'it');
-  await expect(page.locator('a.poem-card', { hasText: 'Seara la margine'.normalize('NFD') })).toContainText(
-    'Originale in rumeno',
-  );
+  await italian.click();
+  await expect(page.locator('#selected-poem')).toContainText('Luce di prova');
+  await expect(italian).toHaveAttribute('lang', 'it');
+  await page.locator('a.poem-card', { hasText: 'Seara la margine'.normalize('NFD') }).click();
+  await expect(page.locator('#selected-poem')).toContainText('Originale in rumeno');
   await expect(page.getByRole('search', { name: 'Cerca nella collezione' })).toBeVisible();
 });
 
 test('an Italian poem page shows the Italian version', async ({ page }) => {
   await page.goto('/?lang=it');
   await page.locator('a.poem-card', { hasText: 'L’incontro nel boschetto' }).click();
+  await page.locator('.collection-detail-link').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('L’incontro nel boschetto');
   await expect(page.locator('.poem-reading-text')).toContainText('ci troviamo senza mappa.');
   await expect(page.locator('.poem-reading-text')).toHaveAttribute('lang', 'it');
@@ -29,7 +30,7 @@ test('an Italian poem page shows the Italian version', async ({ page }) => {
 
 test('a poem without an Italian version shows its original with a note', async ({ page }) => {
   await page.goto('/?lang=it&q=kettle');
-  await page.getByRole('link', { name: /^Leggi «The kettle/ }).click();
+  await page.locator('.collection-detail-link').click();
   await expect(page.getByText('Traduzione non disponibile; viene mostrato l’originale.')).toBeVisible();
 });
 
