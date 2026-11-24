@@ -9,7 +9,7 @@ test('the language selector switches the collection to German', async ({ page })
   await expect(page.locator('html')).toHaveAttribute('lang', 'de');
   const german = page.locator('a.poem-card', { hasText: 'Die Begegnung im Hain' });
   await expect(german).toContainText('Probelicht');
-  await expect(german.locator('h3')).toHaveAttribute('lang', 'de');
+  await expect(german.locator('h2')).toHaveAttribute('lang', 'de');
   await expect(page.locator('a.poem-card', { hasText: 'Seara la margine'.normalize('NFD') })).toContainText(
     'Rumänisches Original',
   );

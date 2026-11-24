@@ -1,4 +1,5 @@
 import { expect, test } from './test.mjs';
+import { fixturePoems } from './fixture.mjs';
 
 const meeting = 'Întâlnirea din crâng';
 const poemIds = async page =>
@@ -109,4 +110,24 @@ test('the home page opens on the collection and a counted theme leads to another
   await page.locator('.content-back').click();
   await expect(cards).toHaveCount(2);
   expect(new URL(page.url()).searchParams.get('topic')).toBe(new URL(collection).searchParams.get('topic'));
+});
+
+test('the title and the complete poem occupy separate columns on phone and desktop', async ({ page }) => {
+  const poem = fixturePoems[0];
+  await page.goto('/?lang=ro');
+  const row = page.getByRole('article', { name: poem.title, exact: true });
+  const title = row.getByRole('heading', { name: poem.title, exact: true });
+  const verses = row.locator('.collection-verses');
+  expect(await verses.textContent()).toBe(poem.content);
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const left = await title.boundingBox();
+    const right = await verses.boundingBox();
+    expect(left.x + left.width).toBeLessThan(right.x);
+    expect(Math.abs(left.y - right.y)).toBeLessThan(1);
+    expect(right.x + right.width).toBeLessThanOrEqual(width);
+    expect(await verses.evaluate(el => getComputedStyle(el).whiteSpace)).toBe('pre-wrap');
+  }
+  await row.getByRole('link').click();
+  await expect(page.locator('h1')).toHaveText(poem.title);
 });

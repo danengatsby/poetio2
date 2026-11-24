@@ -12,7 +12,7 @@ test('the language selector switches the collection to French and remembers it',
   // A poem with a French version is shown in French; one without is marked as the original.
   const french = page.locator('a.poem-card', { hasText: 'La rencontre au bosquet' });
   await expect(french).toContainText('Lumière d’essai');
-  await expect(french.locator('h3')).toHaveAttribute('lang', 'fr');
+  await expect(french.locator('h2')).toHaveAttribute('lang', 'fr');
   await expect(page.locator('a.poem-card', { hasText: 'Seara la margine'.normalize('NFD') })).toContainText(
     'Original en roumain',
   );

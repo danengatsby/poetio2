@@ -2174,24 +2174,22 @@ test('public collection pages stay bounded in SQL and cover tied timestamps once
     assert.equal(first.total, 100);
     assert.equal(first.pages, 9);
     assert.equal(first.poems.length, 12);
-    assert.ok(Buffer.byteLength(JSON.stringify(first)) < 15000);
-    assert.doesNotMatch(JSON.stringify(first), /FINAL_ORIGINAL|translated needle|English title/);
+    assert.ok(Buffer.byteLength(JSON.stringify(first)) < 12 * 31_000);
+    assert.doesNotMatch(JSON.stringify(first), /translated needle|English title/);
     const expectedKeys = [
       'id',
       'author',
-      'image_id',
       'source_language',
       'title',
       'theme',
-      'excerpt',
+      'content',
       'language',
       'has_translation',
       'comment_count',
     ].sort();
     for (const poem of first.poems) {
       assert.deepEqual(Object.keys(poem).sort(), expectedKeys);
-      assert.ok(Array.from(poem.excerpt).length <= 240);
-      assert.equal(poem.excerpt.at(-1), '…');
+      assert.ok(poem.content.endsWith('FINAL_ORIGINAL_' + ids.indexOf(poem.id)));
     }
     const collected = [];
     for (let page = 1; page <= first.pages; page++) {
@@ -2240,7 +2238,7 @@ test('theme counts include later pages and reflect the other active filters', as
   }
 });
 
-test('search reaches full original and translated text; filters combine without leaking full texts', async () => {
+test('search reaches full original and translated text; filters combine and only the selected version is returned', async () => {
   const { db, ids } = await collectionFixture();
   try {
     assert.equal((await listPoemCards(db, { q: 'staia' })).total, 27);
@@ -2252,7 +2250,8 @@ test('search reaches full original and translated text; filters combine without 
     );
     assert.equal(translated.poems[0].title, 'English title 26');
     assert.equal(translated.poems[0].language, 'en-US');
-    assert.doesNotMatch(JSON.stringify(translated.poems), /translated needle|FINAL_ORIGINAL|Titlu/);
+    assert.ok(translated.poems[0].content.endsWith('translated needle 26'));
+    assert.doesNotMatch(JSON.stringify(translated.poems), /FINAL_ORIGINAL|Titlu/);
     const fallback = await listPoemCards(db, { translation: 'without', lang: 'en-US' });
     assert.equal(fallback.poems[0].language, 'ro');
     assert.equal(fallback.poems[0].has_translation, false);
@@ -2264,7 +2263,7 @@ test('search reaches full original and translated text; filters combine without 
       .run();
     const literal = await listPoemCards(db, { q: '%_' });
     assert.equal(literal.total, 1);
-    assert.equal(literal.poems[0].excerpt, '100%_literal\nAl doilea vers…');
+    assert.equal(literal.poems[0].content, '100%_literal\nAl doilea vers\nAl treilea');
     const none = await listPoemCards(db, { theme: 'absent', page: '5' });
     assert.equal(none.page, 1);
     assert.equal(none.total, 0);
@@ -2274,7 +2273,7 @@ test('search reaches full original and translated text; filters combine without 
   }
 });
 
-test('collection bounds Unicode excerpts, input lengths and URL parameters', async () => {
+test('collection preserves Unicode verses and bounds input lengths and URL parameters', async () => {
   const { db, ids } = await collectionFixture(1);
   try {
     await db
@@ -2282,8 +2281,7 @@ test('collection bounds Unicode excerpts, input lengths and URL parameters', asy
       .bind(' \n\t' + '🌙'.repeat(400), ids[0])
       .run();
     const result = await listPoemCards(db);
-    assert.equal(Array.from(result.poems[0].excerpt).length, 240);
-    assert.equal(result.poems[0].excerpt, '🌙'.repeat(239) + '…');
+    assert.equal(result.poems[0].content, ' \n\t' + '🌙'.repeat(400));
     const parsed = collectionQuery({
       q: 'x'.repeat(1000),
       theme: 'a'.repeat(1000),

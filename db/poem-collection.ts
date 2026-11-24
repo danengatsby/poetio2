@@ -2,10 +2,7 @@ import { rebuildPendingPoemSearch } from './poem-search-index';
 import { ensureInitialPoems, ensureLanguageVariants, type Database } from './poems';
 import {
   POEM_PAGE_SIZE,
-  POEM_EXCERPT_LENGTH,
   collectionQuery,
-  poemExcerpt,
-  withoutLeadingTitle,
   type CollectionParams,
   type PoemCard,
   type PoemCollection,
@@ -103,14 +100,12 @@ export async function listPoemCards(
     .first<{ total: number }>())!.total;
   const pages = Math.max(1, Math.ceil(total / POEM_PAGE_SIZE));
   const page = Math.min(requestedPage, pages);
-  // Only the selected language and a bounded prefix leave SQLite. Full texts
-  // stay in the individual poem route and in authenticated editorial queries.
-  // The French and German sites show their own version when there is one, otherwise the original.
+  // Return the complete reading text only for the selected language and page.
   const rows = await db
     .prepare(
-      `SELECT id, author, image_id, source_language,
+      `SELECT id, author, source_language,
     ${display('title')} AS title, ${display('theme')} AS theme,
-    substr(trim(${display('content')}, char(9)||char(10)||char(13)||' '), 1, ${POEM_EXCERPT_LENGTH + 1}) AS excerpt,
+    ${display('content')} AS content,
     ${locale} AS language,
     ${available} AS has_translation,
     (SELECT COUNT(*) FROM poem_comments WHERE poem_id = poems.id AND status = 'approved') AS comment_count
@@ -121,7 +116,6 @@ export async function listPoemCards(
   return {
     poems: rows.results.map(row => ({
       ...row,
-      excerpt: poemExcerpt(withoutLeadingTitle(row.excerpt, row.title)),
       has_translation: Boolean(row.has_translation),
     })),
     filters,
