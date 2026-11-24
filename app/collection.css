@@ -91,8 +91,38 @@
 .collection-detail {
   padding: 0.5rem 0.25rem;
 }
+.collection-poem-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(0.4rem, 1.4vw, 1.25rem);
+  margin-bottom: 0.6rem;
+}
+.collection-poem-heading .poem-audio-player {
+  flex: 0 0 clamp(5rem, 38%, 17rem);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.collection-detail .poem-comments {
+  margin: 2rem 0 0;
+  padding-block: 1.25rem;
+}
+.collection-detail .comment-form {
+  grid-template-columns: minmax(0, 1fr);
+}
+.collection-detail .comment-form button {
+  max-width: 100%;
+  white-space: normal;
+}
+.collection-detail .comment-list {
+  margin-top: 0;
+}
 .collection-detail h1 {
-  margin: 0 0 0.5rem;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
   font: 400 clamp(1.3rem, 2.5vw, 2.25rem)/1.22 var(--serif);
 }
 .collection-byline {

@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { tsImport } from 'tsx/esm/api';
 import { migrate } from '../../scripts/migrate.mjs';
 import { OWNER_EMAIL, fixtureBook, fixturePoems, fixtureShop } from './fixture.mjs';
+import { wavFixture } from '../audio-fixture.mjs';
 import { bookFixture } from '../book-fixture.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -71,8 +72,23 @@ async function waitForServer() {
 try {
   await waitForServer();
   const { translationProvenance } = await tsImport('../../lib/translation-provenance.ts', import.meta.url);
-  for (const poem of fixturePoems) {
+  const owner = { Origin: base, 'oai-authenticated-user-email': OWNER_EMAIL };
+  for (const [index, poem] of fixturePoems.entries()) {
     const body = { id: crypto.randomUUID(), ...poem };
+    if (index < 2) {
+      const upload = await fetch(base + '/api/audio', {
+        method: 'POST',
+        headers: {
+          ...owner,
+          'Content-Type': 'audio/wav',
+          'X-Upload-Id': crypto.randomUUID(),
+          'X-File-Name': 'poem.wav',
+        },
+        body: wavFixture(24000, 220 + 110 * index),
+      });
+      if (!upload.ok) throw new Error(`Uploading audio failed: ${await upload.text()}`);
+      body.audio_ro_id = (await upload.json()).audio.id;
+    }
     if (poem.translated_content) body.translation_provenance = await translationProvenance(poem, 'manual');
     if (poem.fr_content) body.fr_provenance = await translationProvenance(poem, 'manual', 'fr');
     if (poem.de_content) body.de_provenance = await translationProvenance(poem, 'manual', 'de');
@@ -86,7 +102,6 @@ try {
     if (response.status !== 201) throw new Error(`Adding "${poem.title}" failed: ${await response.text()}`);
   }
   // A book: upload the PDF, then publish once its pages have been checked.
-  const owner = { Origin: base, 'oai-authenticated-user-email': OWNER_EMAIL };
   const fileId = crypto.randomUUID();
   const upload = await fetch(base + '/api/book-files', {
     method: 'POST',

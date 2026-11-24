@@ -115,10 +115,12 @@ const copy = {
 export default function PoemComments({
   poemId,
   language,
+  discussionFirst,
   onCountChange,
 }: {
   poemId: string;
   language: SiteLanguage;
+  discussionFirst?: boolean;
   onCountChange?: (poemId: string, total: number) => void;
 }) {
   const updateCount = useCallback((total: number) => onCountChange?.(poemId, total), [poemId, onCountChange]);
@@ -127,6 +129,7 @@ export default function PoemComments({
       key={poemId}
       endpoint={`/api/poems/${poemId}/comments`}
       language={language}
+      discussionFirst={discussionFirst}
       onCountChange={updateCount}
     />
   );
@@ -136,26 +139,37 @@ export function ReaderComments({
   endpoint,
   language,
   intro,
+  discussionFirst,
   onCountChange,
 }: {
   endpoint: string;
   language: SiteLanguage;
   intro?: string;
+  discussionFirst?: boolean;
   onCountChange?: (total: number) => void;
 }) {
   return (
-    <CommentForm key={endpoint} endpoint={endpoint} language={language} intro={intro} onCountChange={onCountChange} />
+    <CommentForm
+      key={endpoint}
+      endpoint={endpoint}
+      language={language}
+      intro={intro}
+      discussionFirst={discussionFirst}
+      onCountChange={onCountChange}
+    />
   );
 }
 function CommentForm({
   endpoint,
   language,
   intro,
+  discussionFirst,
   onCountChange,
 }: {
   endpoint: string;
   language: SiteLanguage;
   intro?: string;
+  discussionFirst?: boolean;
   onCountChange?: (total: number) => void;
 }) {
   const labels = copy[language];
@@ -251,9 +265,48 @@ function CommentForm({
     }
   }
 
+  const discussion = (
+    <>
+      {comments.length > 0 && (
+        <ol className="comment-list">
+          {comments.map(comment => (
+            <li key={comment.id}>
+              <div className="comment-meta">
+                <strong dir="auto">{comment.name}</strong>
+                <time dateTime={new Date(comment.created_at).toISOString()}>
+                  {new Intl.DateTimeFormat(language, { dateStyle: 'medium' }).format(comment.created_at)}
+                </time>
+              </div>
+              <p dir="auto">{comment.content}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+      {loading && (
+        <p role="status" className="comment-note">
+          {labels.loading}
+        </p>
+      )}
+      {loadFailed && (
+        <div role="alert">
+          <p>{labels.loadError}</p>
+          <button className="secondary-button" onClick={() => load(offset)}>
+            {labels.retry}
+          </button>
+        </div>
+      )}
+      {!loading && !loadFailed && !comments.length && <p className="comment-note">{labels.empty}</p>}
+      {hasMore && !loadFailed && (
+        <button className="secondary-button" disabled={loading} onClick={() => load(offset + 20)}>
+          {labels.more}
+        </button>
+      )}
+    </>
+  );
   return (
     <section className="poem-comments" aria-labelledby={`${id}-title`}>
       <h2 id={`${id}-title`}>{total === null ? labels.title : commentCountLabel(total, language)}</h2>
+      {discussionFirst && discussion}
       <p className="comments-intro">{intro ?? labels.intro}</p>
       <form onSubmit={submit} className="comment-form" aria-describedby={`${id}-note`}>
         <label htmlFor={`${id}-name`}>{labels.name}</label>
@@ -362,40 +415,7 @@ function CommentForm({
           {saved ? labels.success : ''}
         </p>
       </form>
-      {comments.length > 0 && (
-        <ol className="comment-list">
-          {comments.map(comment => (
-            <li key={comment.id}>
-              <div className="comment-meta">
-                <strong dir="auto">{comment.name}</strong>
-                <time dateTime={new Date(comment.created_at).toISOString()}>
-                  {new Intl.DateTimeFormat(language, { dateStyle: 'medium' }).format(comment.created_at)}
-                </time>
-              </div>
-              <p dir="auto">{comment.content}</p>
-            </li>
-          ))}
-        </ol>
-      )}
-      {loading && (
-        <p role="status" className="comment-note">
-          {labels.loading}
-        </p>
-      )}
-      {loadFailed && (
-        <div role="alert">
-          <p>{labels.loadError}</p>
-          <button className="secondary-button" onClick={() => load(offset)}>
-            {labels.retry}
-          </button>
-        </div>
-      )}
-      {!loading && !loadFailed && !comments.length && <p className="comment-note">{labels.empty}</p>}
-      {hasMore && !loadFailed && (
-        <button className="secondary-button" disabled={loading} onClick={() => load(offset + 20)}>
-          {labels.more}
-        </button>
-      )}
+      {!discussionFirst && discussion}
     </section>
   );
 }

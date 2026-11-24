@@ -1,6 +1,6 @@
 'use client';
-import { isExtraLanguage, type Poem, type SiteLanguage } from '@/lib/poem-types';
-import { poemVersion } from '@/lib/poem-languages';
+import type { Poem, SiteLanguage } from '@/lib/poem-types';
+import { poemRecording, poemVersion } from '@/lib/poem-languages';
 import PoemAudioPlayer from './poem-audio-player';
 import usePoemReadingPreferences from './use-poem-reading-preferences';
 import './poem-reading.css';
@@ -47,9 +47,7 @@ export default function PoemReading({
   const version = poemVersion(poem, language),
     text = version ?? poem;
   const actualLanguage = version ? language : poem.source_language;
-  // There are Romanian and English recordings; the other languages' pages play the original's.
-  const recording = isExtraLanguage(actualLanguage) ? poem.source_language : actualLanguage;
-  const audioField = recording === 'en-US' ? 'audio_en_id' : 'audio_ro_id';
+  const recording = poemRecording(poem, actualLanguage);
   const { preferences, storageAvailable, setPreferences, resetPreferences } = usePoemReadingPreferences();
   return (
     <article className="poem-reading" lang={language}>
@@ -179,12 +177,12 @@ export default function PoemReading({
         </p>
       </details>
       <PoemAudioPlayer
-        key={audioSrc || poem[audioField]}
-        audioId={poem[audioField]}
+        key={audioSrc || recording.id}
+        audioId={recording.id}
         src={audioSrc}
         title={text.title}
         language={language}
-        recording={recording}
+        recording={recording.language}
         showStatus={mediaStatus}
       />
       {!version && (

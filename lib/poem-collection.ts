@@ -18,6 +18,8 @@ export type PoemCard = {
   content: string;
   language: SiteLanguage;
   source_language: PoemLanguage;
+  audio_ro_id: string | null;
+  audio_en_id: string | null;
   has_translation: boolean;
   comment_count: number;
 };

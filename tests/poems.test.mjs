@@ -2180,6 +2180,8 @@ test('public collection pages stay bounded in SQL and cover tied timestamps once
       'id',
       'author',
       'source_language',
+      'audio_ro_id',
+      'audio_en_id',
       'title',
       'theme',
       'content',

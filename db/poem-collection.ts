@@ -115,7 +115,7 @@ export async function listPoemCards(
   // Return the complete reading text only for the selected language and page.
   const rows = await db
     .prepare(
-      `SELECT id, author, source_language,
+      `SELECT id, author, source_language, audio_ro_id, audio_en_id,
     ${display('title')} AS title, ${display('theme')} AS theme,
     ${display('content')} AS content,
     ${locale} AS language,

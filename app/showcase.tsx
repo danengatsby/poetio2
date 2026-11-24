@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { collectionHref, POEM_PAGE_SIZE, type PoemCollection } from '@/lib/poem-collection';
 import type { SiteLanguage } from '@/lib/poem-types';
 import { pick, rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
+import { poemRecording } from '@/lib/poem-languages';
+import PoemAudioPlayer from './poem-audio-player';
+import PoemComments from './poem-comments';
 import SiteLogo from './site-logo';
 import SiteHeader from './site-header';
 import './collection.css';
@@ -25,6 +28,7 @@ export default function Showcase({
   const reset = collectionHref({ ...filters, q: '', theme: '', topic: '', translation: 'all' });
   const [selectedId, setSelectedId] = useState(initialPoem);
   const selected = poems.find(poem => poem.id === selectedId) ?? poems[0];
+  const recording = selected && poemRecording(selected, selected.language);
   useEffect(() => {
     const restore = () => setSelectedId(new URL(location.href).searchParams.get('poem') ?? undefined);
     window.addEventListener('popstate', restore);
@@ -236,9 +240,19 @@ export default function Showcase({
                 aria-labelledby="selected-poem-title"
                 tabIndex={0}
               >
-                <h1 id="selected-poem-title" lang={selected.language}>
-                  {selected.title}
-                </h1>
+                <div className="collection-poem-heading">
+                  <h1 id="selected-poem-title" lang={selected.language}>
+                    {selected.title}
+                  </h1>
+                  {recording?.id && (
+                    <PoemAudioPlayer
+                      audioId={recording.id}
+                      title={selected.title}
+                      language={language}
+                      recording={recording.language}
+                    />
+                  )}
+                </div>
                 <div className="collection-byline">
                   <span>{selected.author}</span>
                   {selected.theme && <span lang={selected.language}>{selected.theme}</span>}
@@ -249,6 +263,7 @@ export default function Showcase({
                 <p className="collection-verses" lang={selected.language}>
                   {selected.content}
                 </p>
+                <PoemComments poemId={selected.id} language={language} discussionFirst />
               </article>
             </div>
           ) : (

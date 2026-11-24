@@ -119,15 +119,25 @@ test('the home page opens on the collection and a counted theme leads to another
 });
 
 test('choosing a title updates the highlighted item and the single reading panel', async ({ page }) => {
+  await page.route('**/api/poems/*/comments?*', route => {
+    const poemId = new URL(route.request().url()).pathname.split('/')[3];
+    return route.fulfill({
+      json: {
+        comments: [{ id: 'test', name: 'Cititor', content: poemId, created_at: 1720000000000 }],
+        total: 1,
+        hasMore: false,
+      },
+    });
+  });
   await page.goto('/?' + new URLSearchParams({ lang: 'ro', theme: fixturePoems[0].theme }));
   const links = page.locator('.collection-titles a');
   const article = page.locator('#selected-poem');
   await expect(links.first()).toHaveAttribute('aria-current', 'true');
-  await expect(article.getByRole('heading')).toHaveText(await links.first().innerText());
+  await expect(article.getByRole('heading', { level: 1 })).toHaveText(await links.first().innerText());
   const [first, second] = fixturePoems;
   const select = poem => links.filter({ hasText: poem.title });
   await select(first).click();
-  await expect(article.getByRole('heading')).toHaveText(first.title);
+  await expect(article.getByRole('heading', { level: 1 })).toHaveText(first.title);
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const left = await page.locator('.collection-titles').boundingBox();
@@ -135,9 +145,19 @@ test('choosing a title updates the highlighted item and the single reading panel
     expect(left.x + left.width).toBeLessThan(right.x);
     expect(right.x + right.width).toBeLessThanOrEqual(width);
   }
+  const audio = article.locator('audio');
+  const oldAudio = await audio.elementHandle();
+  const firstSource = await audio.getAttribute('src');
+  await oldAudio.evaluate(element => element.play());
+  const discussion = article.locator('.collection-verses + .poem-comments .comment-list p');
+  await expect(discussion).toHaveText(await select(first).getAttribute('data-poem-id'));
   await select(second).focus();
   await page.keyboard.press('Enter');
   await expect(select(second)).toHaveAttribute('aria-current', 'true');
+  await expect(audio).toHaveAttribute('src', /^\/api\/audio\//);
+  expect(await audio.getAttribute('src')).not.toBe(firstSource);
+  expect(await oldAudio.evaluate(element => element.paused && !element.hasAttribute('src'))).toBe(true);
+  await expect(discussion).toHaveText(await select(second).getAttribute('data-poem-id'));
   await expect(page.locator('.collection-verses')).toHaveCount(1);
   expect(await page.locator('.collection-verses').textContent()).toBe(second.content);
   await expect(page.locator('.collection-titles [aria-current]')).toHaveCount(1);
@@ -145,13 +165,16 @@ test('choosing a title updates the highlighted item and the single reading panel
   await expect(select(first)).toHaveAttribute('aria-current', 'true');
   await page.goForward();
   await page.reload();
-  await expect(article.getByRole('heading')).toHaveText(second.title);
+  await expect(article.getByRole('heading', { level: 1 })).toHaveText(second.title);
   await expect(select(second)).toHaveAttribute('aria-current', 'true');
-  await expect(article.getByRole('link')).toHaveCount(0);
+  await expect(article.getByRole('link', { name: /Pagina poemului/ })).toHaveCount(0);
   await openSelectedPoemPage(page);
   await expect(page.locator('h1')).toHaveText(second.title);
   await page.locator('.content-back').click();
   await expect(select(second)).toHaveAttribute('aria-current', 'true');
+  await page.goto('/?' + new URLSearchParams({ q: fixturePoems[2].title }));
+  await expect(article.getByRole('heading', { level: 1 })).toHaveText(fixturePoems[2].title);
+  await expect(article.locator('audio')).toHaveCount(0);
 });
 
 test('the public reader shows seven poems at a time and returns to the same first page', async ({ page }) => {
