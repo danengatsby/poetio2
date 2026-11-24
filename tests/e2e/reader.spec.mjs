@@ -190,6 +190,8 @@ test('choosing a title updates the highlighted item and the single reading panel
 test('the public reader shows nine poems at a time and returns to the same first page', async ({ page }) => {
   await page.goto('/');
   const links = page.locator('.collection-titles [data-poem-id]');
+  const image = page.locator('img.homepage-logo');
+  await expect(image).toBeInViewport();
   await expect(links).toHaveCount(9);
   const first = await poemIds(page);
   const top = page.locator('.collection-pagination:has(+ .collection-reader)');
@@ -197,6 +199,8 @@ test('the public reader shows nine poems at a time and returns to the same first
   await expect(top.locator('[aria-current=page]')).toHaveText(await bottom.locator('[aria-current=page]').innerText());
   await top.locator('[rel=next]').click();
   await expect(page.locator('.collection-results')).toHaveText(/^10–/);
+  await expect(image).toBeInViewport();
+  await image.evaluate(element => element.decode());
   const second = await poemIds(page);
   expect(second.length).toBeGreaterThan(0);
   expect(second.length).toBeLessThanOrEqual(9);
@@ -206,4 +210,5 @@ test('the public reader shows nine poems at a time and returns to the same first
   await expect(top.locator('[aria-current=page]')).toHaveText(await bottom.locator('[aria-current=page]').innerText());
   await bottom.locator('[rel=prev]').click();
   expect(await poemIds(page)).toEqual(first);
+  await expect(image).toBeInViewport();
 });

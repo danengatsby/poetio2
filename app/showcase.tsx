@@ -1,7 +1,7 @@
 'use client';
 // GET navigation keeps the reading selection in the URL.
 import { useEffect, useRef, useState } from 'react';
-import { collectionHref, POEM_PAGE_SIZE, type PoemCollection } from '@/lib/poem-collection';
+import { collectionHref, collectionPageHref, POEM_PAGE_SIZE, type PoemCollection } from '@/lib/poem-collection';
 import type { SiteLanguage } from '@/lib/poem-types';
 import { pick, rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
 import { poemRecording } from '@/lib/poem-languages';
@@ -71,7 +71,7 @@ export default function Showcase({
       </a>
       <SiteHeader language={language} onLanguageChange={changeLanguage} />
       <main id="main" lang={language}>
-        {!filtered && page === 1 && poems.length > 0 && (
+        {poems.length > 0 && (
           <div className="collection-logo shell">
             <SiteLogo />
           </div>
@@ -333,7 +333,7 @@ function CollectionPagination({ filters, page, pages }: Pick<PoemCollection, 'fi
       )}
     >
       {page > 1 && (
-        <a className="secondary-button" rel="prev" href={collectionHref(filters, page - 1)}>
+        <a className="secondary-button" rel="prev" href={collectionPageHref(filters, page - 1)}>
           {pick(
             language,
             '← Pagina anterioară',
@@ -357,7 +357,7 @@ function CollectionPagination({ filters, page, pages }: Pick<PoemCollection, 'fi
         )}
       </span>
       {page < pages && (
-        <a className="secondary-button" rel="next" href={collectionHref(filters, page + 1)}>
+        <a className="secondary-button" rel="next" href={collectionPageHref(filters, page + 1)}>
           {pick(
             language,
             'Pagina următoare →',

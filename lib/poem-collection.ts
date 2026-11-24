@@ -49,7 +49,7 @@ export function collectionQuery(params: CollectionParams, fallback: SiteLanguage
   return { filters, page: /^[1-9]\d{0,6}$/.test(value('page')) ? Number(value('page')) : 1 };
 }
 
-export function collectionHref(filters: CollectionFilters, page = 1, selectedId?: string) {
+export function collectionPageHref(filters: CollectionFilters, page = 1, selectedId?: string) {
   const query = new URLSearchParams({ lang: filters.language });
   if (filters.q) query.set('q', filters.q);
   if (filters.topic) query.set('topic', filters.topic);
@@ -57,7 +57,11 @@ export function collectionHref(filters: CollectionFilters, page = 1, selectedId?
   if (filters.translation !== 'all') query.set('translation', filters.translation);
   if (page > 1) query.set('page', String(page));
   if (selectedId) query.set('poem', selectedId);
-  return '/?' + query.toString() + (selectedId ? '#collection-reader' : '#collection');
+  return '/?' + query.toString();
+}
+
+export function collectionHref(filters: CollectionFilters, page = 1, selectedId?: string) {
+  return collectionPageHref(filters, page, selectedId) + (selectedId ? '#collection-reader' : '#collection');
 }
 
 export function collectionReturnHref(value: string | undefined, language: SiteLanguage) {
