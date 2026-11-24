@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { existsSync, createReadStream } from 'node:fs';
-import { mkdir, rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { Readable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
@@ -93,9 +93,14 @@ function openMediaBucket(directory, prefix, label, accel) {
     async put(key, bytes) {
       const target = objectPath(key);
       await mkdir(dirname(target), { recursive: true, mode: accel ? 0o750 : 0o700 });
+      // The production service masks group permissions on creation (UMask=0077).
+      if (accel) {
+        for (const path of [directory, join(directory, prefix), dirname(target)]) await chmod(path, 0o750);
+      }
       const temporary = `${target}.${randomUUID()}.tmp`;
       try {
-        await writeFile(temporary, bytes, { flag: 'wx', mode: accel ? 0o640 : 0o600 });
+        await writeFile(temporary, bytes, { flag: 'wx', mode: 0o600 });
+        if (accel) await chmod(temporary, 0o640);
         await rename(temporary, target);
       } finally {
         await unlink(temporary).catch(error => {

@@ -244,6 +244,7 @@ test('moderation migration preserves legacy visibility and never reapproves pend
 
 test('accelerated audio and video buckets share files with the service group and name them for nginx', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'poetio-accel-test-'));
+  const previousMask = process.umask(0o077);
   try {
     const key = 'videos/9834e3cf-ef2e-44bc-aa6c-05498159001c/' + 'b'.repeat(64);
     const plain = openVideoBucket(join(directory, 'plain'));
@@ -259,8 +260,13 @@ test('accelerated audio and video buckets share files with the service group and
     assert.throws(() => shared.accelUri('videos/../../poetio.sqlite3'), /Invalid video storage key/);
     const audioKey = 'poem-audio/3c6ed1d5-b9da-40f5-b2ff-702286b2e2cb/' + 'c'.repeat(64);
     const audioBucket = openAudioBucket(join(directory, 'audio'), { accel: '/_poetio/media/audio/' });
+    await audioBucket.put(audioKey, wavFixture());
+    for (const path of ['audio', 'audio/poem-audio', join('audio', dirname(audioKey))])
+      assert.equal(mode(join(directory, path)), 0o750);
+    assert.equal(mode(join(directory, 'audio', audioKey)), 0o640);
     assert.equal(audioBucket.accelUri(audioKey), '/_poetio/media/audio/' + audioKey);
   } finally {
+    process.umask(previousMask);
     await rm(directory, { recursive: true, force: true });
   }
 });
