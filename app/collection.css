@@ -113,7 +113,7 @@
   .collection-poem-heading .poem-audio-player {
     flex: 0 0 2.75rem;
   }
-  .collection-poem-heading audio {
+  .collection-poem-heading .poem-audio-player audio {
     display: none;
   }
   .collection-poem-heading .poem-audio-toggle {

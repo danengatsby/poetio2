@@ -144,6 +144,7 @@ test('choosing a title updates the highlighted item and the single reading panel
     const right = await article.boundingBox();
     const toggle = article.locator('.poem-audio-toggle');
     if (width < 400) {
+      await expect(article.locator('audio')).toBeHidden();
       await toggle.click();
       await expect(toggle).toHaveAccessibleName(/Pauză/);
       await toggle.click();
