@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { Pause, Play } from 'lucide-react';
 import type { PoemLanguage, SiteLanguage } from '@/lib/poem-types';
 import { pick } from '@/lib/site-language';
 import './poem-audio-player.css';
@@ -12,6 +13,7 @@ export default function PoemAudioPlayer({
   language,
   recording,
   showStatus = false,
+  compactControl = false,
 }: {
   audioId: string | null;
   src?: string;
@@ -21,12 +23,15 @@ export default function PoemAudioPlayer({
   /** The language of the recording (the French page plays the original's). */
   recording: PoemLanguage;
   showStatus?: boolean;
+  compactControl?: boolean;
 }) {
   const id = useId();
   const element = useRef<HTMLAudioElement>(null);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const source = src || (audioId ? `/api/audio/${audioId}` : undefined);
+  const playLabel = `${pick(language, 'Ascultă: ', 'Listen to: ', 'Écouter\u00a0: ', 'Anhören: ', 'Escuchar: ', 'Ascolta: ')}${title}`;
   useEffect(() => {
     const audio = element.current;
     if (audio && source) audio.src = source;
@@ -46,9 +51,11 @@ export default function PoemAudioPlayer({
         controls
         preload="metadata"
         src={source}
-        aria-label={`${pick(language, 'Ascultă: ', 'Listen to: ', 'Écouter\u00a0: ', 'Anhören: ', 'Escuchar: ', 'Ascolta: ')}${title}`}
+        aria-label={playLabel}
         aria-disabled={!source || undefined}
         aria-describedby={!source || failed ? `${id}-status` : undefined}
+        onPlay={compactControl ? () => setPlaying(true) : undefined}
+        onPause={compactControl ? () => setPlaying(false) : undefined}
         onLoadedMetadata={() => {
           setFailed(false);
           setReady(true);
@@ -57,6 +64,26 @@ export default function PoemAudioPlayer({
           if (source) setFailed(true);
         }}
       />
+      {compactControl && source && (
+        <button
+          type="button"
+          className="poem-audio-toggle"
+          aria-label={
+            playing ? `${pick(language, 'Pauză', 'Pause', 'Pause', 'Pause', 'Pausa', 'Pausa')} · ${title}` : playLabel
+          }
+          onClick={() => {
+            const audio = element.current;
+            if (!audio) return;
+            if (!audio.paused) audio.pause();
+            else
+              void audio.play().catch((error: Error) => {
+                if (error.name !== 'AbortError') setFailed(true);
+              });
+          }}
+        >
+          {playing ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+        </button>
+      )}
       {showStatus && source && !failed && (
         <p role="status">
           {ready

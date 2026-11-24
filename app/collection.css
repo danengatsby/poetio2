@@ -89,6 +89,7 @@
   font-weight: bold;
 }
 .collection-detail {
+  container-type: inline-size;
   padding: 0.5rem 0.25rem;
 }
 .collection-poem-heading {
@@ -104,6 +105,33 @@
   padding: 0;
   border: 0;
   background: transparent;
+}
+.poem-audio-toggle {
+  display: none;
+}
+@container (max-width: 28rem) {
+  .collection-poem-heading .poem-audio-player {
+    flex: 0 0 2.75rem;
+  }
+  .collection-poem-heading audio {
+    display: none;
+  }
+  .collection-poem-heading .poem-audio-toggle {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--tint);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .poem-audio-toggle:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
 }
 .collection-detail .poem-comments {
   margin: 2rem 0 0;

@@ -142,6 +142,15 @@ test('choosing a title updates the highlighted item and the single reading panel
     await page.setViewportSize({ width, height: 900 });
     const left = await page.locator('.collection-titles').boundingBox();
     const right = await article.boundingBox();
+    const toggle = article.locator('.poem-audio-toggle');
+    if (width < 400) {
+      await toggle.click();
+      await expect(toggle).toHaveAccessibleName(/Pauză/);
+      await toggle.click();
+      await expect(toggle).toHaveAccessibleName(/Ascultă/);
+    } else {
+      await expect(article.locator('audio')).toBeVisible();
+    }
     expect(left.x + left.width).toBeLessThan(right.x);
     expect(right.x + right.width).toBeLessThanOrEqual(width);
   }
@@ -172,8 +181,8 @@ test('choosing a title updates the highlighted item and the single reading panel
   await expect(page.locator('h1')).toHaveText(second.title);
   await page.locator('.content-back').click();
   await expect(select(second)).toHaveAttribute('aria-current', 'true');
-  await page.goto('/?' + new URLSearchParams({ q: fixturePoems[2].title }));
-  await expect(article.getByRole('heading', { level: 1 })).toHaveText(fixturePoems[2].title);
+  await page.getByRole('radio', { name: 'English (US)' }).click();
+  await expect(article.getByRole('heading', { level: 1 })).toHaveText(second.translated_title);
   await expect(article.locator('audio')).toHaveCount(0);
 });
 

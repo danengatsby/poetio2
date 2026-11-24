@@ -246,6 +246,7 @@ export default function Showcase({
                   </h1>
                   {recording?.id && (
                     <PoemAudioPlayer
+                      compactControl
                       audioId={recording.id}
                       title={selected.title}
                       language={language}
