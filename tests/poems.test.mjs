@@ -2172,9 +2172,9 @@ test('public collection pages stay bounded in SQL and cover tied timestamps once
   try {
     const first = await listPoemCards(db);
     assert.equal(first.total, 100);
-    assert.equal(first.pages, 15);
-    assert.equal(first.poems.length, 7);
-    assert.ok(Buffer.byteLength(JSON.stringify(first)) < 7 * 31_000);
+    assert.equal(first.pages, 12);
+    assert.equal(first.poems.length, 9);
+    assert.ok(Buffer.byteLength(JSON.stringify(first)) < 9 * 31_000);
     assert.doesNotMatch(JSON.stringify(first), /translated needle|English title/);
     const expectedKeys = [
       'id',
@@ -2196,24 +2196,24 @@ test('public collection pages stay bounded in SQL and cover tied timestamps once
     const collected = [];
     for (let page = 1; page <= first.pages; page++) {
       const result = await listPoemCards(db, { page: String(page) });
-      assert.equal(result.poems.length, page === 15 ? 2 : 7);
+      assert.equal(result.poems.length, page === 12 ? 1 : 9);
       collected.push(...result.poems.map(poem => poem.id));
     }
     assert.deepEqual(collected, ids);
-    const bookmarked = await listPoemCards(db, { page: '1', poem: ids[7] });
+    const bookmarked = await listPoemCards(db, { page: '1', poem: ids[9] });
     assert.equal(bookmarked.page, 2);
     assert.deepEqual(
       bookmarked.poems.map(poem => poem.id),
-      ids.slice(7, 14),
+      ids.slice(9, 18),
     );
-    const filtered = await listPoemCards(db, { theme: 'Memorie', poem: ids[16] });
+    const filtered = await listPoemCards(db, { theme: 'Memorie', poem: ids[18] });
     assert.equal(filtered.page, 2);
-    assert.ok(filtered.poems.some(poem => poem.id === ids[16]));
-    assert.equal((await listPoemCards(db, { page: '9999999' })).page, 15);
+    assert.ok(filtered.poems.some(poem => poem.id === ids[18]));
+    assert.equal((await listPoemCards(db, { page: '9999999' })).page, 12);
     for (const page of ['-1', '1.5', 'Infinity', '1e8', '10000000'])
       assert.equal((await listPoemCards(db, { page })).page, 1);
     const plan = await db
-      .prepare('EXPLAIN QUERY PLAN SELECT id FROM poems ORDER BY created_at,id LIMIT 7 OFFSET 7')
+      .prepare('EXPLAIN QUERY PLAN SELECT id FROM poems ORDER BY created_at,id LIMIT 9 OFFSET 9')
       .all();
     assert.match(JSON.stringify(plan), /idx_poems_collection_order/);
     assert.doesNotMatch(JSON.stringify(plan), /TEMP B-TREE/);

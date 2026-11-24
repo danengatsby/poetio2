@@ -187,19 +187,19 @@ test('choosing a title updates the highlighted item and the single reading panel
   await expect(article.locator('audio')).toHaveCount(0);
 });
 
-test('the public reader shows seven poems at a time and returns to the same first page', async ({ page }) => {
+test('the public reader shows nine poems at a time and returns to the same first page', async ({ page }) => {
   await page.goto('/');
   const links = page.locator('.collection-titles [data-poem-id]');
-  await expect(links).toHaveCount(7);
+  await expect(links).toHaveCount(9);
   const first = await poemIds(page);
   const top = page.locator('.collection-pagination:has(+ .collection-reader)');
   const bottom = page.locator('.collection-reader + .collection-pagination');
   await expect(top.locator('[aria-current=page]')).toHaveText(await bottom.locator('[aria-current=page]').innerText());
   await top.locator('[rel=next]').click();
-  await expect(page.locator('.collection-results')).toHaveText(/^8–/);
+  await expect(page.locator('.collection-results')).toHaveText(/^10–/);
   const second = await poemIds(page);
   expect(second.length).toBeGreaterThan(0);
-  expect(second.length).toBeLessThanOrEqual(7);
+  expect(second.length).toBeLessThanOrEqual(9);
   expect(second.filter(id => first.includes(id))).toEqual([]);
   await expect(links.first()).toHaveAttribute('aria-current', 'true');
   await expect(bottom.locator('[aria-current=page]')).toHaveText(/^Pagina 2 din /);
