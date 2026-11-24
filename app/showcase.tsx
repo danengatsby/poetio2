@@ -53,6 +53,7 @@ export default function Showcase({
     'Buscar en la colección',
     'Cerca nella collezione',
   );
+  const pagination = pages > 1 && <CollectionPagination filters={filters} page={page} pages={pages} />;
   function changeLanguage(value: SiteLanguage) {
     rememberSiteLanguage(value);
     window.location.assign(
@@ -197,6 +198,7 @@ export default function Showcase({
                 )
               : pick(language, '0 poeme', '0 poems', '0 poème', '0 Gedichte', '0 poemas', '0 poesie')}
           </p>
+          {pagination}
           {selected ? (
             <div className="collection-reader" id="collection-reader">
               <nav
@@ -289,58 +291,7 @@ export default function Showcase({
               )}
             </div>
           )}
-          {pages > 1 && (
-            <nav
-              className="collection-pagination"
-              aria-label={pick(
-                language,
-                'Paginile colecției',
-                'Collection pages',
-                'Pages de la collection',
-                'Seiten der Sammlung',
-                'Páginas de la colección',
-                'Pagine della collezione',
-              )}
-            >
-              {page > 1 && (
-                <a className="secondary-button" rel="prev" href={collectionHref(filters, page - 1)}>
-                  {pick(
-                    language,
-                    '← Pagina anterioară',
-                    '← Previous page',
-                    '← Page précédente',
-                    '← Vorherige Seite',
-                    '← Página anterior',
-                    '← Pagina precedente',
-                  )}
-                </a>
-              )}
-              <span aria-current="page">
-                {pick(
-                  language,
-                  `Pagina ${page} din ${pages}`,
-                  `Page ${page} of ${pages}`,
-                  `Page ${page} sur ${pages}`,
-                  `Seite ${page} von ${pages}`,
-                  `Página ${page} de ${pages}`,
-                  `Pagina ${page} di ${pages}`,
-                )}
-              </span>
-              {page < pages && (
-                <a className="secondary-button" rel="next" href={collectionHref(filters, page + 1)}>
-                  {pick(
-                    language,
-                    'Pagina următoare →',
-                    'Next page →',
-                    'Page suivante →',
-                    'Nächste Seite →',
-                    'Página siguiente →',
-                    'Pagina successiva →',
-                  )}
-                </a>
-              )}
-            </nav>
-          )}
+          {pagination}
         </section>
         <div className="closing shell">
           <span aria-hidden="true">✳</span>
@@ -363,5 +314,61 @@ export default function Showcase({
         </a>
       </footer>
     </>
+  );
+}
+
+function CollectionPagination({ filters, page, pages }: Pick<PoemCollection, 'filters' | 'page' | 'pages'>) {
+  const { language } = filters;
+  return (
+    <nav
+      className="collection-pagination"
+      aria-label={pick(
+        language,
+        'Paginile colecției',
+        'Collection pages',
+        'Pages de la collection',
+        'Seiten der Sammlung',
+        'Páginas de la colección',
+        'Pagine della collezione',
+      )}
+    >
+      {page > 1 && (
+        <a className="secondary-button" rel="prev" href={collectionHref(filters, page - 1)}>
+          {pick(
+            language,
+            '← Pagina anterioară',
+            '← Previous page',
+            '← Page précédente',
+            '← Vorherige Seite',
+            '← Página anterior',
+            '← Pagina precedente',
+          )}
+        </a>
+      )}
+      <span aria-current="page">
+        {pick(
+          language,
+          `Pagina ${page} din ${pages}`,
+          `Page ${page} of ${pages}`,
+          `Page ${page} sur ${pages}`,
+          `Seite ${page} von ${pages}`,
+          `Página ${page} de ${pages}`,
+          `Pagina ${page} di ${pages}`,
+        )}
+      </span>
+      {page < pages && (
+        <a className="secondary-button" rel="next" href={collectionHref(filters, page + 1)}>
+          {pick(
+            language,
+            'Pagina următoare →',
+            'Next page →',
+            'Page suivante →',
+            'Nächste Seite →',
+            'Página siguiente →',
+            'Pagina successiva →',
+          )}
+        </a>
+      )}
+    </nav>
   );
 }
