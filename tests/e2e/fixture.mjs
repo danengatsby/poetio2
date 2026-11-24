@@ -49,6 +49,13 @@ export const fixturePoems = [
     content: 'The kettle sings before the rain.\nThe window keeps a grey account.',
     source_language: 'en-US',
   },
+  {
+    title: 'Urme pe nisip',
+    author: 'Ana Probă',
+    theme: 'Mare',
+    content: 'Pe țărm rămân doi pași.\nUn val ajunge la ei.',
+    source_language: 'ro',
+  },
 ];
 
 export const fixtureBook = {
