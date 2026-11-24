@@ -1,7 +1,7 @@
 import type { PoemLanguage, SiteLanguage } from './poem-types';
 import { siteLanguage } from './site-language';
 
-export const POEM_PAGE_SIZE = 12;
+export const POEM_PAGE_SIZE = 7;
 export type CollectionParams = Record<string, string | string[] | undefined>;
 export type CollectionFilters = {
   q: string;

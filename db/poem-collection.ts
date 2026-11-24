@@ -99,7 +99,19 @@ export async function listPoemCards(
     .bind(...bindings)
     .first<{ total: number }>())!.total;
   const pages = Math.max(1, Math.ceil(total / POEM_PAGE_SIZE));
-  const page = Math.min(requestedPage, pages);
+  let page = Math.min(requestedPage, pages);
+  // A saved selection may have moved to another page since the link was created.
+  if (pages > 1 && typeof params.poem === 'string' && params.poem) {
+    const selected = await db
+      .prepare(
+        `SELECT position FROM (
+      SELECT id, row_number() OVER (ORDER BY created_at, id) AS position FROM poems ${where}
+    ) WHERE id = ?`,
+      )
+      .bind(...bindings, params.poem)
+      .first<{ position: number }>();
+    if (selected) page = Math.ceil(selected.position / POEM_PAGE_SIZE);
+  }
   // Return the complete reading text only for the selected language and page.
   const rows = await db
     .prepare(
