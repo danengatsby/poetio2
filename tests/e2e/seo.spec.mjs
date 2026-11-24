@@ -4,12 +4,12 @@ import { fixturePoems } from './fixture.mjs';
 
 const [meeting] = fixturePoems;
 // The editor test may rename this English-only poem; its title keeps this beginning.
-const KETTLE = /^The kettle/;
+const KETTLE = 'The kettle';
 const SITE = 'https://poetio.cloud';
 
 async function poemId(page, title) {
   await page.goto('/');
-  const card = page.locator('.collection-titles').getByRole('link', { name: title, exact: true });
+  const card = page.locator('.collection-titles').getByRole('link', { name: title, exact: title !== KETTLE });
   return card.getAttribute('data-poem-id');
 }
 
