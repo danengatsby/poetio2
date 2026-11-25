@@ -199,7 +199,9 @@ test('the public reader shows nine poems at a time and returns to the same first
   await expect(top.locator('[aria-current=page]')).toHaveText(await bottom.locator('[aria-current=page]').innerText());
   await top.locator('[rel=next]').click();
   await expect(page.locator('.collection-results')).toHaveText(/^10–/);
-  await expect(image).toBeInViewport();
+  await expect(page).toHaveURL(/#collection-reader$/);
+  await expect(page.locator('#selected-poem-title')).toBeInViewport();
+  await expect(image).not.toBeInViewport();
   await image.evaluate(element => element.decode());
   const second = await poemIds(page);
   expect(second.length).toBeGreaterThan(0);
@@ -210,5 +212,7 @@ test('the public reader shows nine poems at a time and returns to the same first
   await expect(top.locator('[aria-current=page]')).toHaveText(await bottom.locator('[aria-current=page]').innerText());
   await bottom.locator('[rel=prev]').click();
   expect(await poemIds(page)).toEqual(first);
-  await expect(image).toBeInViewport();
+  await expect(page).toHaveURL(/#collection-reader$/);
+  await expect(page.locator('#selected-poem-title')).toBeInViewport();
+  await expect(image).not.toBeInViewport();
 });

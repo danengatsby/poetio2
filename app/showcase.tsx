@@ -333,7 +333,7 @@ function CollectionPagination({ filters, page, pages }: Pick<PoemCollection, 'fi
       )}
     >
       {page > 1 && (
-        <a className="secondary-button" rel="prev" href={collectionPageHref(filters, page - 1)}>
+        <a className="secondary-button" rel="prev" href={collectionPageHref(filters, page - 1) + '#collection-reader'}>
           {pick(
             language,
             '← Pagina anterioară',
@@ -352,7 +352,7 @@ function CollectionPagination({ filters, page, pages }: Pick<PoemCollection, 'fi
         {pick(language, 'din', 'of', 'sur', 'von', 'de', 'di')} {pages}
       </span>
       {page < pages && (
-        <a className="secondary-button" rel="next" href={collectionPageHref(filters, page + 1)}>
+        <a className="secondary-button" rel="next" href={collectionPageHref(filters, page + 1) + '#collection-reader'}>
           {pick(
             language,
             'Pagina următoare →',
