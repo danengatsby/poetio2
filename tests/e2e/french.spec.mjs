@@ -16,8 +16,7 @@ test('the language selector switches the collection to French and remembers it',
   await expect(french).toHaveAttribute('lang', 'fr');
   await page.locator('a.poem-card', { hasText: 'Seara la margine'.normalize('NFD') }).click();
   await expect(page.locator('#selected-poem')).toContainText('Original en roumain');
-  await expect(page.getByRole('search', { name: 'Rechercher dans la collection' })).toBeVisible();
-  await expect(page.getByRole('searchbox', { name: 'Rechercher dans les titres et les textes' })).toBeVisible();
+  await expect(page.getByRole('search')).toHaveCount(0);
   // The choice is kept without the parameter.
   const cookies = await page.context().cookies();
   expect(cookies.find(cookie => cookie.name === 'poetio-language')?.value).toBe('fr');

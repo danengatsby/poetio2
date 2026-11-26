@@ -13,7 +13,7 @@ test('the language selector switches the collection to German', async ({ page })
   await expect(german).toHaveAttribute('lang', 'de');
   await page.locator('a.poem-card', { hasText: 'Seara la margine'.normalize('NFD') }).click();
   await expect(page.locator('#selected-poem')).toContainText('Rumänisches Original');
-  await expect(page.getByRole('search', { name: 'Sammlung durchsuchen' })).toBeVisible();
+  await expect(page.getByRole('search')).toHaveCount(0);
   const cookies = await page.context().cookies();
   expect(cookies.find(cookie => cookie.name === 'poetio-language')?.value).toBe('de');
 });

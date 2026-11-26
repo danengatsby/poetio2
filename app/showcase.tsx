@@ -1,6 +1,6 @@
 'use client';
 // GET navigation keeps the reading selection in the URL.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { collectionHref, collectionPageHref, POEM_PAGE_SIZE, type PoemCollection } from '@/lib/poem-collection';
 import type { SiteLanguage } from '@/lib/poem-types';
 import { pick, rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
@@ -25,7 +25,7 @@ export default function Showcase({
   canAdmin: boolean;
   initialPoem?: string;
 }) {
-  const { poems, themes, filters, page, pages, total } = collection;
+  const { poems, filters, page, pages, total } = collection;
   const language = filters.language,
     copy = siteCopy[language];
   const filtered = Boolean(filters.q || filters.theme || filters.topic || filters.translation !== 'all');
@@ -39,25 +39,6 @@ export default function Showcase({
     window.addEventListener('popstate', restore);
     return () => window.removeEventListener('popstate', restore);
   }, []);
-  const disclosure = useRef<HTMLDetailsElement>(null);
-  useEffect(() => {
-    const desktop = window.matchMedia('(min-width: 761px)');
-    const sync = () => {
-      if (disclosure.current) disclosure.current.open = filtered || desktop.matches;
-    };
-    sync();
-    desktop.addEventListener('change', sync);
-    return () => desktop.removeEventListener('change', sync);
-  }, [filtered]);
-  const searchLabel = pick(
-    language,
-    'Caută în colecție',
-    'Search the collection',
-    'Rechercher dans la collection',
-    'Sammlung durchsuchen',
-    'Buscar en la colección',
-    'Cerca nella collezione',
-  );
   const pagination = pages > 1 && <CollectionPagination filters={filters} page={page} pages={pages} />;
   function changeLanguage(value: SiteLanguage, fromPoem = false) {
     rememberSiteLanguage(value);
@@ -86,114 +67,6 @@ export default function Showcase({
           </div>
         )}
         <section id="collection" className="collection shell" aria-label={copy.poems}>
-          <details className="filter-disclosure" ref={disclosure} open={filtered}>
-            <summary>{searchLabel}</summary>
-            <form
-              className="collection-filters"
-              action="/#collection"
-              method="get"
-              role="search"
-              aria-label={searchLabel}
-            >
-              <input type="hidden" name="lang" value={language} />
-              <label>
-                {pick(
-                  language,
-                  'Caută în titlu și text',
-                  'Search titles and text',
-                  'Rechercher dans les titres et les textes',
-                  'Titel und Texte durchsuchen',
-                  'Buscar en títulos y textos',
-                  'Cerca nei titoli e nei testi',
-                )}
-                <input type="search" name="q" defaultValue={filters.q} maxLength={120} />
-              </label>
-              {filters.theme && <input type="hidden" name="theme" value={filters.theme} />}
-              <label>
-                {pick(language, 'Temă', 'Theme', 'Thème', 'Thema', 'Tema', 'Tema')}
-                <select name="topic" defaultValue={filters.topic || filters.theme}>
-                  <option value="">
-                    {pick(
-                      language,
-                      'Toate temele',
-                      'All themes',
-                      'Tous les thèmes',
-                      'Alle Themen',
-                      'Todos los temas',
-                      'Tutti i temi',
-                    )}
-                  </option>
-                  {filters.theme && (
-                    <option value={filters.theme} disabled>
-                      {filters.theme}
-                    </option>
-                  )}
-                  {filters.topic && !themes.some(theme => theme.key === filters.topic) && (
-                    <option value={filters.topic}>{filters.topic} (0)</option>
-                  )}
-                  {themes.map(theme => (
-                    <option key={theme.key} value={theme.key}>
-                      {theme.label.normalize('NFC')} ({theme.count})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                {pick(language, 'Traducere', 'Translation', 'Traduction', 'Übersetzung', 'Traducción', 'Traduzione')}
-                <select name="translation" defaultValue={filters.translation}>
-                  <option value="all">
-                    {pick(
-                      language,
-                      'Toate poemele',
-                      'All poems',
-                      'Tous les poèmes',
-                      'Alle Gedichte',
-                      'Todos los poemas',
-                      'Tutte le poesie',
-                    )}
-                  </option>
-                  <option value="with">
-                    {pick(
-                      language,
-                      'Cu traducere',
-                      'With a translation',
-                      'Avec traduction',
-                      'Mit Übersetzung',
-                      'Con traducción',
-                      'Con traduzione',
-                    )}
-                  </option>
-                  <option value="without">
-                    {pick(
-                      language,
-                      'Fără traducere',
-                      'Without a translation',
-                      'Sans traduction',
-                      'Ohne Übersetzung',
-                      'Sin traducción',
-                      'Senza traduzione',
-                    )}
-                  </option>
-                </select>
-              </label>
-              <button type="submit" className="primary-button">
-                {pick(language, 'Caută', 'Search', 'Rechercher', 'Suchen', 'Buscar', 'Cerca')}
-              </button>
-              {filtered && (
-                <a className="collection-reset" href={reset}>
-                  {pick(
-                    language,
-                    'Șterge filtrele',
-                    'Clear filters',
-                    'Effacer les filtres',
-                    'Filter zurücksetzen',
-                    'Borrar filtros',
-                    'Azzera i filtri',
-                  )}
-                </a>
-              )}
-            </form>
-          </details>
           <p className="collection-results" role="status">
             {total
               ? pick(
@@ -207,6 +80,19 @@ export default function Showcase({
                 )
               : pick(language, '0 poeme', '0 poems', '0 poème', '0 Gedichte', '0 poemas', '0 poesie')}
           </p>
+          {filtered && (
+            <a className="collection-reset" href={reset}>
+              {pick(
+                language,
+                'Vezi toate poemele',
+                'View all poems',
+                'Voir tous les poèmes',
+                'Alle Gedichte anzeigen',
+                'Ver todos los poemas',
+                'Vedi tutte le poesie',
+              )}
+            </a>
+          )}
           {pagination}
           {selected ? (
             <div className="collection-reader" id="collection-reader">
@@ -290,12 +176,12 @@ export default function Showcase({
                 {filtered
                   ? pick(
                       language,
-                      'Niciun poem nu corespunde filtrelor. Încearcă alte cuvinte sau șterge filtrele.',
-                      'No poems match these filters. Try other words or clear the filters.',
-                      'Aucun poème ne correspond à ces filtres. Essayez d’autres mots ou effacez les filtres.',
-                      'Keine Gedichte entsprechen diesen Filtern. Versuchen Sie andere Wörter oder setzen Sie die Filter zurück.',
-                      'Ningún poema coincide con estos filtros. Prueba otras palabras o borra los filtros.',
-                      'Nessuna poesia corrisponde a questi filtri. Prova altre parole o azzera i filtri.',
+                      'Niciun poem nu corespunde filtrelor.',
+                      'No poems match these filters.',
+                      'Aucun poème ne correspond à ces filtres.',
+                      'Keine Gedichte entsprechen diesen Filtern.',
+                      'Ningún poema coincide con estos filtros.',
+                      'Nessuna poesia corrisponde a questi filtri.',
                     )
                   : copy.empty}
               </p>

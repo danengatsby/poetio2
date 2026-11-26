@@ -33,7 +33,7 @@ test('keeps the chosen language and search when returning to the collection', as
   const url = new URL(page.url());
   expect(url.searchParams.get('lang')).toBe('en-US');
   expect(url.searchParams.get('q')).toBe('labirintul');
-  await expect(page.getByRole('searchbox')).toHaveValue('labirintul');
+  await expect(page.getByRole('link', { name: 'View all poems' })).toBeVisible();
   await expect(page.locator('[data-poem-id]')).toHaveCount(1);
 });
 
@@ -85,7 +85,7 @@ test('collection pages have a canonical address and a sharing preview; favicon.i
   await expect(page.locator('link[rel="icon"][href="/favicon.svg"]')).toHaveCount(1);
 });
 
-test('the home page opens on the collection and a counted theme leads to another reading', async ({ page }) => {
+test('the home page opens on the collection and a saved theme link leads to another reading', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   for (const text of ['Fără grabă', 'Colecția', 'Unele lucruri se citesc pe îndelete.']) {
@@ -95,12 +95,8 @@ test('the home page opens on the collection and a counted theme leads to another
     await page.locator('.collection-titles [aria-current]').innerText(),
   );
   await expect(page.getByRole('link', { name: 'Citește poemul', exact: true })).toHaveCount(0);
-  const search = page.getByRole('search');
-  await expect(search).toBeHidden();
-  await page.getByText('Caută în colecție', { exact: true }).click();
-  const themes = search.getByRole('combobox', { name: 'Temă', exact: true });
-  await themes.selectOption({ label: 'Lumină de probă (2)' });
-  await search.getByRole('button', { name: 'Caută', exact: true }).click();
+  await expect(page.locator('.filter-disclosure, form[role="search"]')).toHaveCount(0);
+  await page.goto('/?' + new URLSearchParams({ lang: 'ro', topic: 'lumina de proba' }) + '#collection');
   const cards = page.locator('[data-poem-id]');
   await expect(cards).toHaveCount(2);
   const collection = page.url();

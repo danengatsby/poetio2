@@ -13,7 +13,7 @@ test('the language selector switches the collection to Italian', async ({ page }
   await expect(italian).toHaveAttribute('lang', 'it');
   await page.locator('a.poem-card', { hasText: 'Seara la margine'.normalize('NFD') }).click();
   await expect(page.locator('#selected-poem')).toContainText('Originale in rumeno');
-  await expect(page.getByRole('search', { name: 'Cerca nella collezione' })).toBeVisible();
+  await expect(page.getByRole('search')).toHaveCount(0);
 });
 
 test('an Italian poem page shows the Italian version', async ({ page }) => {
