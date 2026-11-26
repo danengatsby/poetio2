@@ -1,3 +1,4 @@
+import { isSiteLanguage } from '../lib/site-language';
 import { AppError, isOwnerEmail } from '../lib/access';
 import { validImageId } from './images';
 import { validateRevision, type Database } from './poems';
@@ -20,23 +21,57 @@ export function validateVideo(value: unknown): VideoInput {
     return text;
   };
   validateVideoId(data.file_id);
+  const subtitle_text = data.subtitle_text == null ? '' : read('subtitle_text', 60000, 'Subtitrare');
+  const subtitle_language = data.subtitle_language ?? 'ro';
+  if (!isSiteLanguage(subtitle_language)) throw new AppError(400, 'Limba subtitrării este nevalidă.');
+  if (subtitle_text) validateCues(subtitle_text);
   return {
+    subtitle_text,
+    subtitle_language,
     title: read('title', 180, 'Titlu', true),
     author: read('author', 120, 'Autor'),
     description: read('description', 5000, 'Descriere'),
     file_id: data.file_id,
   };
 }
+function validateCues(text: string) {
+  const [header, ...blocks] = text.split(/\n[ \t]*\n/);
+  if (!/^WEBVTT(?:[ \t][^\n]*)?$/.test(header) || !blocks.length)
+    throw new AppError(400, 'Subtitrarea trebuie să înceapă cu WEBVTT și să conțină replici sincronizate.');
+  const time = (s: string) => s.split(':').reduce((total, part) => total * 60 + Number(part), 0);
+  let seen = 0;
+  for (const block of blocks) {
+    if (/^NOTE(?:\s|$)/.test(block) || /^(STYLE|REGION)\n/.test(block)) continue;
+    const lines = block.split('\n');
+    const index = lines[0].includes('-->') ? 0 : 1;
+    const timing =
+      /^((?:\d{2,}:)?[0-5]\d:[0-5]\d\.\d{3})[ \t]+-->[ \t]+((?:\d{2,}:)?[0-5]\d:[0-5]\d\.\d{3})(?:[ \t].*)?$/.exec(
+        lines[index] || '',
+      );
+    if (
+      !timing ||
+      time(timing[2]) <= time(timing[1]) ||
+      !lines
+        .slice(index + 1)
+        .join('')
+        .trim()
+    )
+      throw new AppError(400, 'Verifică începutul, sfârșitul și textul fiecărei replici WebVTT.');
+    seen++;
+  }
+  if (!seen) throw new AppError(400, 'Lipsește textul sincronizat.');
+}
 async function requireFile(db: Database, id: string, validator?: MediaValidator) {
   const file = await getVideoFile(db, id);
   if (!file || !isOwnerEmail(file.owner_email)) throw new AppError(400, 'Încarcă fișierul video înainte de salvare.');
   await requireReadyMedia(file, 'video', validator);
 }
-export async function listVideos(db: Database): Promise<VideoWithCommentCount[]> {
+export async function listVideos(db: Database, includeText = true): Promise<VideoWithCommentCount[]> {
   return (
     await db
       .prepare(
-        `SELECT videos.*, (SELECT COUNT(*) FROM video_comments WHERE video_id = videos.id AND status = 'approved') AS comment_count
+        `SELECT id,title,author,description,file_id,revision,created_at,updated_at,subtitle_language,
+    length(subtitle_text)>0 AS has_subtitles, ${includeText ? 'subtitle_text' : "'' AS subtitle_text"}, (SELECT COUNT(*) FROM video_comments WHERE video_id = videos.id AND status = 'approved') AS comment_count
     FROM videos ORDER BY created_at DESC, id DESC`,
       )
       .all<VideoWithCommentCount>()
@@ -49,7 +84,9 @@ const matches = (video: Video, input: VideoInput) =>
   video.title === input.title &&
   video.author === input.author &&
   video.description === input.description &&
-  video.file_id === input.file_id;
+  video.file_id === input.file_id &&
+  video.subtitle_text === input.subtitle_text &&
+  video.subtitle_language === input.subtitle_language;
 
 export async function createVideo(db: Database, id: string, value: unknown, validator?: MediaValidator) {
   validateVideoId(id);
@@ -58,9 +95,19 @@ export async function createVideo(db: Database, id: string, value: unknown, vali
   const now = Date.now();
   await db
     .prepare(
-      'INSERT INTO videos (id, title, author, description, file_id, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT(id) DO NOTHING',
+      'INSERT INTO videos (id, title, author, description, file_id, subtitle_text, subtitle_language, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT(id) DO NOTHING',
     )
-    .bind(id, input.title, input.author, input.description, input.file_id, now, now)
+    .bind(
+      id,
+      input.title,
+      input.author,
+      input.description,
+      input.file_id,
+      input.subtitle_text,
+      input.subtitle_language,
+      now,
+      now,
+    )
     .run();
   const video = await getVideo(db, id);
   if (!video || !matches(video, input))
@@ -76,13 +123,28 @@ export async function updateVideo(
 ) {
   validateVideoId(id);
   validateRevision(revision);
-  const input = validateVideo(value);
+  const previous = await getVideo(db, id);
+  const input = validateVideo(
+    value && typeof value === 'object'
+      ? { subtitle_text: previous?.subtitle_text, subtitle_language: previous?.subtitle_language, ...value }
+      : value,
+  );
   await requireFile(db, input.file_id, validator);
   const result = await db
     .prepare(
-      'UPDATE videos SET title = ?, author = ?, description = ?, file_id = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?',
+      'UPDATE videos SET title = ?, author = ?, description = ?, file_id = ?, subtitle_text=?, subtitle_language=?, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?',
     )
-    .bind(input.title, input.author, input.description, input.file_id, Date.now(), id, revision)
+    .bind(
+      input.title,
+      input.author,
+      input.description,
+      input.file_id,
+      input.subtitle_text,
+      input.subtitle_language,
+      Date.now(),
+      id,
+      revision,
+    )
     .run();
   const video = await getVideo(db, id);
   if (!video) throw new AppError(404, 'Videoul a fost șters. Datele introduse rămân în formular.');

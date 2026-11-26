@@ -6,12 +6,17 @@ export type Video = {
   author: string;
   description: string;
   file_id: string;
+  subtitle_text: string;
+  subtitle_language: string;
   revision: number;
   created_at: number;
   updated_at: number;
 };
-export type VideoWithCommentCount = Video & { comment_count: number };
-export type VideoInput = Pick<Video, 'title' | 'author' | 'description' | 'file_id'>;
+export type VideoWithCommentCount = Video & { comment_count: number; has_subtitles: number };
+export type VideoInput = Pick<
+  Video,
+  'title' | 'author' | 'description' | 'file_id' | 'subtitle_text' | 'subtitle_language'
+>;
 export const pilotSubtitles = {
   fileId: '0c08a990-fc6c-473a-a127-f553d2e06906',
   path: '/subtitrari/o-zi-incarcata-de-mister.ro.vtt',

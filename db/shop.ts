@@ -1,4 +1,6 @@
 // Books sold directly on Poetio: settings, quotes from current prices and stock, orders.
+import { createHash } from 'node:crypto';
+import { siteLanguage } from '../lib/site-language';
 import { AppError } from '../lib/access';
 import { normalizeBookPrice } from '../lib/book-price';
 import { validImageId } from './images';
@@ -11,6 +13,7 @@ import {
   ORDER_LIMITS,
   ORDER_STATUSES,
   amountCents,
+  checkoutIdentity,
   isCurrency,
   paymentMethods,
   priceCents,
@@ -219,6 +222,7 @@ export type QuoteLine = {
   problem: '' | 'unavailable' | 'sold_out' | 'too_many';
 };
 export type Quote = {
+  token: string;
   lines: QuoteLine[];
   currency: string;
   subtotal_cents: number;
@@ -293,6 +297,13 @@ export async function quote(db: Database, value: unknown, settings?: ShopSetting
   const subtotal = lines.reduce((sum, line) => sum + line.unit_cents * line.quantity, 0);
   const shipping = amountCents(shop.shipping_amount) ?? 0;
   return {
+    token: digest([
+      shop.currency,
+      shipping,
+      shop.delivery_min_days,
+      shop.delivery_max_days,
+      lines.map(line => [line.book_id, line.cover, line.quantity, line.unit_cents, line.title]),
+    ]),
     lines,
     currency: shop.currency,
     subtotal_cents: subtotal,
@@ -302,6 +313,7 @@ export async function quote(db: Database, value: unknown, settings?: ShopSetting
   };
 }
 
+const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const HOUR = 3_600_000;
 // Phone numbers typed as +40 712 345 678, 0712345678 or 0040712345678 are the same number.
 const phoneKey = (phone: string) => phone.replace(/\D/g, '').slice(-9);
@@ -338,13 +350,25 @@ async function checkOrderLimits(
 const randomKey = () =>
   Array.from(crypto.getRandomValues(new Uint8Array(24)), byte => byte.toString(16).padStart(2, '0')).join('');
 
-export async function createOrder(db: Database, value: unknown) {
+export async function createOrder(db: Database, value: unknown, allowNew: () => void = () => {}) {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const stamp = db.changeStamp();
+    try {
+      const result = await placeOrder(db, value, allowNew, stamp);
+      if (result) return result;
+    } catch (error) {
+      if (db.changeStamp() === stamp || !(error instanceof AppError)) throw error;
+    }
+  }
+  throw new AppError(409, 'Magazinul s-a modificat între timp. Verifică oferta și reîncearcă.');
+}
+
+async function placeOrder(db: Database, value: unknown, allowNew: () => void, stamp: string) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new AppError(400, 'Comanda este goală.');
   const data = value as Row;
   // A field people do not see; bots fill it in.
   if (data.website) throw new AppError(400, 'Comanda nu a putut fi trimisă.');
-  const settings = await getShopSettings(db);
-  if (!shopReady(settings)) throw new AppError(409, 'Comenzile nu sunt deschise încă.');
+
   const text = (key: string, label: string, max: number, required = true) => {
     const item = typeof data[key] === 'string' ? (data[key] as string).replace(/\s+/g, ' ').trim() : '';
     if (required && !item) throw new AppError(400, `Completează câmpul „${label}”.`);
@@ -364,11 +388,30 @@ export async function createOrder(db: Database, value: unknown) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) throw new AppError(400, 'Adresa de email nu este validă.');
   if (!/^\+?[\d\s().-]{6,30}$/.test(customer.phone)) throw new AppError(400, 'Numărul de telefon nu este valid.');
   const method = data.payment_method as PaymentMethod;
-  if (!paymentMethods(settings).includes(method)) throw new AppError(400, 'Alege o metodă de plată disponibilă.');
+  if (
+    !validImageId(data.attempt_key) ||
+    typeof data.offer_token !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(data.offer_token)
+  )
+    throw new AppError(409, 'Reîncarcă oferta înainte de a confirma comanda.');
+  const language = siteLanguage(typeof data.language === 'string' ? data.language : null);
+  const requestHash = digest(checkoutIdentity(data));
+  const previous = await db
+    .prepare('SELECT id,number,access_key,request_hash FROM orders WHERE attempt_key=?')
+    .bind(data.attempt_key)
+    .first<{ id: string; number: number; access_key: string; request_hash: string }>();
+  if (previous) {
+    if (previous.request_hash !== requestHash) throw new AppError(409, 'Datele diferă de comanda deja confirmată.');
+    return { id: previous.id, number: previous.number, key: previous.access_key, replayed: true };
+  }
+  allowNew();
+  const settings = await getShopSettings(db);
+  if (!shopReady(settings)) throw new AppError(409, 'Comenzile nu sunt deschise încă.');
+  if (!paymentMethods(settings).includes(method)) throw new AppError(409, 'Alege o metodă de plată disponibilă.');
   if (data.accept_terms !== true) throw new AppError(400, 'Pentru a comanda, acceptă termenii și condițiile.');
   await checkOrderLimits(db, customer, settings, Date.now());
   const offer = await quote(db, data.items, settings);
-  if (!offer.ok)
+  if (!offer.ok || offer.token !== data.offer_token)
     throw new AppError(409, 'Prețul sau stocul unui produs s-a schimbat. Verifică din nou coșul înainte de a comanda.');
 
   const id = crypto.randomUUID(),
@@ -383,8 +426,8 @@ export async function createOrder(db: Database, value: unknown) {
     db
       .prepare(
         `INSERT INTO orders (id, number, access_key, status, customer_name, email, phone, address, city, county, postal_code, note,
-           payment_method, currency, subtotal_cents, shipping_cents, total_cents, created_at, updated_at)
-         SELECT ?, COALESCE(MAX(number), 1000) + 1, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM orders`,
+           payment_method, currency, subtotal_cents, shipping_cents, total_cents, created_at, updated_at, attempt_key,request_hash,language,delivery_min_days,delivery_max_days)
+         SELECT ?, COALESCE(MAX(number), 1000) + 1, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM orders`,
       )
       .bind(
         id,
@@ -404,6 +447,11 @@ export async function createOrder(db: Database, value: unknown) {
         offer.total_cents,
         now,
         now,
+        data.attempt_key,
+        requestHash,
+        language,
+        settings.delivery_min_days,
+        settings.delivery_max_days,
       ),
     ...offer.lines.map(line =>
       db
@@ -414,20 +462,22 @@ export async function createOrder(db: Database, value: unknown) {
     ),
   ];
   try {
-    await db.batch(statements);
+    if ((await db.batch(statements, stamp)) === null) return null;
   } catch (error) {
     if (/book_shop_stock_not_negative|CHECK constraint/i.test(String((error as Error)?.message)))
       throw new AppError(409, 'Între timp s-a epuizat stocul unei cărți din coș. Verifică din nou coșul.');
     throw error;
   }
   const order = await db.prepare('SELECT number FROM orders WHERE id = ?').bind(id).first<{ number: number }>();
-  return { id, key, number: order!.number };
+  return { id, key, number: order!.number, replayed: false };
 }
 
 export type Order = {
   id: string;
   number: number;
   status: OrderStatus;
+  delivery_min_days: number | null;
+  delivery_max_days: number | null;
   customer_name: string;
   email: string;
   phone: string;
@@ -467,7 +517,9 @@ async function withItems(db: Database, order: Row | null): Promise<Order | null>
       .bind(order.id as string)
       .all<Order['items'][number]>()
   ).results;
-  const { access_key: _secret, ...rest } = order;
+  const { access_key: _secret, attempt_key: _attempt, request_hash: _hash, ...rest } = order;
+  void _attempt;
+  void _hash;
   void _secret;
   return { ...(rest as unknown as Order), items };
 }

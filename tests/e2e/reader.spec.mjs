@@ -216,3 +216,17 @@ test('the public reader shows nine poems at a time and returns to the same first
   await expect(page.locator('#selected-poem-title')).toBeInViewport();
   await expect(image).not.toBeInViewport();
 });
+
+test('mobile collection remembers reading size across pages and the individual reader', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 760 });
+  await page.goto('/');
+  const settings = page.locator('.poem-reading-settings');
+  await settings.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  await settings.getByRole('button', { name: 'Mărește versurile' }).click();
+  const size = await page.locator('.collection-verses').evaluate(el => getComputedStyle(el).fontSize);
+  await page.locator('.collection-pagination a[rel=next]').first().click();
+  await expect(page.locator('.collection-verses')).toHaveCSS('font-size', size);
+  await openSelectedPoemPage(page);
+  await expect(page.locator('.poem-reading-text')).toHaveCSS('font-size', size);
+});

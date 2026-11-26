@@ -1,8 +1,8 @@
 'use client';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { SiteLanguage } from '@/lib/poem-types';
 import { clearCart, useCart, type CartItem } from '@/lib/cart';
-import { paymentLabel, type PaymentMethod } from '@/lib/shop';
+import { checkoutIdentity, formatMoney, paymentLabel, type PaymentMethod } from '@/lib/shop';
 import { pick, withSiteLanguage } from '@/lib/site-language';
 import ShopFrame, { useShopLanguage } from '../shop-frame';
 import { ShopLine, ShopTotals } from '../shop-lines';
@@ -23,7 +23,11 @@ export default function CheckoutView({
   const directKey = JSON.stringify(direct);
   const items = useMemo(() => (directKey !== 'null' ? [JSON.parse(directKey) as CartItem] : cart), [directKey, cart]);
   const inBrowser = useInBrowser();
-  const state = useQuote(items);
+  const [quoteRevision, setQuoteRevision] = useState(0);
+  const state = useQuote(items, quoteRevision);
+  const [previousTotal, setPreviousTotal] = useState('');
+  const attempt = useRef<{ signature: string; key: string } | null>(null);
+  const receiptPending = useRef(false);
   const [values, setValues] = useState<Record<Field, string>>(
     () => Object.fromEntries(FIELDS.map(field => [field, ''])) as Record<Field, string>,
   );
@@ -32,6 +36,34 @@ export default function CheckoutView({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    let pending;
+    try {
+      pending = JSON.parse(sessionStorage.getItem('poetio-checkout-attempt') || 'null');
+    } catch {
+      return;
+    }
+    if (!pending || pending.direct !== Boolean(direct) || pending.cart !== JSON.stringify(items) || !items.length)
+      return;
+    const controller = new AbortController();
+    void fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'receipt', attempt_key: pending.key, signature: pending.signature }),
+      signal: controller.signal,
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (!controller.signal.aborted && data.order?.key) {
+          sessionStorage.removeItem('poetio-checkout-attempt');
+          if (!direct) clearCart();
+          window.location.replace(withSiteLanguage(`/comanda/${data.order.id}?cheie=${data.order.key}`, language));
+        }
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [direct, items, language]);
+
   const shop = state.status === 'ready' ? state.shop : null;
   const chosen = method || shop?.payment_methods[0] || '';
   const update = (field: Field) => (event: { target: { value: string } }) =>
@@ -39,23 +71,52 @@ export default function CheckoutView({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (sending) return;
+    if (sending || receiptPending.current || state.status !== 'ready' || !accepted) return;
+    receiptPending.current = true;
     setError('');
     setSending(true);
     const form = new FormData(event.currentTarget);
     try {
+      const payload = {
+        ...values,
+        payment_method: chosen,
+        accept_terms: accepted,
+        website: form.get('website') ?? '',
+        items,
+        language,
+        offer_token: state.quote.token,
+      };
+      const bytes = await crypto.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(JSON.stringify(checkoutIdentity(payload))),
+      );
+      const signature = Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
+      if (attempt.current?.signature !== signature) {
+        let key = crypto.randomUUID() as string;
+        try {
+          const old = JSON.parse(sessionStorage.getItem('poetio-checkout-attempt') || 'null');
+          if (old?.signature === signature && typeof old.key === 'string') key = old.key;
+          sessionStorage.setItem(
+            'poetio-checkout-attempt',
+            JSON.stringify({ key, signature, direct: Boolean(direct), cart: JSON.stringify(items) }),
+          );
+        } catch {
+          /* Memory still covers retries on this page. */
+        }
+        attempt.current = { key, signature };
+      }
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...values,
-          payment_method: chosen,
-          accept_terms: accepted,
-          website: form.get('website') ?? '',
-          items,
-        }),
+        body: JSON.stringify({ ...payload, attempt_key: attempt.current.key }),
       });
       const data = await response.json().catch(() => ({}));
+      if (response.status === 409) {
+        setPreviousTotal(formatMoney(state.quote.total_cents, state.quote.currency, language));
+        setMethod('');
+        setAccepted(false);
+        setQuoteRevision(value => value + 1);
+      }
       if (!response.ok)
         throw new Error(
           response.status === 429 && !data.error
@@ -79,10 +140,28 @@ export default function CheckoutView({
                   'Non è stato possibile inviare l’ordine.',
                 ),
         );
+      if (!data.order?.key || !data.order?.id)
+        throw new Error(
+          pick(
+            language,
+            'Confirmarea nu a sosit. Reîncearcă.',
+            'Confirmation missing. Try again.',
+            'Confirmation manquante. Réessayez.',
+            'Bestätigung fehlt. Erneut versuchen.',
+            'Falta la confirmación. Reintenta.',
+            'Conferma mancante. Riprova.',
+          ),
+        );
+      try {
+        sessionStorage.removeItem('poetio-checkout-attempt');
+      } catch {
+        /* Storage is optional. */
+      }
       if (!direct) clearCart();
       window.location.assign(withSiteLanguage(`/comanda/${data.order.id}?cheie=${data.order.key}`, language));
     } catch (failure) {
       setError((failure as Error).message);
+      receiptPending.current = false;
       setSending(false);
     }
   }
@@ -405,6 +484,20 @@ export default function CheckoutView({
             'Riepilogo dell’ordine',
           )}
         >
+          {previousTotal && (
+            <p role="status">
+              {pick(
+                language,
+                'Totalul afișat anterior',
+                'Previously displayed total',
+                'Total précédent',
+                'Vorheriger Gesamtbetrag',
+                'Total anterior',
+                'Totale precedente',
+              )}{' '}
+              · {previousTotal}
+            </p>
+          )}
           <ShopTotals quote={quote} language={language} />
           <label className="shop-choice">
             <input type="checkbox" required checked={accepted} onChange={event => setAccepted(event.target.checked)} />

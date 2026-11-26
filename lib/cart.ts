@@ -1,6 +1,6 @@
 'use client';
 // The visitor's cart, kept in this browser only until the order is placed.
-import { useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import { MAX_ITEM_QUANTITY } from './shop';
 
 export type CartItem = { book_id: string; cover: 1 | 2; quantity: number };
@@ -67,7 +67,7 @@ function subscribe(change: () => void) {
 /** The cart, updated across components and tabs. Empty while the page is rendered on the server. */
 export function useCart() {
   const text = useSyncExternalStore(subscribe, raw, () => '[]');
-  return read(text);
+  return useMemo(() => read(text), [text]);
 }
 
 export const cartCount = (items: CartItem[]) => items.reduce((sum, item) => sum + item.quantity, 0);

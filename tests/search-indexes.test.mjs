@@ -28,7 +28,7 @@ process.on('exit', () => rmSync(compiled, { recursive: true, force: true }));
 const require = createRequire(import.meta.url);
 const { textMatch } = require(join(compiled, 'lib/book-text.js'));
 const { createBookSearch } = require(join(compiled, 'db/book-search.js'));
-const { listPoemCards } = require(join(compiled, 'db/poem-collection.js'));
+const { listPoemCards, feedPoems } = require(join(compiled, 'db/poem-collection.js'));
 const { withoutLeadingTitle } = require(join(compiled, 'lib/poem-collection.js'));
 const { listAdminPoems } = require(join(compiled, 'db/poem-admin-list.js'));
 const { sitemapEntries } = require(join(compiled, 'db/sitemap.js'));
@@ -373,4 +373,25 @@ test('NFC index rebuild preserves existing originals and covers subsequent impor
   sqlite.prepare('UPDATE poems SET content=? WHERE id=?').run('Măceș'.normalize('NFD'), imported);
   assert.equal((await listAdminPoems(db, { q: 'suvoi' })).total, 0);
   assert.equal((await listAdminPoems(db, { q: 'maces' })).total, 1);
+});
+
+test('RSS limits at 50 with stable ties, chosen language and fallback', async t => {
+  const { sqlite, path } = fixture(t);
+  const ids = Array.from({ length: 55 }, (_, index) => poem(sqlite, 'Original', 'Poem ' + index));
+  const newest = ids[54];
+  sqlite.prepare("UPDATE poems SET created_at=2,fr_title='Titre',fr_content='Texte' WHERE id=?").run(newest);
+  const db = openDatabase(path);
+  try {
+    const rows = await feedPoems(db, 'fr');
+    assert.equal(rows.length, 50);
+    assert.deepEqual(
+      rows.map(r => r.id),
+      [newest, ...ids.slice(0, 54).sort().slice(0, 49)],
+    );
+    assert.equal(rows[0].title, 'Titre');
+    assert.equal(rows[0].content, 'Texte');
+    assert.equal(rows[1].content, 'Original');
+  } finally {
+    db.close();
+  }
 });

@@ -202,7 +202,16 @@ function AccessRow({
   const browser = [
     session.browser,
     session.os,
-    session.language === 'en-US' ? 'site în engleză' : session.language === 'ro' ? 'site în română' : '',
+    (
+      {
+        ro: 'site în română',
+        'en-US': 'site în engleză',
+        fr: 'site în franceză',
+        de: 'site în germană',
+        es: 'site în spaniolă',
+        it: 'site în italiană',
+      } as Record<string, string>
+    )[session.language] || 'limbă necunoscută',
   ].filter(Boolean);
   const placed = session.orders.some(order => order.placed);
   return (

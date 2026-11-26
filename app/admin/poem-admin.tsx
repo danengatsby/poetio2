@@ -16,6 +16,8 @@ import { type Poem, type PoemInput, EXTRA_LANGUAGES, type ExtraLanguage } from '
 import { otherLanguage } from '@/lib/poem-languages';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { defaultPoemImage, poemImage, IMAGE_TYPES, MAX_IMAGE_BYTES } from '@/lib/poem-images';
+import TranslationInventory from './translation-inventory';
+import type { SiteLanguage } from '@/lib/poem-types';
 import PoemCover from '../poem-cover';
 import AudioUploadField, { type SelectedAudio } from './audio-upload-field';
 import { AUDIO_FIELDS, audioFileType, type AudioField } from '@/lib/poem-audio';
@@ -378,12 +380,13 @@ export default function Admin({
       }
     }
   }
-  async function selectPoem(id: string) {
+  async function selectPoem(id: string, language?: SiteLanguage) {
     setLoadingPoem(true);
     setError('');
     try {
       const data = await request(`/api/poems/${encodeURIComponent(id)}`, { signal: AbortSignal.timeout(30000) });
       replaceDraft(fromPoem(data.poem));
+      if (language) requestAnimationFrame(() => document.getElementById('edit-language-' + language)?.focus());
     } catch (error) {
       reportError(error, 'Poemul nu poate fi încărcat. Textul din editor este păstrat.');
     } finally {
@@ -822,6 +825,11 @@ export default function Admin({
                 ? 'Se încarcă lista…'
                 : `${collection.total} ${collection.q ? 'rezultate' : 'poeme'} · Pagina ${collection.page} din ${collection.pages}`}
             </p>
+            <TranslationInventory
+              collection={collection}
+              disabled={locked}
+              openPoem={(id, lang) => guard(() => void selectPoem(id, lang))}
+            />
             {poems.length ? (
               <ul>
                 {poems.map(poem => (
@@ -918,6 +926,7 @@ export default function Admin({
                       Titlu — {sourceLabel}{' '}
                       <input
                         ref={titleInput}
+                        id={'edit-language-' + sourceLanguage}
                         value={draft.title}
                         onChange={e => update('title', e.target.value)}
                         required
@@ -1049,6 +1058,7 @@ export default function Admin({
                     <label>
                       Titlul traducerii
                       <input
+                        id={'edit-language-' + translatedLanguage}
                         lang={translatedLanguage}
                         value={draft.translated_title || ''}
                         onChange={event => update('translated_title', event.target.value)}
@@ -1116,6 +1126,7 @@ export default function Admin({
                         <label>
                           Titlul în {name}
                           <input
+                            id={'edit-language-' + language}
                             lang={language}
                             value={draft[`${language}_title`] || ''}
                             onChange={event => update(`${language}_title`, event.target.value)}

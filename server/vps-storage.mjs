@@ -14,7 +14,14 @@ export function openDatabase(file) {
   const sqlite = new DatabaseSync(file);
   sqlite.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
   sqlite.prepare('SELECT key FROM collection_meta LIMIT 1').all();
+  // total_changes detects this connection's writes; data_version detects commits on other connections.
+  const version = sqlite.prepare('SELECT total_changes() AS local, data_version AS external FROM pragma_data_version');
+  const changeStamp = () => {
+    const row = version.get();
+    return row.local + '/' + row.external;
+  };
   return {
+    changeStamp,
     prepare(query) {
       const statement = sqlite.prepare(query);
       let bindings = [];
@@ -40,10 +47,14 @@ export function openDatabase(file) {
         },
       };
     },
-    async batch(statements) {
+    async batch(statements, expectedStamp) {
       // No await inside the transaction: another request cannot interleave.
       sqlite.exec('BEGIN IMMEDIATE');
       try {
+        if (expectedStamp !== undefined && expectedStamp !== changeStamp()) {
+          sqlite.exec('ROLLBACK');
+          return null;
+        }
         const results = statements.map(statement => statement[runStatement]());
         sqlite.exec('COMMIT');
         return results;

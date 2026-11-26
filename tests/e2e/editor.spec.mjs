@@ -48,3 +48,11 @@ test('a recovered draft keeps the image uploaded before the save failed', async 
   expect(body.title).toBe('The kettle, the rain and a picture');
   expect(body.image_id).toBe(imageId);
 });
+
+test('translation inventory opens the requested field', async ({ page }) => {
+  await page.goto('/admin');
+  await page.getByText('Inventarul traducerilor', { exact: true }).click();
+  const row = page.getByRole('row').filter({ hasText: 'Întâlnirea din crâng' });
+  await row.getByRole('button', { name: / · fr · / }).click();
+  await expect(page.locator('#edit-language-fr')).toBeFocused();
+});

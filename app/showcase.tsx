@@ -6,6 +6,8 @@ import type { SiteLanguage } from '@/lib/poem-types';
 import { pick, rememberSiteLanguage, siteCopy, withSiteLanguage } from '@/lib/site-language';
 import { poemRecording } from '@/lib/poem-languages';
 import PoemAudioPlayer from './poem-audio-player';
+import { ReadingSettings } from './poem-reading';
+import usePoemReadingPreferences from './use-poem-reading-preferences';
 import PoemComments from './poem-comments';
 import SiteLogo from './site-logo';
 import SiteHeader from './site-header';
@@ -28,6 +30,7 @@ export default function Showcase({
   const reset = collectionHref({ ...filters, q: '', theme: '', topic: '', translation: 'all' });
   const [selectedId, setSelectedId] = useState(initialPoem);
   const selected = poems.find(poem => poem.id === selectedId) ?? poems[0];
+  const { preferences } = usePoemReadingPreferences();
   const recording = selected && poemRecording(selected, selected.language);
   useEffect(() => {
     const restore = () => setSelectedId(new URL(location.href).searchParams.get('poem') ?? undefined);
@@ -263,7 +266,13 @@ export default function Showcase({
                     <span>{selected.source_language === 'ro' ? copy.originalRomanian : copy.originalEnglish}</span>
                   )}
                 </div>
-                <p className="collection-verses" lang={selected.language}>
+                <ReadingSettings language={language} />
+                <p
+                  className="collection-verses poem-reading-text"
+                  data-width={preferences.width}
+                  style={{ fontSize: `${preferences.textSize}rem` }}
+                  lang={selected.language}
+                >
                   {selected.content}
                 </p>
                 <PoemComments poemId={selected.id} language={language} discussionFirst />

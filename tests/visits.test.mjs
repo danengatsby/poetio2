@@ -270,3 +270,19 @@ test('a visit shows the order placed in it; a later visit to the order page show
   ]);
   assert.equal(stats.titles[`/comanda/${order}`], 'nr. 1007');
 });
+
+test('all site languages survive and a visit without IP forgets its raw browser and visitor identifier', async t => {
+  const db = await store(t);
+  const languages = ['ro', 'en-US', 'fr', 'de', 'es', 'it'];
+  for (const [index, language] of languages.entries()) await visit(db, { ip: '', now: NOON + index * 20000, language });
+  assert.deepEqual(
+    (await db.prepare('SELECT language FROM visits ORDER BY id').all()).results.map(r => r.language),
+    languages,
+  );
+  assert.equal(await visits.forgetOldVisitors(db, NOON + 91 * DAY), 6);
+  assert.equal(
+    (await db.prepare('SELECT count(*) AS n FROM visits WHERE user_agent IS NOT NULL OR visitor<>session_id').first())
+      .n,
+    0,
+  );
+});

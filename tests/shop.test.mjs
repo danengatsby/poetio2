@@ -46,6 +46,14 @@ async function store(t) {
   return db;
 }
 
+async function place(db, body) {
+  return shop.createOrder(db, {
+    ...body,
+    attempt_key: crypto.randomUUID(),
+    offer_token: (await shop.quote(db, body.items)).token,
+  });
+}
+
 const customer = {
   name: 'Ana Pop',
   email: 'ana@example.com',
@@ -108,7 +116,7 @@ test('a quote uses stored prices and stock, not what the browser sends', async t
 
 test('an order takes a number, totals from the database and decrements the stock', async t => {
   const db = await store(t);
-  const first = await shop.createOrder(db, { ...customer, items: [{ book_id: BOOK, cover: 1, quantity: 2 }] });
+  const first = await place(db, { ...customer, items: [{ book_id: BOOK, cover: 1, quantity: 2 }] });
   assert.equal(first.number, 1001);
   assert.match(first.key, /^[0-9a-f]{48}$/);
   assert.equal((await shop.getBookShop(db, BOOK)).stock, 1);
@@ -119,12 +127,12 @@ test('an order takes a number, totals from the database and decrements the stock
   assert.equal(await shop.getCustomerOrder(db, first.id, 'a'.repeat(48)), null);
 
   // Two copies are no longer available: refused, nothing written.
-  await assert.rejects(shop.createOrder(db, { ...customer, items: [{ book_id: BOOK, cover: 2, quantity: 2 }] }), {
+  await assert.rejects(place(db, { ...customer, items: [{ book_id: BOOK, cover: 2, quantity: 2 }] }), {
     status: 409,
   });
   assert.equal((await shop.listOrders(db, 'all', 0)).orders.length, 1);
   assert.equal((await shop.getBookShop(db, BOOK)).stock, 1);
-  const second = await shop.createOrder(db, { ...customer, items: [{ book_id: BOOK, cover: 2, quantity: 1 }] });
+  const second = await place(db, { ...customer, items: [{ book_id: BOOK, cover: 2, quantity: 1 }] });
   assert.equal(second.number, 1002);
   assert.equal((await shop.getBookShop(db, BOOK)).stock, 0);
   assert.equal((await shop.quote(db, [{ book_id: BOOK, cover: 1, quantity: 1 }])).lines[0].problem, 'sold_out');
@@ -133,11 +141,11 @@ test('an order takes a number, totals from the database and decrements the stock
 test('orders refuse incomplete details, bots and unavailable payment methods', async t => {
   const db = await store(t);
   const items = [{ book_id: BOOK, cover: 1, quantity: 1 }];
-  await assert.rejects(shop.createOrder(db, { ...customer, items, phone: 'abc' }), /telefon/);
-  await assert.rejects(shop.createOrder(db, { ...customer, items, email: 'nu' }), /email/);
-  await assert.rejects(shop.createOrder(db, { ...customer, items, accept_terms: false }), /termenii/);
-  await assert.rejects(shop.createOrder(db, { ...customer, items, payment_method: 'transfer' }), /metodă de plată/);
-  await assert.rejects(shop.createOrder(db, { ...customer, items, website: 'http://spam' }), /nu a putut/);
+  await assert.rejects(place(db, { ...customer, items, phone: 'abc' }), /telefon/);
+  await assert.rejects(place(db, { ...customer, items, email: 'nu' }), /email/);
+  await assert.rejects(place(db, { ...customer, items, accept_terms: false }), /termenii/);
+  await assert.rejects(place(db, { ...customer, items, payment_method: 'transfer' }), /metodă de plată/);
+  await assert.rejects(place(db, { ...customer, items, website: 'http://spam' }), /nu a putut/);
   assert.equal((await shop.getBookShop(db, BOOK)).stock, 3);
 });
 
@@ -146,13 +154,13 @@ test('orders are limited per email or phone and for the whole shop', async t => 
   await shop.saveBookShop(db, BOOK, { stock: null, language: 'ro' });
   const items = [{ book_id: BOOK, cover: 1, quantity: 1 }];
   const { perContactPerDay, perHour, perDay } = rules.ORDER_LIMITS;
-  for (let i = 0; i < perContactPerDay; i++) await shop.createOrder(db, { ...customer, items });
+  for (let i = 0; i < perContactPerDay; i++) await place(db, { ...customer, items });
   // The same email in other letters, or the same phone written differently, is the same contact.
-  await assert.rejects(shop.createOrder(db, { ...customer, items, email: 'ANA@example.com', phone: '0799 000 000' }), {
+  await assert.rejects(place(db, { ...customer, items, email: 'ANA@example.com', phone: '0799 000 000' }), {
     status: 429,
     message: /ultimele 24 de ore.*autor@example\.com/,
   });
-  await assert.rejects(shop.createOrder(db, { ...customer, items, email: 'alt@example.com', phone: '0040712345678' }), {
+  await assert.rejects(place(db, { ...customer, items, email: 'alt@example.com', phone: '0040712345678' }), {
     status: 429,
   });
   // A refused order writes nothing.
@@ -162,7 +170,7 @@ test('orders are limited per email or phone and for the whole shop', async t => 
     .prepare('UPDATE orders SET created_at = created_at - ?')
     .bind(25 * 3_600_000)
     .run();
-  await shop.createOrder(db, { ...customer, items });
+  await place(db, { ...customer, items });
 
   // The shop as a whole: so many orders an hour, and so many in 24 hours.
   const fill = async (count, age) => {
@@ -184,14 +192,14 @@ test('orders are limited per email or phone and for the whole shop', async t => 
   };
   const other = { ...customer, email: 'nou@example.com', phone: '0733 111 222', items };
   await fill(perHour - 1, 60_000);
-  await assert.rejects(shop.createOrder(db, other), { status: 429, message: /prea multe comenzi/ });
+  await assert.rejects(place(db, other), { status: 429, message: /prea multe comenzi/ });
   await db
     .prepare('UPDATE orders SET created_at = created_at - ? WHERE created_at > ?')
     .bind(2 * 3_600_000, Date.now() - 3_600_000)
     .run();
-  await shop.createOrder(db, other);
+  await place(db, other);
   await fill(perDay - perHour - 1, 3 * 3_600_000);
-  await assert.rejects(shop.createOrder(db, { ...other, email: 'al-treilea@example.com', phone: '0744 333 444' }), {
+  await assert.rejects(place(db, { ...other, email: 'al-treilea@example.com', phone: '0744 333 444' }), {
     status: 429,
     message: /prea multe comenzi/,
   });
@@ -213,7 +221,7 @@ test('the per-address limit counts only recent events and forgets old keys', asy
 
 test('status changes follow the order flow and a cancellation returns the copies once', async t => {
   const db = await store(t);
-  const order = await shop.createOrder(db, { ...customer, items: [{ book_id: BOOK, cover: 1, quantity: 2 }] });
+  const order = await place(db, { ...customer, items: [{ book_id: BOOK, cover: 1, quantity: 2 }] });
   await assert.rejects(shop.updateOrderStatus(db, order.id, { from: 'new', status: 'delivered' }), /nu este permisă/);
   assert.equal((await shop.updateOrderStatus(db, order.id, { from: 'new', status: 'confirmed' })).status, 'confirmed');
   assert.equal(
@@ -281,7 +289,7 @@ test('prices set on the shop page use its currency, need the current revision an
 
 test('a sale preserves its stock decrement when the owner edits a price from an open page', async t => {
   const db = await store(t);
-  await shop.createOrder(db, { ...customer, items: [{ book_id: BOOK, cover: 1, quantity: 1 }] });
+  await place(db, { ...customer, items: [{ book_id: BOOK, cover: 1, quantity: 1 }] });
   const edit = { revision: 1, price_1: '48', currency: 'RON' };
   await assert.rejects(shop.saveBookShop(db, BOOK, { ...edit, stock: 5, expected_stock: 3 }), { status: 409 });
   await assert.rejects(shop.saveBookShop(db, BOOK, { ...edit, currency: 'USD' }), { status: 409 });
@@ -318,4 +326,36 @@ test('the seller address is saved and missing legal details are listed without c
   assert.equal(rules.addressLine(settings.seller_address), 'Str. Lungă 2, Iași');
   assert.deepEqual(rules.legalGaps(settings), []);
   await assert.rejects(shop.saveShopSettings(db, { ...settings, seller_address: 'x'.repeat(301) }), /maximum 300/);
+});
+
+test('retries return one receipt and only the accepted offer reserves stock', async t => {
+  const db = await store(t),
+    items = [{ book_id: BOOK, cover: 1, quantity: 1 }];
+  const original = await shop.quote(db, items);
+  const body = { ...customer, items, attempt_key: crypto.randomUUID(), offer_token: original.token, language: 'it' };
+  await db.prepare("UPDATE books SET price_1='59.90 RON' WHERE id=?").bind(BOOK).run();
+  await assert.rejects(shop.createOrder(db, body), { status: 409 });
+  const changed = await shop.quote(db, items);
+  const settings = await shop.getShopSettings(db);
+  await shop.saveShopSettings(db, { ...settings, shipping_amount: '25' });
+  await assert.rejects(shop.createOrder(db, { ...body, offer_token: changed.token }), { status: 409 });
+  assert.equal((await shop.getBookShop(db, BOOK)).stock, 3);
+  assert.equal((await shop.listOrders(db, 'all', 0)).orders.length, 0);
+  const accepted = { ...body, offer_token: (await shop.quote(db, items)).token };
+  const [a, b] = await Promise.all([shop.createOrder(db, accepted), shop.createOrder(db, accepted)]);
+  assert.equal(a.key, b.key);
+  assert.equal(a.number, b.number);
+  assert.notEqual(a.replayed, b.replayed);
+  assert.equal((await shop.getBookShop(db, BOOK)).stock, 2);
+  await shop.saveShopSettings(db, { ...settings, delivery_min_days: 8, delivery_max_days: 9 });
+  const receipt = await shop.getCustomerOrder(db, a.id, a.key);
+  assert.equal(receipt.delivery_min_days, settings.delivery_min_days);
+  assert.equal(receipt.language, 'it');
+  assert.equal(receipt.total_cents, 8490);
+  await assert.rejects(shop.createOrder(db, { ...accepted, name: 'Alt nume' }), { status: 409 });
+  assert.equal((await shop.createOrder(db, accepted, () => assert.fail('Retry counted as a new order'))).id, a.id);
+  assert.equal(
+    rules.deliveryWindow(new Date('2026-11-12T22:30:00Z'), { delivery_min_days: 1, delivery_max_days: 1 }, 'ro'),
+    'luni, 16 noiembrie',
+  );
 });

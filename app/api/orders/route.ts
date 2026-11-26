@@ -17,14 +17,27 @@ export async function POST(request: Request) {
     if (request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json')
       throw new AppError(415, 'Formatul cererii nu este acceptat.');
     const ip = clientIp(request);
-    if (!perAddress.allows(ip))
-      throw new AppError(
-        429,
-        'De la această conexiune s-au trimis deja mai multe comenzi. Încearcă din nou peste o oră.',
-      );
-    const order = await createOrder(getPoemDb(), await readJson(request, 16_384));
-    perAddress.record(ip);
-    return Response.json({ order }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
+    const data = await readJson(request, 16_384);
+    const db = getPoemDb();
+    if (data?.action === 'receipt') {
+      const order =
+        typeof data.attempt_key === 'string' && typeof data.signature === 'string'
+          ? await db
+              .prepare('SELECT id,access_key AS key,number FROM orders WHERE attempt_key=? AND request_hash=?')
+              .bind(data.attempt_key, data.signature)
+              .first()
+          : null;
+      return Response.json({ order }, { headers: { 'Cache-Control': 'no-store' } });
+    }
+    const order = await createOrder(db, data, () => {
+      if (!perAddress.allows(ip))
+        throw new AppError(
+          429,
+          'De la această conexiune s-au trimis deja mai multe comenzi. Încearcă din nou peste o oră.',
+        );
+    });
+    if (!order.replayed) perAddress.record(ip);
+    return Response.json({ order }, { status: order.replayed ? 200 : 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     return apiError(error);
   }

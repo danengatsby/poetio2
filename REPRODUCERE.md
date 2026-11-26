@@ -25,7 +25,7 @@ Pe Ubuntu, testele de randare PDF și backup necesită și dependențe de sistem
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends \
   poppler-utils util-linux ffmpeg tesseract-ocr tesseract-ocr-ron tesseract-ocr-eng \
-  fonts-dejavu-core fontconfig python3 gnupg
+  fonts-dejavu-core fontconfig python3 gnupg rclone
 ```
 
 Python trebuie să ofere `hashlib.file_digest` și filtrul `data` pentru `tarfile.extractall` (Python 3.12 sau mai nou). Scripturile Linux folosesc și utilitarele uzuale `bash`, `timeout`, `flock`, `curl` și `sha256sum`.
@@ -33,15 +33,21 @@ Python trebuie să ofere `hashlib.file_digest` și filtrul `data` pentru `tarfil
 ## Verificări din checkout
 
 ```sh
+npm run format:check
 npm run lint -- --max-warnings=0
 ./node_modules/.bin/tsc --noEmit --incremental false
-npm run test:backup
-npm test
 npm run build:vps
-git status --short
+npm run test:vps
+node --test tests/ui-components.test.mjs
+npm run test:backup
+npm run test:operations
+npm run test:external
+npm run test:release
+npx playwright install --with-deps --only-shell chromium
+npm run test:e2e
 ```
 
-`npm test` compilează varianta Cloudflare și rulează testele Node, inclusiv integrarea Worker cu D1/R2 locale și răspunsuri simulate pentru traduceri. Nu necesită o cheie OpenAI reală. `npm run build:vps` verifică versiunile React/RSC și compilează varianta Node. Ambele comenzi scriu în `dist`; execută-le în ordinea de mai sus sau în checkouturi separate. `npm run test:vps` poate fi folosit pentru suita Node destinată VPS, fără o compilare Cloudflare.
+Buildul produce serverul Node și fișierele client în `dist/`. Testele de browser pornesc o instanță locală cu o bază temporară. Pentru publicarea unui build local cu rezultatele verificărilor vezi [procedura de publicare](deploy/PUBLICARE.md).
 
 Variantele WebP din `public/optimized` și manifestul `lib/generated-images.ts` sunt versionate împreună cu originalele și generatorul `scripts/build-images.mjs`. Compilările le regenerează; o diferență raportată de Git trebuie revizuită înainte de publicare. Cache-urile, `dist`, `node_modules`, bazele SQLite și credențialele sunt excluse din Git.
 

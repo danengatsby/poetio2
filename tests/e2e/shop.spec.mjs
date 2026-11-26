@@ -30,6 +30,25 @@ test('the sale page sells the book on Poetio: price, delivery, stock and quantit
   await expect(cartCount(page)).toHaveText('0');
 });
 
+test('a changed delivery price requires the buyer to accept the new quote', async ({ page, request, baseURL }) => {
+  const headers = { 'oai-authenticated-user-email': OWNER_EMAIL, Origin: baseURL };
+  await page.goto(salePath);
+  await page.getByRole('link', { name: 'Cumpără acum' }).click();
+  await fillAddress(page);
+  await page.getByLabel(/Am citit și accept/).check();
+  try {
+    expect(
+      (await request.put('/api/admin/shop', { headers, data: { ...fixtureShop, shipping_amount: '7.00' } })).ok(),
+    ).toBe(true);
+    await page.getByRole('button', { name: 'Comandă cu obligație de plată' }).click();
+    await expect(page.getByLabel(/Am citit și accept/)).not.toBeChecked();
+    await expect(page.getByRole('complementary', { name: 'Sumarul comenzii' })).toContainText(nbsp('17,00 USD'));
+    await expect(page.getByText(/Totalul afișat anterior/)).toContainText(nbsp('15,00 USD'));
+    await expect(page.getByLabel('Nume și prenume')).toHaveValue('Ana Cititoare');
+  } finally {
+    expect((await request.put('/api/admin/shop', { headers, data: fixtureShop })).ok()).toBe(true);
+  }
+});
 test('cart and checkout: an order paid by bank transfer', async ({ page }) => {
   await page.goto(salePath);
   await page.getByLabel('Cantitate:').selectOption('2');
@@ -83,7 +102,16 @@ test('buy now orders one book with cash on delivery and leaves the cart alone', 
   await fillAddress(page);
   await expect(page.getByLabel(/^Ramburs/)).toBeChecked();
   await page.getByLabel(/Am citit și accept/).check();
+  // The server commits but the confirmation is lost. Reloading must find the same receipt.
+  await page.route('**/api/orders', async route => {
+    if (route.request().postDataJSON().action === 'receipt') return route.continue();
+    const response = await route.fetch();
+    expect(response.status()).toBe(201);
+    await route.abort();
+  });
   await page.getByRole('button', { name: 'Comandă cu obligație de plată' }).click();
+  await expect(page.locator('.shop-alert').filter({ hasText: /fetch|network/i })).toBeVisible();
+  await page.reload({ waitUntil: 'commit' });
 
   await expect(page.getByRole('status').first()).toHaveText('Mulțumim! Comanda nr. 1002 a fost înregistrată.');
   await expect(page.getByText(nbsp('Plătești 15,00 USD curierului, când primești coletul.'))).toBeVisible();

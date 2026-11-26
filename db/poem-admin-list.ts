@@ -1,5 +1,8 @@
+import { translationStatus } from '../lib/translation-provenance';
+import { isExtraLanguage, EXTRA_LANGUAGES } from '../lib/poem-types';
+import { SITE_LANGUAGES } from '../lib/site-language';
 import { rebuildPendingPoemSearch } from './poem-search-index';
-import { ensureInitialPoems, ensureLanguageVariants, type Database } from './poems';
+import { ensureInitialPoems, ensureLanguageVariants, readPoem, type StoredPoem, type Database } from './poems';
 import {
   ADMIN_POEM_PAGE_SIZE,
   adminPoemQuery,
@@ -14,7 +17,16 @@ export async function listAdminPoems(db: Database, params: CollectionParams = {}
   await ensureLanguageVariants(db);
   const { q, page: requestedPage } = adminPoemQuery(params);
   if (q) await rebuildPendingPoemSearch(db);
-  const columns = ['title', 'author', 'theme', 'content', 'translated_title', 'translated_theme', 'translated_content'];
+  const columns = [
+    'title',
+    'author',
+    'theme',
+    'content',
+    'translated_title',
+    'translated_theme',
+    'translated_content',
+    ...EXTRA_LANGUAGES.flatMap(lang => [`${lang}_title`, `${lang}_theme`, `${lang}_content`]),
+  ];
   const search = q ? searchPredicate('poem_search', columns, q) : null;
   const where = search ? `WHERE id IN (SELECT poem_id FROM poem_search WHERE ${search.sql})` : '';
   const bindings = search?.bindings ?? [];
@@ -33,4 +45,27 @@ export async function listAdminPoems(db: Database, params: CollectionParams = {}
     .bind(...bindings, ADMIN_POEM_PAGE_SIZE, (page - 1) * ADMIN_POEM_PAGE_SIZE)
     .all<AdminPoemSummary>();
   return { poems, q, total, page, pages };
+}
+
+/** Only the requested page is inspected; the client receives status labels, not the poems. */
+export async function translationInventory(db: Database, ids: string[]) {
+  if (!ids.length) return [];
+  const { results } = await db
+    .prepare(`SELECT * FROM poems WHERE id IN (${ids.map(() => '?').join(',')}) ORDER BY created_at,id`)
+    .bind(...ids)
+    .all<StoredPoem>();
+  return Promise.all(
+    results.map(async row => {
+      const poem = readPoem(row);
+      const states = await Promise.all(
+        SITE_LANGUAGES.map(async lang => [
+          lang,
+          lang === poem.source_language
+            ? 'original'
+            : await translationStatus(poem, isExtraLanguage(lang) ? lang : 'translated'),
+        ]),
+      );
+      return { id: poem.id, title: poem.title, states: Object.fromEntries(states) };
+    }),
+  );
 }

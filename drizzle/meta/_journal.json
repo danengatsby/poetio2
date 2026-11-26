@@ -197,6 +197,13 @@
       "when": 1795401579605,
       "tag": "0027_poem_italian",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "6",
+      "when": 1795701969793,
+      "tag": "0028_reader_shop_updates",
+      "breakpoints": true
     }
   ]
 }

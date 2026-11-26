@@ -171,7 +171,7 @@
 }
 .collection-verses {
   margin: 0;
-  max-width: 72ch;
+  max-width: 42rem;
   font: 400 clamp(1rem, 1.4vw, 1.25rem)/1.65 var(--serif);
   white-space: pre-wrap;
 }

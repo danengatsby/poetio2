@@ -59,9 +59,6 @@ def pending(database, after):
     return sorted(rows, key=lambda row: (row["created_at"], row["id"]))
 
 
-PAYMENTS = {"cod": "ramburs", "transfer": "transfer bancar"}
-
-
 def mailbox(value, whose):
     """Exactly one mailbox, so a list of addresses cannot redirect a message."""
     address = Address(addr_spec=value)
@@ -90,24 +87,115 @@ def seller_details(source, has_shop):
     return {row[0]: ", ".join(" ".join(line.split()) for line in row[1].splitlines() if line.strip()) for row in rows}
 
 
-def buyer_terms(config):
-    """Who sells, how to reach them, and the right of withdrawal: the confirmation the law asks for (OUG 34/2014)."""
+BUYER_COPY = {
+    'ro': {
+        'subject': 'Am primit comanda nr.',
+        'greeting': 'Bună, {name}! Îți mulțumim pentru comandă.',
+        'order': 'Comanda nr.',
+        'cover': 'coperta',
+        'total': 'Total cu livrare',
+        'payment': 'Plată',
+        'cod': 'ramburs',
+        'transfer': 'transfer bancar',
+        'link': 'Detaliile comenzii tale',
+        'seller': 'Vânzător',
+        'contact': 'Contact',
+        'terms': 'Poți renunța la cumpărare în 14 zile de la primirea cărților, fără să explici motivul. Cărțile au garanția legală de conformitate de 2 ani. Termenii, formularul de retragere și garanția',
+    },
+    'en-US': {
+        'subject': 'We received order',
+        'greeting': 'Thank you for your order, {name}.',
+        'order': 'Order',
+        'cover': 'cover',
+        'total': 'Total including shipping',
+        'payment': 'Payment',
+        'cod': 'cash on delivery',
+        'transfer': 'bank transfer',
+        'link': 'View your order',
+        'seller': 'Seller',
+        'contact': 'Contact',
+        'terms': 'You can withdraw within 14 days of receiving the books without giving a reason. The books carry a two-year legal guarantee of conformity. Terms, withdrawal form and guarantee',
+    },
+    'fr': {
+        'subject': 'Nous avons reçu la commande',
+        'greeting': 'Merci pour votre commande, {name}.',
+        'order': 'Commande',
+        'cover': 'couverture',
+        'total': 'Total avec livraison',
+        'payment': 'Paiement',
+        'cod': 'à la livraison',
+        'transfer': 'virement bancaire',
+        'link': 'Votre commande',
+        'seller': 'Vendeur',
+        'contact': 'Contact',
+        'terms': 'Vous pouvez vous rétracter sans motif dans les 14 jours suivant la réception des livres. Les livres bénéficient de la garantie légale de conformité de deux ans. Conditions, formulaire de rétractation et garantie',
+    },
+    'de': {
+        'subject': 'Wir haben Ihre Bestellung erhalten',
+        'greeting': 'Vielen Dank für Ihre Bestellung, {name}.',
+        'order': 'Bestellung',
+        'cover': 'Umschlag',
+        'total': 'Gesamtbetrag einschließlich Versand',
+        'payment': 'Zahlung',
+        'cod': 'Nachnahme',
+        'transfer': 'Überweisung',
+        'link': 'Ihre Bestellung',
+        'seller': 'Verkäufer',
+        'contact': 'Kontakt',
+        'terms': 'Sie können den Kauf innerhalb von 14 Tagen nach Erhalt der Bücher ohne Angabe von Gründen widerrufen. Für die Bücher gilt die zweijährige gesetzliche Gewährleistung. Bedingungen, Widerrufsformular und Gewährleistung',
+    },
+    'es': {
+        'subject': 'Hemos recibido el pedido',
+        'greeting': 'Gracias por tu pedido, {name}.',
+        'order': 'Pedido',
+        'cover': 'cubierta',
+        'total': 'Total con envío',
+        'payment': 'Pago',
+        'cod': 'contra reembolso',
+        'transfer': 'transferencia bancaria',
+        'link': 'Ver tu pedido',
+        'seller': 'Vendedor',
+        'contact': 'Contacto',
+        'terms': 'Puedes desistir sin indicar el motivo en los 14 días siguientes a la recepción de los libros. Los libros tienen una garantía legal de conformidad de dos años. Condiciones, formulario de desistimiento y garantía',
+    },
+    'it': {
+        'subject': 'Abbiamo ricevuto il tuo ordine',
+        'greeting': 'Grazie per il tuo ordine, {name}.',
+        'order': 'Ordine',
+        'cover': 'copertina',
+        'total': 'Totale con spedizione',
+        'payment': 'Pagamento',
+        'cod': 'contrassegno',
+        'transfer': 'bonifico bancario',
+        'link': 'Dettagli del tuo ordine',
+        'seller': 'Venditore',
+        'contact': 'Contatti',
+        'terms': 'Puoi recedere senza indicare il motivo entro 14 giorni dal ricevimento dei libri. I libri hanno una garanzia legale di conformità di due anni. Condizioni, modulo di recesso e garanzia',
+    },
+}
+
+
+def buyer_terms(config, copy, language):
     seller = config.get("seller") or {}
     who = ", ".join(seller[key] for key in ("seller_name", "seller_address") if seller.get(key))
     contact = " · ".join(seller[key] for key in ("contact_email", "contact_phone") if seller.get(key))
-    lines = [f"Vânzător: {who}"] if who else []
+    lines = [f"{copy['seller']}: {who}"] if who else []
     if contact:
-        lines.append(f"Contact: {contact}")
-    lines += ["", "Poți renunța la cumpărare în 14 zile de la primirea cărților, fără să explici motivul. "
-              "Cărțile au garanția legală de conformitate de 2 ani. Termenii, formularul de retragere și garanția: "
-              f"{config['site']}/termeni#retur"]
+        lines.append(f"{copy['contact']}: {contact}")
+    query = '' if language == 'ro' else f'?lang={language}'
+    lines.extend(['', f"{copy['terms']}: {config['site']}/termeni{query}#retur"])
     return "\n".join(lines).strip("\n")
 
 
 def compose_order(order, items, role, config):
     number = order["number"]
-    total = f"{order['total_cents'] // 100},{order['total_cents'] % 100:02d} {order['currency']}"
-    books = "\n".join(f"  {item['quantity']} × {' '.join(item['title'].split())} (coperta {item['cover']})" for item in items)
+    language = order["language"] if role == 'buyer' and 'language' in order.keys() else 'ro'
+    if language not in BUYER_COPY:
+        language = 'ro'
+    copy = BUYER_COPY[language]
+    separator = '.' if language == 'en-US' else ','
+    total = f"{order['total_cents'] // 100}{separator}{order['total_cents'] % 100:02d} {order['currency']}"
+    books = "\n".join(f"  {item['quantity']} × {' '.join(item['title'].split())} ({copy['cover']} {item['cover']})" for item in items)
     message = EmailMessage()
     message["From"] = config["sender"]
     message["Message-ID"] = f"<order-{order['id']}-{role}@poetio.cloud>"
@@ -122,12 +210,12 @@ def compose_order(order, items, role, config):
     else:
         # Reject address lists even in legacy order data.
         message["To"] = mailbox(order["email"], "customer")
-        message["Subject"] = f"Poetio: am primit comanda nr. {number}"
-        intro = f"Bună, {order['customer_name']}!\n\nÎți mulțumim pentru comandă."
-        link = f"Detaliile comenzii tale: {config['site']}/comanda/{order['id']}?cheie={order['access_key']}"
-    terms = f"\n{buyer_terms(config)}\n" if role == "buyer" else ""
-    message.set_content(f"{intro}\n\nComanda nr. {number}\n{books}\nTotal cu livrare: {total}\n"
-                        f"Plată: {PAYMENTS[order['payment_method']]}\n\n{link}\n{terms}")
+        message["Subject"] = f"Poetio: {copy['subject']} {number}"
+        intro = copy['greeting'].format(name=order['customer_name'])
+        link = f"{copy['link']}: {config['site']}/comanda/{order['id']}?cheie={order['access_key']}&lang={language}"
+    terms = f"\n{buyer_terms(config, copy, language)}\n" if role == "buyer" else ""
+    message.set_content(f"{intro}\n\n{copy['order']} {number}\n{books}\n{copy['total']}: {total}\n"
+                        f"{copy['payment']}: {copy[order['payment_method']]}\n\n{link}\n{terms}")
     return message
 
 

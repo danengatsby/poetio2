@@ -77,8 +77,9 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
                 <strong>Statistica vizitelor.</strong> La fiecare pagină deschisă păstrăm adresa IP, pagina, ora,
                 browserul și localitatea aproximativă dedusă din IP, ca să știm ce se citește și să protejăm site-ul de
                 abuzuri. Temeiul este interesul nostru legitim (lit. f). Nu folosim cookie-uri pentru asta. Adresa IP și
-                datele browserului se șterg după {VISIT_IP_RETENTION_DAYS} de zile; rămân doar numărul vizitelor,
-                paginile și localitatea.
+                identificatorul comun între sesiuni și descrierea brută a browserului se șterg după{' '}
+                {VISIT_IP_RETENTION_DAYS} de zile; păstrăm sesiunile, paginile și orele, locul aproximativ, sursa, limba
+                și categoriile de dispozitiv, sistem și browser.
               </li>
               <li>
                 <strong>Jurnalele serverului.</strong> Adresa IP, adresa paginii cerute, ora și browserul, pentru
@@ -160,8 +161,8 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
                 page, l’heure, le navigateur et la localité approximative déduite de l’IP, afin de savoir ce qui est lu
                 et de protéger le site contre les abus. La base légale est notre intérêt légitime (point f). Aucun
                 cookie n’est utilisé pour cela. L’adresse IP et les données du navigateur sont supprimées après{' '}
-                {VISIT_IP_RETENTION_DAYS}&nbsp;jours&nbsp;; seuls restent le nombre de visites, les pages et les
-                localités.
+                {VISIT_IP_RETENTION_DAYS}&nbsp;jours&nbsp;; restent les sessions, les pages et horaires, le lieu
+                approximatif, la source, la langue et les catégories d’appareil, de système et de navigateur.
               </li>
               <li>
                 <strong>Journaux du serveur.</strong> Adresse IP, adresse demandée, heure et navigateur, pour la
@@ -247,7 +248,8 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
                 Uhrzeit, den Browser und den aus der IP abgeleiteten ungefähren Ort, um zu wissen, was gelesen wird, und
                 um die Website vor Missbrauch zu schützen. Rechtsgrundlage ist unser berechtigtes Interesse (lit. f).
                 Dafür werden keine Cookies verwendet. IP-Adresse und Browserdaten werden nach {VISIT_IP_RETENTION_DAYS}{' '}
-                Tagen gelöscht; es bleiben nur die Zahl der Besuche, die Seiten und die Orte.
+                Tagen gelöscht; erhalten bleiben Sitzungen, Seiten, Zeiten, ungefähre Orte, Herkunft, Sprache sowie
+                Geräte-, System- und Browserkategorien.
               </li>
               <li>
                 <strong>Serverprotokolle.</strong> IP-Adresse, aufgerufene Adresse, Uhrzeit und Browser, für Sicherheit
@@ -332,8 +334,9 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
                 <strong>Estadísticas de visitas.</strong> Por cada página abierta guardamos la dirección IP, la página,
                 la hora, el navegador y la localidad aproximada deducida de la IP, para saber qué se lee y proteger el
                 sitio de abusos. La base jurídica es nuestro interés legítimo (letra f). No se usan cookies para ello.
-                La dirección IP y los datos del navegador se borran a los {VISIT_IP_RETENTION_DAYS} días; solo quedan el
-                número de visitas, las páginas y las localidades.
+                La dirección IP y los datos del navegador se borran a los {VISIT_IP_RETENTION_DAYS} días; se conservan
+                sesiones, páginas, horas, ubicación aproximada, origen, idioma y categorías de dispositivo, sistema y
+                navegador.
               </li>
               <li>
                 <strong>Registros del servidor.</strong> Dirección IP, dirección solicitada, hora y navegador, por
@@ -416,7 +419,8 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
                 l’ora, il browser e la località approssimativa ricavata dall’IP, per sapere che cosa viene letto e
                 proteggere il sito dagli abusi. La base giuridica è il nostro legittimo interesse (lettera f). Non
                 usiamo cookie per questo. L’indirizzo IP e i dati del browser vengono cancellati dopo{' '}
-                {VISIT_IP_RETENTION_DAYS} giorni; restano solo il numero di visite, le pagine e le località.
+                {VISIT_IP_RETENTION_DAYS} giorni; restano sessioni, pagine, orari, località approssimativa, provenienza,
+                lingua e categorie di dispositivo, sistema e browser.
               </li>
               <li>
                 <strong>Registri del server.</strong> Indirizzo IP, indirizzo richiesto, ora e browser, per la sicurezza
@@ -497,8 +501,8 @@ export default function PrivacyView({ initialLanguage, shop }: { initialLanguage
                 <strong>Visit statistics.</strong> For each page you open we keep your IP address, the page, the time,
                 your browser and the approximate town derived from the IP, to know what is read and to protect the site
                 from abuse. The legal basis is our legitimate interest (f). No cookies are used for this. The IP address
-                and browser details are deleted after {VISIT_IP_RETENTION_DAYS} days; only visit counts, pages and towns
-                remain.
+                and raw browser strings are deleted after {VISIT_IP_RETENTION_DAYS} days; we retain sessions, pages,
+                times, approximate location, source, language and device, OS and browser categories.
               </li>
               <li>
                 <strong>Server logs.</strong> IP address, requested address, time and browser, for security and

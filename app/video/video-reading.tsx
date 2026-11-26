@@ -11,7 +11,7 @@ export default function VideoReading({
   children,
   mediaStatus = false,
 }: {
-  video: Pick<Video, 'title' | 'author' | 'description'>;
+  video: Pick<Video, 'title' | 'author' | 'description' | 'id' | 'subtitle_text' | 'subtitle_language'>;
   src?: string;
   poster?: string;
   language: SiteLanguage;
@@ -31,6 +31,9 @@ export default function VideoReading({
         <VideoPlayer
           key={src}
           src={src}
+          subtitleSrc={!mediaStatus && video.subtitle_text ? `/api/videos/${video.id}/subtitles` : undefined}
+          subtitleLanguage={video.subtitle_language || 'ro'}
+          previewText={mediaStatus ? video.subtitle_text : undefined}
           poster={poster}
           title={video.title}
           language={language}

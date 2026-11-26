@@ -261,6 +261,8 @@ export default function VideoGallery({
                 <VideoPlayer
                   key={`${current.id}:${current.file_id}`}
                   src={`/api/video-files/${current.file_id}`}
+                  subtitleSrc={current.has_subtitles ? `/api/videos/${current.id}/subtitles` : undefined}
+                  subtitleLanguage={current.subtitle_language}
                   poster={videoPosterPath(current.file_id)}
                   title={current.title}
                   language={language}

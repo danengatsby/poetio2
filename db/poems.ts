@@ -16,7 +16,7 @@ import { parseTranslationProvenance, sourceKey, translatedKey, translationStatus
 import type { MediaValidator } from './media-validation';
 
 type VersionProvenance = `${ExtraLanguage}_provenance`;
-type StoredPoem = Omit<Poem, 'translation_provenance' | VersionProvenance> & {
+export type StoredPoem = Omit<Poem, 'translation_provenance' | VersionProvenance> & {
   translation_provenance: string | null;
 } & Partial<Record<VersionProvenance, string | null>>;
 /** The language names used in error messages. */
@@ -34,7 +34,7 @@ function parseStored(value: string | null | undefined) {
     return null;
   }
 }
-function readPoem<T extends StoredPoem>(
+export function readPoem<T extends StoredPoem>(
   row: T,
 ): Omit<T, 'translation_provenance' | VersionProvenance> & Pick<Poem, 'translation_provenance' | VersionProvenance> {
   return {
@@ -112,7 +112,11 @@ export type Statement = {
   all<T>(): Promise<{ results: T[] }>;
   run(): Promise<{ meta: { changes: number } }>;
 };
-export type Database = { prepare(sql: string): Statement; batch(statements: Statement[]): Promise<unknown> };
+export type Database = {
+  prepare(sql: string): Statement;
+  changeStamp(): string;
+  batch(statements: Statement[], expectedStamp?: string): Promise<unknown>;
+};
 
 export async function ensureInitialPoems(db: Database) {
   const marker = await db.prepare('SELECT value FROM collection_meta WHERE key = ?').bind('initial_poems_v1').first();

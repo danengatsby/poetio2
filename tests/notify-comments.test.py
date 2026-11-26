@@ -168,6 +168,20 @@ class NoticeTests(unittest.TestCase):
         self.assertIn('https://poetio.cloud/termeni#retur', text)
         self.assertNotIn('14 zile', admin.get_content())
 
+    def test_italian_buyer_receives_localized_confirmation_and_links(self):
+        self.create_shop()
+        self.mail()
+        self.order(1001)
+        with closing(sqlite3.connect(self.database)) as db, db:
+            db.execute("ALTER TABLE orders ADD language TEXT DEFAULT 'it'")
+        self.assertEqual(self.mail()['delivered'], 2)
+        admin, buyer = self.sent
+        self.assertIn('ordine', buyer['Subject'])
+        self.assertIn('Totale con spedizione', buyer.get_content())
+        self.assertIn('&lang=it', buyer.get_content())
+        self.assertIn('/termeni?lang=it#retur', buyer.get_content())
+        self.assertIn('comandă nouă', admin['Subject'])
+
     def test_one_refusal_does_not_block_other_recipients_or_resend_a_success(self):
         self.create_shop()
         self.mail()

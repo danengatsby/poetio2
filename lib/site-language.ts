@@ -4,7 +4,7 @@ export const SITE_LANGUAGE_COOKIE = 'poetio-language';
 export const SITE_LANGUAGE_HEADER = 'x-poetio-language';
 export const SITE_LANGUAGES: SiteLanguage[] = ['ro', 'en-US', 'fr', 'de', 'es', 'it'];
 
-const isSiteLanguage = (value: unknown): value is SiteLanguage =>
+export const isSiteLanguage = (value: unknown): value is SiteLanguage =>
   value === 'ro' || value === 'en-US' || value === 'fr' || value === 'de' || value === 'es' || value === 'it';
 
 export function siteLanguage(value?: string | null, preference?: string | null): SiteLanguage {

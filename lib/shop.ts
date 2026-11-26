@@ -3,6 +3,23 @@ import { BOOK_PRICE_CURRENCIES, normalizeBookPrice, type BookPriceCurrency } fro
 import { pick } from './site-language';
 import type { SiteLanguage } from './poem-types';
 
+export function checkoutIdentity(data: Record<string, unknown>) {
+  return [
+    'name',
+    'phone',
+    'email',
+    'address',
+    'city',
+    'county',
+    'postal_code',
+    'note',
+    'payment_method',
+    'accept_terms',
+    'items',
+    'language',
+    'offer_token',
+  ].map(key => data[key] ?? null);
+}
 export type PaymentMethod = 'cod' | 'transfer';
 export const ORDER_STATUSES = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -118,7 +135,15 @@ export const isCurrency = (value: unknown): value is BookPriceCurrency =>
   (BOOK_PRICE_CURRENCIES as readonly unknown[]).includes(value);
 
 function addBusinessDays(start: Date, days: number) {
-  const date = new Date(start);
+  // Count weekdays on the calendar used at checkout, including around midnight and DST.
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Bucharest',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(start);
+  const number = (name: string) => Number(parts.find(part => part.type === name)?.value);
+  const date = new Date(Date.UTC(number('year'), number('month') - 1, number('day'), 12));
   let left = days;
   while (left > 0) {
     date.setUTCDate(date.getUTCDate() + 1);

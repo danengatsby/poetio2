@@ -40,7 +40,7 @@ export default async function VideoPage() {
   let videos: VideoWithCommentCount[] = [];
   let failed = false;
   try {
-    videos = await listVideos(getPoemDb());
+    videos = await listVideos(getPoemDb(), false);
   } catch (error) {
     console.error('Video collection unavailable', error);
     failed = true;

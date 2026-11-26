@@ -2,6 +2,8 @@
 // how a browser is described, and how long the IP address is kept.
 
 /** Days after which a visit keeps its page, time and approximate place but loses its IP address and browser string. */
+export const VISIT_CLEANUP_SQL =
+  'UPDATE visits SET ip = NULL, user_agent = NULL, visitor = session_id WHERE created_at < ? AND (ip IS NOT NULL OR user_agent IS NOT NULL OR visitor <> session_id)';
 export const VISIT_IP_RETENTION_DAYS = 90;
 /** Page views from the same visitor less than this far apart belong to one visit. */
 export const VISIT_SESSION_GAP_MS = 30 * 60_000;

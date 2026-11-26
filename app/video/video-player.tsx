@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import type { SiteLanguage } from '@/lib/poem-types';
-import { pilotSubtitles } from '@/lib/video-types';
 import { pick } from '@/lib/site-language';
 
 export default function VideoPlayer({
@@ -10,16 +9,31 @@ export default function VideoPlayer({
   language = 'ro',
   showStatus = false,
   poster,
+  subtitleSrc,
+  subtitleLanguage = 'ro',
+  previewText,
 }: {
   src: string;
   title: string;
   language?: SiteLanguage;
   showStatus?: boolean;
   poster?: string;
+  subtitleSrc?: string;
+  subtitleLanguage?: string;
+  previewText?: string;
 }) {
   const element = useRef<HTMLVideoElement>(null);
   const [subtitlesOn, setSubtitlesOn] = useState(false);
-  const hasSubtitles = src === `/api/video-files/${pilotSubtitles.fileId}`;
+  const hasSubtitles = Boolean(subtitleSrc || previewText);
+  const trackRef = useRef<HTMLTrackElement>(null);
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || !previewText) return;
+    const url = URL.createObjectURL(new Blob([previewText], { type: 'text/vtt' }));
+    track.src = url;
+    return () => URL.revokeObjectURL(url);
+  }, [previewText]);
+  const trackLabel = new Intl.DisplayNames([language], { type: 'language' }).of(subtitleLanguage) || subtitleLanguage;
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -54,12 +68,7 @@ export default function VideoPlayer({
         }}
       >
         {hasSubtitles && (
-          <track
-            kind="subtitles"
-            srcLang="ro"
-            label={pick(language, 'Română', 'Romanian', 'Roumain', 'Rumänisch', 'Rumano', 'Rumeno')}
-            src={pilotSubtitles.path}
-          />
+          <track kind="subtitles" ref={trackRef} srcLang={subtitleLanguage} label={trackLabel} src={subtitleSrc} />
         )}
       </video>
       {hasSubtitles && !failed && (
@@ -75,15 +84,8 @@ export default function VideoPlayer({
             }
           }}
         >
-          {pick(
-            language,
-            'Subtitrări în română',
-            'Romanian subtitles',
-            'Sous-titres en roumain',
-            'Rumänische Untertitel',
-            'Subtítulos en rumano',
-            'Sottotitoli in rumeno',
-          )}
+          {pick(language, 'Subtitrări', 'Subtitles', 'Sous-titres', 'Untertitel', 'Subtítulos', 'Sottotitoli')} ·{' '}
+          {trackLabel}
         </button>
       )}
       {showStatus && !failed && (

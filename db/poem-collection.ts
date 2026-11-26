@@ -25,6 +25,26 @@ function poemColumns(language: SiteLanguage) {
   return { available, display, locale: `CASE WHEN ${use} THEN '${language}' ELSE source_language END` };
 }
 
+export async function feedPoems(db: Database, language: SiteLanguage) {
+  await ensureInitialPoems(db);
+  await ensureLanguageVariants(db);
+  const { display } = poemColumns(language);
+  const rows = await db
+    .prepare(
+      `SELECT id,author,created_at,updated_at,${display('title')} AS title,${display('theme')} AS theme,${display('content')} AS content FROM poems ORDER BY created_at DESC,id ASC LIMIT 50`,
+    )
+    .all<{
+      id: string;
+      author: string;
+      created_at: number;
+      updated_at: number;
+      title: string;
+      theme: string;
+      content: string;
+    }>();
+  return rows.results;
+}
+
 export async function nextPoem(db: Database, current: { id: string; created_at: number }, language: SiteLanguage) {
   const { display, locale } = poemColumns(language);
   // Cycle forward in collection order, giving poems on the same original theme priority.

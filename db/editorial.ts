@@ -39,7 +39,9 @@ export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot
           it_theme: 80,
           it_content: 30000,
         }
-      : { title: 180, author: 120, description: 5000 };
+      : kind === 'video'
+        ? { title: 180, author: 120, description: 5000, subtitle_language: 8, subtitle_text: 60000 }
+        : { title: 180, author: 120, description: 5000 };
   for (const [key, limit] of Object.entries(limits)) {
     if (data[key] !== undefined && data[key] !== null && (typeof data[key] !== 'string' || data[key].length > limit))
       throw new AppError(400, 'Un câmp al schiței depășește limita sau este nevalid.');
@@ -70,6 +72,7 @@ export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot
       result[key] = version;
     }
   }
+  if (kind === 'video' && !result.subtitle_language) result.subtitle_language = 'ro';
   result.pendingFiles = data.pendingFiles === true;
   if (kind === 'poem' && data.pendingPoemFiles !== undefined) {
     const fields = data.pendingPoemFiles;

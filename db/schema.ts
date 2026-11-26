@@ -132,6 +132,8 @@ export const videos = sqliteTable(
     title: text('title').notNull(),
     author: text('author').notNull().default(''),
     description: text('description').notNull().default(''),
+    subtitleText: text('subtitle_text').notNull().default(''),
+    subtitleLanguage: text('subtitle_language').notNull().default('ro'),
     fileId: text('file_id')
       .notNull()
       .references(() => videoFiles.id),
@@ -360,6 +362,11 @@ export const orders = sqliteTable(
     id: text('id').primaryKey(),
     number: integer('number').notNull().unique(),
     accessKey: text('access_key').notNull(),
+    attemptKey: text('attempt_key').unique(),
+    requestHash: text('request_hash'),
+    language: text('language').notNull().default('ro'),
+    deliveryMin: integer('delivery_min_days'),
+    deliveryMax: integer('delivery_max_days'),
     status: text('status').notNull().default('new'),
     customerName: text('customer_name').notNull(),
     email: text('email').notNull(),

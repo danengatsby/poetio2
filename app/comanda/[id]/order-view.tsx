@@ -134,7 +134,17 @@ export default function OrderView({
                 )}
               </dt>
               <dd>
-                {delivery[language]}
+                {delivery[language]}{' '}
+                {order.delivery_min_days == null &&
+                  pick(
+                    language,
+                    '(estimare recalculată)',
+                    '(recalculated estimate)',
+                    '(estimation recalculée)',
+                    '(neu geschätzt)',
+                    '(estimación recalculada)',
+                    '(stima ricalcolata)',
+                  )}
                 {order.payment_method === 'transfer' &&
                   pick(
                     language,

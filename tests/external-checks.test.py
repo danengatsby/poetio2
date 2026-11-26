@@ -115,7 +115,9 @@ class OffsiteTest(ExternalTestCase):
     def test_reports_an_archive_that_changed_after_verification(self):
         archive = make_backup('poetio-20261120T031500Z.tar.gz.gpg')
         with open(archive, 'r+b') as handle:
-            handle.write(b'X')
+            first = handle.read(1)[0]
+            handle.seek(0)
+            handle.write(bytes([first ^ 1]))
         self.assertEqual(external.main(['x', 'offsite']), 1)
         self.assertIn('no longer matches', self.heartbeat.calls[-1][1])
 

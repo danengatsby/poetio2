@@ -106,11 +106,21 @@ test('the visit in which a reader places an order shows it in the Accesări tabl
   expect((await report).status()).toBe(204);
   // The order goes out from the page, as the checkout sends it, and the buyer lands on its page.
   const placed = await page.evaluate(async book => {
+    const items = [{ book_id: book, cover: 1, quantity: 1 }];
+    const { quote } = await (
+      await fetch('/api/shop/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+      })
+    ).json();
     const response = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: 'Ion Cumpărător',
+        attempt_key: crypto.randomUUID(),
+        offer_token: quote.token,
         email: 'ion@example.com',
         phone: '0733 999 888',
         address: 'Str. Lungă 2',

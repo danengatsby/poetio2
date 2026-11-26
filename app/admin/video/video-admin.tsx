@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- Use document navigation with the existing administration. */
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { MAX_VIDEO_BYTES, VIDEO_ACCEPT, videoFileType, type Video } from '@/lib/video-types';
+import { SITE_LANGUAGES } from '@/lib/site-language';
 import RecoveryTools from '../recovery-tools';
 import type { EditorSnapshot } from '@/lib/editorial';
 import ThemeToggle from '../../theme-toggle';
@@ -9,13 +10,18 @@ import VideoReading from '../../video/video-reading';
 import ReaderPreview from '../reader-preview';
 import '../../video/video.css';
 
-type Draft = Pick<Video, 'id' | 'title' | 'author' | 'description' | 'file_id' | 'revision'> & { isNew: boolean };
+type Draft = Pick<
+  Video,
+  'id' | 'title' | 'author' | 'description' | 'file_id' | 'revision' | 'subtitle_text' | 'subtitle_language'
+> & { isNew: boolean };
 const fromVideo = (video: Video): Draft => ({
   id: video.id,
   title: video.title,
   author: video.author,
   description: video.description,
   file_id: video.file_id,
+  subtitle_text: video.subtitle_text,
+  subtitle_language: video.subtitle_language,
   revision: video.revision,
   isNew: false,
 });
@@ -25,6 +31,8 @@ const blank = (): Draft => ({
   author: '',
   description: '',
   file_id: '',
+  subtitle_text: '',
+  subtitle_language: 'ro',
   revision: 1,
   isNew: true,
 });
@@ -445,6 +453,34 @@ export default function VideoAdmin({
                       }}
                     />
                   </label>
+                  <label>
+                    Limba subtitrării
+                    <select
+                      value={draft.subtitle_language}
+                      onChange={e => setDraft({ ...draft, subtitle_language: e.target.value })}
+                    >
+                      {SITE_LANGUAGES.map(lang => (
+                        <option key={lang} value={lang}>
+                          {new Intl.DisplayNames(['ro'], { type: 'language' }).of(lang)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Subtitrare WebVTT
+                    <textarea
+                      rows={6}
+                      maxLength={60000}
+                      value={draft.subtitle_text}
+                      placeholder={'WEBVTT\n\n00:00.000 --> 00:02.000\nPrimul vers'}
+                      onChange={e => setDraft({ ...draft, subtitle_text: e.target.value })}
+                    />
+                  </label>
+                  <small>
+                    Verifică sincronizarea în previzualizare, apoi salvează videoul. Golește textul pentru a retrage
+                    pista.
+                  </small>
+
                   <label>
                     Fișier video
                     <input

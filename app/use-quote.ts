@@ -17,9 +17,12 @@ export const useInBrowser = () =>
     () => false,
   );
 
-export function useQuote(items: CartItem[]) {
+export function useQuote(items: CartItem[], revision = 0) {
   const key = JSON.stringify(items);
-  const [state, setState] = useState<{ key: string; value: QuoteState }>({ key: '', value: { status: 'loading' } });
+  const [state, setState] = useState<{ key: string; revision?: number; value: QuoteState }>({
+    key: '',
+    value: { status: 'loading' },
+  });
   useEffect(() => {
     const list = JSON.parse(key) as CartItem[];
     if (!list.length) return;
@@ -32,15 +35,20 @@ export function useQuote(items: CartItem[]) {
     })
       .then(async response => {
         const data = await response.json().catch(() => ({}));
+        if (controller.signal.aborted) return;
         if (!response.ok) throw new Error(data.error || 'Coșul nu a putut fi verificat.');
-        setState({ key, value: { status: 'ready', quote: data.quote, shop: data.shop } });
+        setState({ key, revision, value: { status: 'ready', quote: data.quote, shop: data.shop } });
       })
       .catch((error: Error) => {
-        if (error.name === 'AbortError') return;
-        setState({ key, value: { status: 'error', message: error.message || 'Coșul nu a putut fi verificat.' } });
+        if (controller.signal.aborted || error.name === 'AbortError') return;
+        setState({
+          key,
+          revision,
+          value: { status: 'error', message: error.message || 'Coșul nu a putut fi verificat.' },
+        });
       });
     return () => controller.abort();
-  }, [key]);
+  }, [key, revision]);
   // A result for an older cart is shown as loading until the new one arrives.
-  return state.key === key ? state.value : ({ status: 'loading' } as QuoteState);
+  return state.key === key && state.revision === revision ? state.value : ({ status: 'loading' } as QuoteState);
 }

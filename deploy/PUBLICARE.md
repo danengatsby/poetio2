@@ -58,7 +58,7 @@ Testele pornesc buildul pe o bază temporară, creată de runner. Poemele de tes
 
 ## Fără GitHub
 
-Dacă GitHub nu e disponibil, poți construi și împacheta local, într-un checkout curat al commitului: `npm ci && npm run build:vps && node scripts/package-build.mjs build-out`. Arhiva se publică apoi cu `prepare --artifact build-out/poetio-build-<commit>.tar.gz`. Dovezile notează `tested_by_ci: false`. Pe acest server, buildul local are nevoie de swap și de `choom`; vezi notele despre memorie.
+Dacă GitHub nu e disponibil, poți construi și împacheta local, într-un checkout curat al commitului: `npm ci && python3 scripts/verify-local-build.py /tmp/poetio-build`. Arhiva se publică apoi cu `prepare --artifact /tmp/poetio-build/poetio-build-<commit>.tar.gz`. Scriptul salvează lângă arhivă un fișier `.checks.json` cu rezultatele, commitul și suma arhivei. Comanda `prepare` îl verifică și îl copiază lângă manifest ca `local-checks.json`. Dovezile notează `tested_by_ci: false` pentru compilarea locală. Pe acest server, buildul local are nevoie de swap și de `choom`; vezi notele despre memorie.
 
 ## Confirmările de comandă prin email
 
@@ -123,3 +123,9 @@ sudo systemctl daemon-reload
 ```
 
 Verificarea de pe server nu poate anunța un server oprit de tot. Pentru asta, [uptime.yml](../.github/workflows/uptime.yml) verifică din GitHub, la fiecare 30 de minute, pagina principală, fluxul RSS și certificatul. O rulare eșuată trimite email de la GitHub contului care a făcut ultimul push pe `main`. GitHub suspendă programările dintr-un repository public după 60 de zile fără commituri și anunță înainte. Programarea se reia din tabul Actions („Enable workflow”) sau la următorul push.
+
+De la migrarea 0028, serviciul aplicației curăță vizitele vechi la pornire și zilnic. Pentru confirmările multilingve, actualizează și scriptul folosit de serviciile de email la activarea versiunii:
+
+```sh
+sudo install -m 0755 /var/www/Poetio/current/scripts/notify-comments.py /usr/local/sbin/poetio-notify-comments
+```

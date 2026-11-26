@@ -362,6 +362,14 @@ def prepare(arguments):
         archive = Path(arguments.artifact).resolve()
         checksum = Path(str(archive) + '.sha256').read_text()
         origin = {'artifact': str(archive), 'tested_by_ci': False}
+        checks_file = Path(str(archive) + '.checks.json')
+        if checks_file.is_file():
+            checks = json.loads(checks_file.read_text())
+            if (checks.get('commit') != commit or checks.get('archive_sha256') != sha256_file(archive)
+                    or not checks.get('checks') or any(step.get('exit') != 0 for step in checks['checks'])):
+                raise SystemExit('Local checks do not match this commit and build, or contain a failed step.')
+            record(evidence, 'local-checks.json', checks)
+            origin['local_checks'] = 'local-checks.json'
     else:
         slug = github_slug(git('remote', 'get-url', 'origin'))
         if subprocess.run(git_command('merge-base', '--is-ancestor', commit, 'origin/main')).returncode:

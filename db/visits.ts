@@ -1,7 +1,9 @@
 // Page views of the public site and the statistics shown in /admin/vizite.
 import type { Database } from './poems';
+import { isSiteLanguage } from '../lib/site-language';
 import type { OrderStatus } from '../lib/shop';
 import {
+  VISIT_CLEANUP_SQL,
   VISIT_IP_RETENTION_DAYS,
   VISIT_SESSION_GAP_MS,
   VISITS_PER_IP_HOUR,
@@ -39,12 +41,7 @@ let lastCleanup = 0;
 /** Clears the IP address and browser string of visits older than the retention period. */
 export async function forgetOldVisitors(db: Database, now = Date.now()) {
   const before = now - VISIT_IP_RETENTION_DAYS * 86_400_000;
-  const result = await db
-    .prepare(
-      'UPDATE visits SET ip = NULL, user_agent = NULL, visitor = session_id WHERE ip IS NOT NULL AND created_at < ?',
-    )
-    .bind(before)
-    .run();
+  const result = await db.prepare(VISIT_CLEANUP_SQL).bind(before).run();
   lastCleanup = now;
   return result.meta.changes;
 }
@@ -76,7 +73,7 @@ export async function recordVisit(db: Database, input: VisitInput) {
   if (continues && last.path === path && now - last.created_at < 10_000) return false;
   const session = continues ? last.session_id : crypto.randomUUID();
   const browser = describeBrowser(userAgent);
-  const language = input.language === 'ro' || input.language === 'en-US' ? input.language : '';
+  const language = isSiteLanguage(input.language) ? input.language : '';
   await db
     .prepare(
       `INSERT INTO visits (created_at, session_id, visitor, ip, user_agent, path, referrer, language, country, region, city, device, browser, os)

@@ -37,6 +37,10 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const order = await getCustomerOrder(db, (await params).id, (await searchParams).cheie);
   if (!order) notFound();
   const settings = await getShopSettings(db);
+  const promised = {
+    delivery_min_days: order.delivery_min_days ?? settings.delivery_min_days,
+    delivery_max_days: order.delivery_max_days ?? settings.delivery_max_days,
+  };
   const placed = new Date(order.created_at);
   return (
     <OrderView
@@ -44,12 +48,12 @@ export default async function OrderPage({ params, searchParams }: Props) {
       order={order}
       shop={publicShop(settings)}
       delivery={{
-        ro: deliveryWindow(placed, settings, 'ro'),
-        'en-US': deliveryWindow(placed, settings, 'en-US'),
-        fr: deliveryWindow(placed, settings, 'fr'),
-        de: deliveryWindow(placed, settings, 'de'),
-        es: deliveryWindow(placed, settings, 'es'),
-        it: deliveryWindow(placed, settings, 'it'),
+        ro: deliveryWindow(placed, promised, 'ro'),
+        'en-US': deliveryWindow(placed, promised, 'en-US'),
+        fr: deliveryWindow(placed, promised, 'fr'),
+        de: deliveryWindow(placed, promised, 'de'),
+        es: deliveryWindow(placed, promised, 'es'),
+        it: deliveryWindow(placed, promised, 'it'),
       }}
     />
   );
