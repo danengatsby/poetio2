@@ -7,6 +7,7 @@
 import { spawn } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
+import { DatabaseSync } from 'node:sqlite';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -100,6 +101,15 @@ try {
       body: JSON.stringify(body),
     });
     if (response.status !== 201) throw new Error(`Adding "${poem.title}" failed: ${await response.text()}`);
+    if (index === 0) {
+      // This published translation predates provenance tracking, like older poems on the site.
+      const db = new DatabaseSync(join(data, 'poetio.sqlite3'));
+      try {
+        db.prepare('UPDATE poems SET translation_provenance=NULL, revision=revision+1 WHERE id=?').run(body.id);
+      } finally {
+        db.close();
+      }
+    }
   }
   // A book: upload the PDF, then publish once its pages have been checked.
   const fileId = crypto.randomUUID();

@@ -40,6 +40,17 @@ export function translatedKey(poem: PoemInput) {
     poem.translated_content?.replace(/\r\n?/g, '\n') || '',
   ]);
 }
+/** Older published translations may be kept verbatim while editing recordings or metadata. */
+export function keepsLegacyTranslation(input: PoemInput, published?: PoemInput | null) {
+  return Boolean(
+    published &&
+    !published.translation_provenance &&
+    published.translated_title?.trim() &&
+    published.translated_content?.trim() &&
+    sourceKey(input) === sourceKey(published) &&
+    translatedKey(input) === translatedKey(published),
+  );
+}
 async function digest(value: string) {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('');

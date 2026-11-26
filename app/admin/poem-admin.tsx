@@ -34,7 +34,7 @@ import {
 import RecoveryTools from './recovery-tools';
 import type { EditorSnapshot } from '@/lib/editorial';
 import ThemeToggle from '../theme-toggle';
-import { translationProvenance } from '@/lib/translation-provenance';
+import { keepsLegacyTranslation, translationProvenance } from '@/lib/translation-provenance';
 import { useTranslationStatus } from './use-translation-status';
 import { adminPoemListUrl, type AdminPoemCollection } from '@/lib/poem-admin-list';
 
@@ -226,14 +226,17 @@ export default function Admin({
   const translatedLabel = translatedLanguage === 'ro' ? 'Română' : 'English (US)';
   const translationState = useTranslationStatus(draft);
   const translateOnSave = sourceLanguage === 'ro' && translationState === 'missing';
-  const translationBlocked = translationState !== 'ready' && translationState !== 'missing';
+  const keepLegacy =
+    translationState === 'unreviewed' && draft && !draft.isNew && keepsLegacyTranslation(draft, baseline);
+  const translationBlocked = !keepLegacy && translationState !== 'ready' && translationState !== 'missing';
   const translationMessage = {
     checking: 'Se verifică asocierea traducerii…',
     missing: 'Nu există o traducere completată.',
     incomplete:
       'Completează titlul și textul traducerii, apoi confirmă revizuirea manuală, sau salvează fără traducere.',
-    unreviewed:
-      'Traducerea nu are o asociere verificată cu originalul. Compară textele și confirmă revizuirea manuală sau pregătește o traducere nouă.',
+    unreviewed: keepLegacy
+      ? 'Traducerea publicată se păstrează la salvarea modificărilor. Poți confirma separat revizuirea textului.'
+      : 'Traducerea nu are o asociere verificată cu originalul. Compară textele și confirmă revizuirea manuală sau pregătește o traducere nouă.',
     stale: 'Originalul s-a schimbat. Traducerea trebuie regenerată sau verificată manual înainte de publicare.',
     edited: 'Traducerea a fost modificată. Confirmă revizuirea manuală pentru originalul actual înainte de publicare.',
     ready: 'Traducerea este asociată originalului actual. Orice schimbare a textelor cere o nouă verificare.',
@@ -1062,7 +1065,7 @@ export default function Admin({
                     <h3 id="translation-editor-title">Varianta în {translatedLabel}</h3>
                     <p className="field-help">
                       Compară originalul și traducerea în previzualizare. După editarea manuală, confirmă că traducerea
-                      corespunde originalului actual. „Salvează fără traducere” elimină varianta tradusă din publicare.
+                      corespunde originalului actual. Salvarea fără traducere elimină varianta tradusă din publicare.
                       {sourceLanguage === 'ro' &&
                         translationReady &&
                         ' Poți genera varianta EN cu „Pregătește traducerea în schiță”.'}
@@ -1254,7 +1257,9 @@ export default function Admin({
                         if (event.currentTarget.form?.reportValidity()) void save(event, true);
                       }}
                     >
-                      Salvează fără traducere
+                      {baseline?.translated_content?.trim() && !baseline.isNew
+                        ? 'Salvează și elimină traducerea publicată'
+                        : 'Salvează fără traducere'}
                     </button>
                   )}
                   <button

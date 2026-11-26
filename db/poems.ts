@@ -12,7 +12,7 @@ import { requireAvailableImage, validImageId } from './images';
 import { languageBackfill } from './language-backfill';
 import { requireAvailableAudio, validAudioId } from './audio';
 import { AUDIO_FIELDS } from '../lib/poem-audio';
-import { parseTranslationProvenance, sourceKey, translatedKey, translationStatus } from '../lib/translation-provenance';
+import { parseTranslationProvenance, keepsLegacyTranslation, translationStatus } from '../lib/translation-provenance';
 import type { MediaValidator } from './media-validation';
 
 type VersionProvenance = `${ExtraLanguage}_provenance`;
@@ -92,13 +92,7 @@ async function requireCurrentTranslation(input: PoemInput, current?: Poem) {
   if (status === 'ready') return input;
   // Keep existing, untracked translations readable and allow older clients to
   // change shared metadata. Never attach them to a new original or new text.
-  if (
-    status === 'unreviewed' &&
-    current &&
-    !current.translation_provenance &&
-    sourceKey(input) === sourceKey(current) &&
-    translatedKey(input) === translatedKey(current)
-  )
+  if (status === 'unreviewed' && keepsLegacyTranslation(input, current))
     return { ...input, translation_provenance: null };
   throw new AppError(
     409,

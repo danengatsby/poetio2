@@ -40,6 +40,9 @@ test('the editor previews and publishes a separate recording for each extra lang
   }
   await preview.getByRole('button', { name: 'Înapoi la editor' }).click();
   const poem = await save();
+  expect(poem.translated_title).toBe(fixturePoems[0].translated_title);
+  expect(poem.translated_content).toBe(fixturePoems[0].translated_content);
+  expect(poem.translation_provenance).toBeNull();
   const reader = await browser.newPage({ baseURL });
   try {
     const ids = new Set();
