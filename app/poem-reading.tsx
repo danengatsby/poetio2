@@ -48,7 +48,7 @@ export default function PoemReading({
     text = version ?? poem;
   const actualLanguage = version ? language : poem.source_language;
   const recording = poemRecording(poem, actualLanguage);
-  const { preferences } = usePoemReadingPreferences();
+  const preferences = usePoemReadingPreferences();
   return (
     <article className="poem-reading" lang={language}>
       <p className="eyebrow" lang={actualLanguage}>
@@ -60,7 +60,6 @@ export default function PoemReading({
       </h1>
       {poem.author && <p className="reader-author">{poem.author}</p>}
       {children}
-      <ReadingSettings language={language} />
       <PoemAudioPlayer
         key={audioSrc || recording.id}
         audioId={recording.id}
@@ -92,127 +91,5 @@ export default function PoemReading({
         {text.content}
       </div>
     </article>
-  );
-}
-
-export function ReadingSettings({ language }: { language: SiteLanguage }) {
-  const { preferences, storageAvailable, setPreferences, resetPreferences } = usePoemReadingPreferences();
-  return (
-    <details className="poem-reading-settings">
-      <summary>
-        {pick(
-          language,
-          'Confort de lectură',
-          'Reading comfort',
-          'Confort de lecture',
-          'Lesekomfort',
-          'Comodidad de lectura',
-          'Comfort di lettura',
-        )}
-      </summary>
-      <div className="poem-reading-controls">
-        <div
-          role="group"
-          aria-label={pick(
-            language,
-            'Dimensiunea versurilor',
-            'Poem text size',
-            'Taille du texte du poème',
-            'Textgröße des Gedichts',
-            'Tamaño del texto del poema',
-            'Dimensione del testo della poesia',
-          )}
-        >
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={preferences.textSize <= 1}
-            onClick={() => setPreferences({ textSize: Math.max(1, preferences.textSize - 0.125) })}
-            aria-label={pick(
-              language,
-              'Micșorează versurile',
-              'Decrease poem text size',
-              'Réduire le texte du poème',
-              'Gedichttext verkleinern',
-              'Reducir el texto del poema',
-              'Riduci il testo della poesia',
-            )}
-          >
-            A−
-          </button>
-          <output aria-live="polite">{Math.round(preferences.textSize * 100)}%</output>
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={preferences.textSize >= 2}
-            onClick={() => setPreferences({ textSize: Math.min(2, preferences.textSize + 0.125) })}
-            aria-label={pick(
-              language,
-              'Mărește versurile',
-              'Increase poem text size',
-              'Agrandir le texte du poème',
-              'Gedichttext vergrößern',
-              'Ampliar el texto del poema',
-              'Ingrandisci il testo della poesia',
-            )}
-          >
-            A+
-          </button>
-        </div>
-        <label>
-          {pick(
-            language,
-            'Lățimea textului',
-            'Text width',
-            'Largeur du texte',
-            'Textbreite',
-            'Ancho del texto',
-            'Larghezza del testo',
-          )}
-          <select
-            value={preferences.width}
-            onChange={event => setPreferences({ width: event.target.value as typeof preferences.width })}
-          >
-            <option value="narrow">
-              {pick(language, 'Îngustă', 'Narrow', 'Étroite', 'Schmal', 'Estrecho', 'Stretta')}
-            </option>
-            <option value="normal">{pick(language, 'Medie', 'Medium', 'Moyenne', 'Mittel', 'Medio', 'Media')}</option>
-            <option value="wide">{pick(language, 'Largă', 'Wide', 'Large', 'Breit', 'Ancho', 'Larga')}</option>
-          </select>
-        </label>
-        <button type="button" className="secondary-button" onClick={resetPreferences}>
-          {pick(
-            language,
-            'Resetează lectura',
-            'Reset reading settings',
-            'Réinitialiser les réglages de lecture',
-            'Leseeinstellungen zurücksetzen',
-            'Restablecer los ajustes de lectura',
-            'Ripristina le impostazioni di lettura',
-          )}
-        </button>
-      </div>
-      <p className="field-help" role="status">
-        {storageAvailable
-          ? pick(
-              language,
-              'Preferințele poemelor se păstrează în acest browser.',
-              'Poem preferences are saved in this browser.',
-              'Les préférences de lecture sont enregistrées dans ce navigateur.',
-              'Die Leseeinstellungen werden in diesem Browser gespeichert.',
-              'Las preferencias de lectura se guardan en este navegador.',
-              'Le preferenze di lettura vengono salvate in questo browser.',
-            )
-          : pick(
-              language,
-              'Preferințele nu pot fi salvate. Reglajele funcționează până la reîncărcare.',
-              'Preferences cannot be saved. Controls still work until you reload.',
-              'Les préférences ne peuvent pas être enregistrées. Les réglages fonctionnent jusqu’au prochain rechargement.',
-              'Die Einstellungen können nicht gespeichert werden. Sie funktionieren bis zum nächsten Neuladen.',
-              'No se pueden guardar las preferencias. Los ajustes funcionan hasta que recargues la página.',
-              'Non è possibile salvare le preferenze. Le impostazioni funzionano fino al prossimo ricaricamento.',
-            )}
-      </p>
-    </details>
   );
 }

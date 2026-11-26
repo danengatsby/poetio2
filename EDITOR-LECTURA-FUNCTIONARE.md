@@ -14,7 +14,7 @@ Pentru un PDF nou, „Pregătește PDF privat pentru previzualizare” încarcă
 
 Antetul public păstrează legăturile Poeme, Video, Cărți, Autor și RO/EN la vedere. Tema și administrarea sunt grupate în „Opțiuni”, folosind `details`; Escape și atingerea în afară închid meniul. Comenzile au minimum 44 px înălțime. În proba Chromium la 390 px: antetul scade de la 246,80 la 116,39 px, recuperând 130,41 px de ecran.
 
-Poemele au un panou „Confort de lectură”: font 100–200%, trepte de 12,5%, lățime îngustă/medie/largă și resetare. `poetio:poem-reading:v1` păstrează exclusiv aceste preferințe; setările cărților și pozițiile PDF rămân separate. Valorile invalide sunt înlocuite cu valorile implicite 112,5%/medie. Schimbările se sincronizează între file; dacă stocarea este refuzată, comenzile rămân funcționale în memoria paginii și mesajul explică lipsa persistenței.
+Cititorul de poeme folosește dimensiunea textului și lățimea salvate anterior în acest browser. Valorile implicite sunt 112,5% și lățime medie.
 
 ## Panoul privat de funcționare
 
