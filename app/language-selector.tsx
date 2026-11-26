@@ -8,10 +8,12 @@ export default function LanguageSelector({
   language,
   onChange,
   compact = false,
+  forPoem = false,
 }: {
   language: SiteLanguage;
   onChange: (language: SiteLanguage) => void;
   compact?: boolean;
+  forPoem?: boolean;
 }) {
   return (
     <ToggleGroup
@@ -20,16 +22,29 @@ export default function LanguageSelector({
       onValueChange={value => {
         if (SITE_LANGUAGES.includes(value as SiteLanguage)) onChange(value as SiteLanguage);
       }}
-      className="site-language-menu"
-      aria-label={pick(
-        language,
-        'Limba site-ului',
-        'Site language',
-        'Langue du site',
-        'Sprache der Website',
-        'Idioma del sitio',
-        'Lingua del sito',
-      )}
+      id={forPoem ? 'poem-language' : undefined}
+      className={forPoem ? 'site-language-menu reader-language-menu' : 'site-language-menu'}
+      aria-label={
+        forPoem
+          ? pick(
+              language,
+              'Limba poemului',
+              'Poem language',
+              'Langue du poème',
+              'Sprache des Gedichts',
+              'Idioma del poema',
+              'Lingua della poesia',
+            )
+          : pick(
+              language,
+              'Limba site-ului',
+              'Site language',
+              'Langue du site',
+              'Sprache der Website',
+              'Idioma del sitio',
+              'Lingua del sito',
+            )
+      }
     >
       <ToggleGroupItem value="ro" lang="ro" aria-label="Română" title="Română">
         {compact ? 'RO' : 'Română'}

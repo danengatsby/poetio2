@@ -11,6 +11,8 @@ import usePoemReadingPreferences from './use-poem-reading-preferences';
 import PoemComments from './poem-comments';
 import SiteLogo from './site-logo';
 import SiteHeader from './site-header';
+import LanguageSelector from './language-selector';
+import { poemHref } from '@/lib/content-metadata';
 import './collection.css';
 import LegalLinks from './legal-links';
 
@@ -57,15 +59,19 @@ export default function Showcase({
     'Cerca nella collezione',
   );
   const pagination = pages > 1 && <CollectionPagination filters={filters} page={page} pages={pages} />;
-  function changeLanguage(value: SiteLanguage) {
+  function changeLanguage(value: SiteLanguage, fromPoem = false) {
     rememberSiteLanguage(value);
-    window.location.assign(
-      collectionHref(
-        { ...filters, topic: '', theme: filters.topic || filters.theme, language: value },
-        page,
-        selectedId,
-      ),
-    );
+    const nextFilters = { ...filters, topic: '', theme: filters.topic || filters.theme, language: value };
+    if (fromPoem && selected) {
+      // A translation filter may exclude this poem in the new language.
+      const href =
+        filters.translation === 'all'
+          ? collectionPageHref(nextFilters, page, selected.id)
+          : poemHref(selected.id, value, collectionHref(nextFilters, page, selected.id));
+      window.location.assign(href + '#poem-language');
+    } else {
+      window.location.assign(collectionHref(nextFilters, page, selectedId));
+    }
   }
   return (
     <>
@@ -245,6 +251,7 @@ export default function Showcase({
                 aria-labelledby="selected-poem-title"
                 tabIndex={0}
               >
+                <LanguageSelector language={language} onChange={value => changeLanguage(value, true)} compact forPoem />
                 <div className="collection-poem-heading">
                   <h1 id="selected-poem-title" lang={selected.language}>
                     {selected.title}

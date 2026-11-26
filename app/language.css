@@ -23,6 +23,16 @@
 .site-language-menu button:focus-visible {
   outline-offset: 2px;
 }
+.site-language-menu.reader-language-menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(2.75rem, 100%), 1fr));
+  width: min(100%, 17.25rem);
+  margin-bottom: 0.75rem;
+  scroll-margin-top: 1rem;
+}
+.reader-language-menu button {
+  padding-inline: 0.25rem;
+}
 .original-language-note {
   display: block;
   margin: 0 0 0.7rem;

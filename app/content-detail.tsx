@@ -6,6 +6,7 @@ import { collectionReturnHref, type PoemCard } from '@/lib/poem-collection';
 import { contentPath, poemHref } from '@/lib/content-metadata';
 import { pick, rememberSiteLanguage, withSiteLanguage } from '@/lib/site-language';
 import SiteHeader from './site-header';
+import LanguageSelector from './language-selector';
 import PoemReading from './poem-reading';
 import { ReaderComments } from './poem-comments';
 import VideoReading from './video/video-reading';
@@ -35,11 +36,11 @@ export default function ContentDetail({
   const collectionPath = poem
     ? (backHref ?? withSiteLanguage('/#collection', language))
     : withSiteLanguage('/video', language);
-  function changeLanguage(locale: SiteLanguage) {
+  function changeLanguage(locale: SiteLanguage, fromPoem = false) {
     rememberSiteLanguage(locale);
     const query = new URLSearchParams({ lang: locale });
     if (poem && backHref) query.set('returnTo', collectionReturnHref(backHref, locale));
-    window.location.assign(path + '?' + query.toString());
+    window.location.assign(path + '?' + query.toString() + (fromPoem ? '#poem-language' : ''));
   }
   async function copy() {
     const link = new URL(withSiteLanguage(path, language), window.location.origin).href;
@@ -122,9 +123,12 @@ export default function ContentDetail({
           )}
         </a>
         {poem ? (
-          <PoemReading poem={poem} language={language}>
-            {share}
-          </PoemReading>
+          <>
+            <LanguageSelector language={language} onChange={value => changeLanguage(value, true)} compact forPoem />
+            <PoemReading poem={poem} language={language}>
+              {share}
+            </PoemReading>
+          </>
         ) : (
           <VideoReading
             video={video!}

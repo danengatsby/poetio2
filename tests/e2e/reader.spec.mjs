@@ -25,7 +25,7 @@ test('keeps the chosen language and search when returning to the collection', as
   await openSelectedPoemPage(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(meeting);
 
-  await page.getByRole('radio', { name: 'English (US)' }).click();
+  await page.getByRole('radiogroup', { name: 'Limba poemului' }).getByRole('radio', { name: 'English (US)' }).click();
   await expect(page).toHaveURL(/[?&]lang=en-US/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('The meeting in the grove');
 
@@ -41,7 +41,7 @@ test('copies a link that holds only the poem and its language', async ({ page, c
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: baseURL });
   await page.goto('/?' + new URLSearchParams({ lang: 'ro', q: 'labirintul' }) + '#collection');
   await openSelectedPoemPage(page);
-  await page.getByRole('radio', { name: 'English (US)' }).click();
+  await page.locator('header').getByRole('radio', { name: 'English (US)' }).click();
   await expect(page).toHaveURL(/[?&]lang=en-US/);
   const id = new URL(page.url()).pathname.split('/').at(-1);
 
@@ -142,6 +142,11 @@ test('choosing a title updates the highlighted item and the single reading panel
     await page.setViewportSize({ width, height: 900 });
     const left = await page.locator('.collection-titles').boundingBox();
     const right = await article.boundingBox();
+    const selector = article.getByRole('radiogroup', { name: 'Limba poemului' });
+    await expect(selector.getByRole('radio')).toHaveText(['RO', 'EN', 'FR', 'DE', 'ES', 'IT']);
+    const lastOption = await selector.getByRole('radio', { name: 'Italiano' }).boundingBox();
+    expect(lastOption.x + lastOption.width).toBeLessThanOrEqual(right.x + right.width);
+    expect(lastOption.y + lastOption.height).toBeLessThanOrEqual((await article.locator('h1').boundingBox()).y);
     const toggle = article.locator('.poem-audio-toggle');
     if (width < 400) {
       await expect(article.locator('audio')).toBeHidden();
@@ -182,7 +187,8 @@ test('choosing a title updates the highlighted item and the single reading panel
   await expect(page.locator('h1')).toHaveText(second.title);
   await page.locator('.content-back').click();
   await expect(select(second)).toHaveAttribute('aria-current', 'true');
-  await page.getByRole('radio', { name: 'English (US)' }).click();
+  await article.getByRole('radio', { name: 'English (US)' }).click();
+  await expect(page).toHaveURL(/#poem-language$/);
   await expect(article.getByRole('heading', { level: 1 })).toHaveText(second.translated_title);
   await expect(article.locator('audio')).toHaveCount(0);
 });
