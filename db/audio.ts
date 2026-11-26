@@ -1,5 +1,5 @@
 import { AppError, isOwnerEmail } from '../lib/access';
-import { MAX_AUDIO_BYTES } from '../lib/poem-audio';
+import { MAX_AUDIO_BYTES, AUDIO_FIELDS } from '../lib/poem-audio';
 import { validImageId } from './images';
 import type { Database } from './poems';
 import { requireReadyMedia, validateMediaUpload, type MediaValidator } from './media-validation';
@@ -199,7 +199,10 @@ export async function serveAudio(db: Database, bucket: AudioBucket, request: Req
   const owner = isOwnerEmail(request.headers.get('oai-authenticated-user-email'));
   if (
     !owner &&
-    !(await db.prepare('SELECT id FROM poems WHERE audio_ro_id = ? OR audio_en_id = ? LIMIT 1').bind(id, id).first())
+    !(await db
+      .prepare(`SELECT id FROM poems WHERE ${AUDIO_FIELDS.map(field => field + ' = ?').join(' OR ')} LIMIT 1`)
+      .bind(...AUDIO_FIELDS.map(() => id))
+      .first())
   )
     return missing();
   if (bucket.accelUri)

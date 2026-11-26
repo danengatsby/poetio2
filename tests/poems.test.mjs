@@ -1006,7 +1006,7 @@ test('recordings remain private until attached, support seeking, and detach with
       status: 400,
     });
     assert.throws(() => service.validateInput({ ...input, audio_ro_id: '../../bad' }), { status: 400 });
-    const poemInput = { ...input, audio_ro_id: recordingId };
+    const poemInput = { ...input, audio_ro_id: recordingId, audio_it_id: recordingId };
     const poem = await service.createPoem(db, id, poemInput, readyMediaValidator);
     assert.equal(poem.audio_ro_id, recordingId);
     assert.equal(poem.audio_en_id, null);
@@ -1055,6 +1055,12 @@ test('recordings remain private until attached, support seeking, and detach with
       readyMediaValidator,
     );
     assert.equal(olderForm.audio_ro_id, secondId);
+    assert.equal(olderForm.audio_it_id, recordingId);
+    const history = await db
+      .prepare("SELECT snapshot FROM content_history WHERE entity_id=? AND revision=? AND event='saved'")
+      .bind(id, olderForm.revision)
+      .first();
+    assert.equal(JSON.parse(history.snapshot).audio_it_id, recordingId);
     assert.equal(
       olderForm.audio_en_id,
       recordingId,
@@ -1064,7 +1070,7 @@ test('recordings remain private until attached, support seeking, and detach with
       db,
       id,
       3,
-      { ...input, audio_ro_id: null, audio_en_id: null },
+      { ...input, audio_ro_id: null, audio_en_id: null, audio_it_id: null },
       readyMediaValidator,
     );
     assert.equal(detached.content, input.content);
@@ -2182,6 +2188,10 @@ test('public collection pages stay bounded in SQL and cover tied timestamps once
       'source_language',
       'audio_ro_id',
       'audio_en_id',
+      'audio_fr_id',
+      'audio_de_id',
+      'audio_es_id',
+      'audio_it_id',
       'title',
       'theme',
       'content',

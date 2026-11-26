@@ -48,7 +48,7 @@ export function draftSnapshot(kind: ContentKind, value: unknown): EditorSnapshot
     result[key] = data[key] ?? '';
   }
   for (const field of kind === 'poem'
-    ? ['image_id', 'audio_ro_id', 'audio_en_id']
+    ? mediaFields
     : kind === 'book'
       ? ['file_id', 'image_id', 'image_2_id']
       : ['file_id']) {

@@ -1,7 +1,9 @@
 import type { EditorSnapshot } from './editorial';
 import type { PoemInput } from './poem-types';
 
-export const mediaFields = ['image_id', 'audio_ro_id', 'audio_en_id'] as const;
+import { AUDIO_FIELDS } from './poem-audio';
+
+export const mediaFields = ['image_id', ...AUDIO_FIELDS] as const;
 export type PoemMediaField = (typeof mediaFields)[number];
 
 export const poemFieldLabels = {
@@ -16,6 +18,10 @@ export const poemFieldLabels = {
   image_id: 'Imagine',
   audio_ro_id: 'Înregistrare RO',
   audio_en_id: 'Înregistrare EN',
+  audio_fr_id: 'Înregistrare FR',
+  audio_de_id: 'Înregistrare DE',
+  audio_es_id: 'Înregistrare ES',
+  audio_it_id: 'Înregistrare IT',
   translation_provenance: 'Revizuirea traducerii',
   fr_title: 'Titlul în franceză',
   fr_theme: 'Tema în franceză',
@@ -42,7 +48,7 @@ export function pendingPoemMedia(snapshot: EditorSnapshot): PoemMediaField[] {
     return mediaFields.filter(field => fields.includes(field));
   }
   // Older drafts only recorded that at least one file was pending.
-  return snapshot.pendingFiles ? [...mediaFields] : [];
+  return snapshot.pendingFiles ? ['image_id', 'audio_ro_id', 'audio_en_id'] : [];
 }
 
 function sameValue(left: unknown, right: unknown) {

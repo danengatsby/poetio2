@@ -1,3 +1,4 @@
+import { audioField, type AudioField } from './poem-audio';
 import { isExtraLanguage, type Poem, type PoemLanguage, type SiteLanguage } from './poem-types';
 
 export const POEM_LANGUAGES: PoemLanguage[] = ['ro', 'en-US'];
@@ -6,12 +7,13 @@ export function otherLanguage(language: PoemLanguage): PoemLanguage {
   return language === 'ro' ? 'en-US' : 'ro';
 }
 
-export function poemRecording(
-  poem: Pick<Poem, 'source_language' | 'audio_ro_id' | 'audio_en_id'>,
-  textLanguage: SiteLanguage,
-) {
-  const language = isExtraLanguage(textLanguage) ? poem.source_language : textLanguage;
-  return { language, id: language === 'en-US' ? poem.audio_en_id : poem.audio_ro_id };
+export function poemRecording(poem: Pick<Poem, 'source_language' | AudioField>, textLanguage: SiteLanguage) {
+  const id = poem[audioField(textLanguage)];
+  if (!id && isExtraLanguage(textLanguage)) {
+    const original = poem[audioField(poem.source_language)];
+    if (original) return { language: poem.source_language, id: original };
+  }
+  return { language: textLanguage, id };
 }
 
 /** The poem in a site language: the original, its translation, the French or German version, or null. */

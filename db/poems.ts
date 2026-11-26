@@ -310,8 +310,8 @@ export async function createPoem(db: Database, id: string, input: PoemInput, val
   const now = Date.now();
   const insert = db
     .prepare(
-      `INSERT INTO poems (id, title, author, theme, content, source_language, translated_title, translated_theme, translated_content, translation_provenance, ${VERSION_COLUMNS.join(', ')}, image_id, audio_ro_id, audio_en_id, revision, created_at, updated_at) VALUES (${Array(
-        13 + VERSION_COLUMNS.length,
+      `INSERT INTO poems (id, title, author, theme, content, source_language, translated_title, translated_theme, translated_content, translation_provenance, ${VERSION_COLUMNS.join(', ')}, image_id, ${AUDIO_FIELDS.join(', ')}, revision, created_at, updated_at) VALUES (${Array(
+        11 + VERSION_COLUMNS.length + AUDIO_FIELDS.length,
       )
         .fill('?')
         .join(', ')}, 1, ?, ?) ON CONFLICT(id) DO NOTHING`,
@@ -334,8 +334,7 @@ export async function createPoem(db: Database, id: string, input: PoemInput, val
         storedVersion(input, language),
       ]),
       input.image_id ?? null,
-      input.audio_ro_id ?? null,
-      input.audio_en_id ?? null,
+      ...AUDIO_FIELDS.map(field => input[field] ?? null),
       now,
       now,
     );
@@ -430,7 +429,7 @@ export async function updatePoem(
   const versions = await requireCurrentVersions(kept);
   const update = db
     .prepare(
-      `UPDATE poems SET title = ?, author = ?, theme = ?, content = ?, source_language = ?, translated_title = ?, translated_theme = ?, translated_content = ?, translation_provenance = ?, ${VERSION_COLUMNS.map(column => column + ' = ?').join(', ')}, image_id = CASE WHEN ? = 1 THEN ? ELSE image_id END, audio_ro_id = CASE WHEN ? = 1 THEN ? ELSE audio_ro_id END, audio_en_id = CASE WHEN ? = 1 THEN ? ELSE audio_en_id END, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?`,
+      `UPDATE poems SET title = ?, author = ?, theme = ?, content = ?, source_language = ?, translated_title = ?, translated_theme = ?, translated_content = ?, translation_provenance = ?, ${VERSION_COLUMNS.map(column => column + ' = ?').join(', ')}, image_id = CASE WHEN ? = 1 THEN ? ELSE image_id END, ${AUDIO_FIELDS.map(field => `${field} = CASE WHEN ? = 1 THEN ? ELSE ${field} END`).join(', ')}, revision = revision + 1, updated_at = ? WHERE id = ? AND revision = ?`,
     )
     .bind(
       input.title,
@@ -450,10 +449,7 @@ export async function updatePoem(
       ]),
       input.image_id === undefined ? 0 : 1,
       input.image_id ?? null,
-      input.audio_ro_id === undefined ? 0 : 1,
-      input.audio_ro_id ?? null,
-      input.audio_en_id === undefined ? 0 : 1,
-      input.audio_en_id ?? null,
+      ...AUDIO_FIELDS.flatMap(field => [input[field] === undefined ? 0 : 1, input[field] ?? null]),
       Date.now(),
       id,
       revision,

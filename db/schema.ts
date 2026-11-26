@@ -56,6 +56,10 @@ export const poems = sqliteTable(
     imageId: text('image_id').references(() => poemImages.id),
     audioRoId: text('audio_ro_id').references(() => poemAudio.id),
     audioEnId: text('audio_en_id').references(() => poemAudio.id),
+    audioFrId: text('audio_fr_id').references(() => poemAudio.id),
+    audioDeId: text('audio_de_id').references(() => poemAudio.id),
+    audioEsId: text('audio_es_id').references(() => poemAudio.id),
+    audioItId: text('audio_it_id').references(() => poemAudio.id),
     revision: integer('revision').notNull().default(1),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
@@ -65,6 +69,10 @@ export const poems = sqliteTable(
     index('idx_poems_image_id').on(table.imageId),
     index('idx_poems_audio_ro_id').on(table.audioRoId),
     index('idx_poems_audio_en_id').on(table.audioEnId),
+    index('idx_poems_audio_fr_id').on(table.audioFrId),
+    index('idx_poems_audio_de_id').on(table.audioDeId),
+    index('idx_poems_audio_es_id').on(table.audioEsId),
+    index('idx_poems_audio_it_id').on(table.audioItId),
   ],
 );
 

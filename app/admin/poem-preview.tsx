@@ -1,10 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { isExtraLanguage, type PoemInput, type SiteLanguage } from '@/lib/poem-types';
-import { poemVersion } from '@/lib/poem-languages';
+import { type PoemInput, type SiteLanguage } from '@/lib/poem-types';
+import { poemRecording, poemVersion } from '@/lib/poem-languages';
 import PoemReading, { type ReadablePoem } from '../poem-reading';
 import type { SelectedAudio } from './audio-upload-field';
-import type { AudioField } from '@/lib/poem-audio';
+import { audioField, type AudioField } from '@/lib/poem-audio';
 import ReaderPreview from './reader-preview';
 
 function LocalAudioPoem({ poem, language, file }: { poem: ReadablePoem; language: SiteLanguage; file?: File }) {
@@ -46,8 +46,12 @@ export default function PoemPreview({
     it_title: draft.it_title ?? null,
     it_theme: draft.it_theme ?? null,
     it_content: draft.it_content ?? null,
-    audio_ro_id: draft.audio_ro_id ?? null,
-    audio_en_id: draft.audio_en_id ?? null,
+    audio_ro_id: audio.audio_ro_id?.id ?? draft.audio_ro_id ?? null,
+    audio_en_id: audio.audio_en_id?.id ?? draft.audio_en_id ?? null,
+    audio_fr_id: audio.audio_fr_id?.id ?? draft.audio_fr_id ?? null,
+    audio_de_id: audio.audio_de_id?.id ?? draft.audio_de_id ?? null,
+    audio_es_id: audio.audio_es_id?.id ?? draft.audio_es_id ?? null,
+    audio_it_id: audio.audio_it_id?.id ?? draft.audio_it_id ?? null,
   };
   return (
     <ReaderPreview
@@ -65,9 +69,7 @@ export default function PoemPreview({
     >
       {language => {
         const actual = poemVersion(poem, language) ? language : poem.source_language;
-        // As on the site: the French and German versions play the original's recording.
-        const field =
-          (isExtraLanguage(actual) ? poem.source_language : actual) === 'ro' ? 'audio_ro_id' : 'audio_en_id';
+        const field = audioField(poemRecording(poem, actual).language);
         const selected = audio[field];
         return (
           <LocalAudioPoem

@@ -1,3 +1,4 @@
+import { AUDIO_FIELDS } from '../lib/poem-audio';
 import { rebuildPendingPoemSearch } from './poem-search-index';
 import { ensureInitialPoems, ensureLanguageVariants, type Database } from './poems';
 import {
@@ -135,7 +136,7 @@ export async function listPoemCards(
   // Return the complete reading text only for the selected language and page.
   const rows = await db
     .prepare(
-      `SELECT id, author, source_language, audio_ro_id, audio_en_id,
+      `SELECT id, author, source_language, ${AUDIO_FIELDS.join(', ')},
     ${display('title')} AS title, ${display('theme')} AS theme,
     ${display('content')} AS content,
     ${locale} AS language,

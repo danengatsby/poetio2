@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
-import type { PoemLanguage, SiteLanguage } from '@/lib/poem-types';
+import type { SiteLanguage } from '@/lib/poem-types';
 import { pick } from '@/lib/site-language';
 import './poem-audio-player.css';
 
@@ -20,8 +20,8 @@ export default function PoemAudioPlayer({
   title: string;
   /** The site language, for the labels. */
   language: SiteLanguage;
-  /** The language of the recording (the French page plays the original's). */
-  recording: PoemLanguage;
+  /** Language of the selected recording, including an original-language fallback. */
+  recording: SiteLanguage;
   showStatus?: boolean;
   compactControl?: boolean;
 }) {
@@ -31,7 +31,8 @@ export default function PoemAudioPlayer({
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
   const source = src || (audioId ? `/api/audio/${audioId}` : undefined);
-  const playLabel = `${pick(language, 'Ascultă: ', 'Listen to: ', 'Écouter\u00a0: ', 'Anhören: ', 'Escuchar: ', 'Ascolta: ')}${title}`;
+  const recordingName = new Intl.DisplayNames([language], { type: 'language' }).of(recording);
+  const playLabel = `${pick(language, 'Ascultă: ', 'Listen to: ', 'Écouter\u00a0: ', 'Anhören: ', 'Escuchar: ', 'Ascolta: ')}${title}${recording !== language ? ` (${recordingName})` : ''}`;
   useEffect(() => {
     const audio = element.current;
     if (audio && source) audio.src = source;
@@ -111,12 +112,12 @@ export default function PoemAudioPlayer({
         <p id={`${id}-status`} className="poem-audio-status">
           {pick(
             language,
-            `Înregistrarea în ${recording === 'ro' ? 'română' : 'engleză'} nu a fost încă adăugată.`,
-            `${recording === 'ro' ? 'A Romanian' : 'An English'} recording has not been added yet.`,
-            `L’enregistrement en ${recording === 'ro' ? 'roumain' : 'anglais'} n’a pas encore été ajouté.`,
-            `Eine ${recording === 'ro' ? 'rumänische' : 'englische'} Aufnahme wurde noch nicht hinzugefügt.`,
-            `Aún no se ha añadido una grabación en ${recording === 'ro' ? 'rumano' : 'inglés'}.`,
-            `Non è ancora stata aggiunta una registrazione in ${recording === 'ro' ? 'rumeno' : 'inglese'}.`,
+            `Înregistrare indisponibilă (${recordingName}).`,
+            `Recording unavailable (${recordingName}).`,
+            `Enregistrement indisponible (${recordingName}).`,
+            `Aufnahme nicht verfügbar (${recordingName}).`,
+            `Grabación no disponible (${recordingName}).`,
+            `Registrazione non disponibile (${recordingName}).`,
           )}
         </p>
       )}

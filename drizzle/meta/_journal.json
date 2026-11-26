@@ -204,6 +204,13 @@
       "when": 1795701969793,
       "tag": "0028_reader_shop_updates",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1795710147155,
+      "tag": "0029_poem_audio_languages",
+      "breakpoints": true
     }
   ]
 }

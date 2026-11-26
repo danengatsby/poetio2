@@ -1,5 +1,6 @@
 'use client';
 import type { Poem, SiteLanguage } from '@/lib/poem-types';
+import type { AudioField } from '@/lib/poem-audio';
 import { poemRecording, poemVersion } from '@/lib/poem-languages';
 import PoemAudioPlayer from './poem-audio-player';
 import usePoemReadingPreferences from './use-poem-reading-preferences';
@@ -28,8 +29,7 @@ export type ReadablePoem = Pick<
   | 'it_title'
   | 'it_theme'
   | 'it_content'
-  | 'audio_ro_id'
-  | 'audio_en_id'
+  | AudioField
 >;
 export default function PoemReading({
   poem,

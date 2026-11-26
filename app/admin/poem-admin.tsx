@@ -20,7 +20,7 @@ import TranslationInventory from './translation-inventory';
 import type { SiteLanguage } from '@/lib/poem-types';
 import PoemCover from '../poem-cover';
 import AudioUploadField, { type SelectedAudio } from './audio-upload-field';
-import { AUDIO_FIELDS, audioFileType, type AudioField } from '@/lib/poem-audio';
+import { AUDIO_FIELDS, AUDIO_LABELS, audioFileType, type AudioField } from '@/lib/poem-audio';
 import PoemPreview from './poem-preview';
 import PoemRecoveryComparison from './poem-recovery-comparison';
 import {
@@ -45,6 +45,14 @@ const VERSION_NAME: Record<ExtraLanguage, string> = {
   de: 'germană',
   es: 'spaniolă',
   it: 'italiană',
+};
+const emptyAudio = {
+  audio_ro_id: null,
+  audio_en_id: null,
+  audio_fr_id: null,
+  audio_de_id: null,
+  audio_es_id: null,
+  audio_it_id: null,
 };
 const blank = (): Draft => ({
   id: crypto.randomUUID(),
@@ -74,8 +82,7 @@ const blank = (): Draft => ({
   it_content: '',
   it_provenance: null,
   image_id: null,
-  audio_ro_id: null,
-  audio_en_id: null,
+  ...emptyAudio,
   revision: 1,
   isNew: true,
 });
@@ -109,6 +116,10 @@ const fromPoem = (poem: Poem): Draft => ({
   image_id: poem.image_id,
   audio_ro_id: poem.audio_ro_id,
   audio_en_id: poem.audio_en_id,
+  audio_fr_id: poem.audio_fr_id,
+  audio_de_id: poem.audio_de_id,
+  audio_es_id: poem.audio_es_id,
+  audio_it_id: poem.audio_it_id,
   revision: poem.revision,
   isNew: false,
 });
@@ -177,10 +188,7 @@ export default function Admin({
   const [imageBusy, setImageBusy] = useState(false);
   const [selectedImage, setSelectedImage] = useState<{ file: File; id: string; url: string } | null>(null);
   const [imageError, setImageError] = useState('');
-  const [selectedAudio, setSelectedAudio] = useState<Record<AudioField, SelectedAudio | null>>({
-    audio_ro_id: null,
-    audio_en_id: null,
-  });
+  const [selectedAudio, setSelectedAudio] = useState<Record<AudioField, SelectedAudio | null>>(emptyAudio);
   const [missingMedia, setMissingMedia] = useState<PoemMediaField[]>([]);
   const [comparison, setComparison] = useState<{
     recovered: Draft;
@@ -192,7 +200,7 @@ export default function Admin({
   const [audioEditorVersion, setAudioEditorVersion] = useState(0);
   const imageInput = useRef<HTMLInputElement>(null);
   const pendingAction = useRef<(() => void) | null>(null);
-  const titleInput = useRef<HTMLInputElement>(null);
+  const focusAfterLoad = useRef<SiteLanguage | null>(null);
   const pendingMedia = useMemo(
     () =>
       mediaFields.filter(
@@ -283,7 +291,14 @@ export default function Admin({
   function resolveMedia(field: PoemMediaField) {
     setMissingMedia(current => current.filter(key => key !== field));
   }
-  function replaceDraft(value: Draft | null) {
+  useEffect(() => {
+    if (locked || !focusAfterLoad.current) return;
+    document.getElementById('edit-language-' + focusAfterLoad.current)?.focus();
+    focusAfterLoad.current = null;
+  }, [draft, locked, audioEditorVersion]);
+
+  function replaceDraft(value: Draft | null, language?: SiteLanguage) {
+    focusAfterLoad.current = value ? (language ?? value.source_language ?? 'ro') : null;
     setMissingMedia([]);
     setComparison(null);
     setDraft(value);
@@ -294,10 +309,9 @@ export default function Admin({
     setTranslationFailed(false);
     setSelectedImage(null);
     setImageError('');
-    setSelectedAudio({ audio_ro_id: null, audio_en_id: null });
+    setSelectedAudio(emptyAudio);
     setAudioEditorVersion(value => value + 1);
     if (imageInput.current) imageInput.current.value = '';
-    requestAnimationFrame(() => titleInput.current?.focus());
   }
   function guard(action: () => void) {
     if (locked) return;
@@ -385,8 +399,7 @@ export default function Admin({
     setError('');
     try {
       const data = await request(`/api/poems/${encodeURIComponent(id)}`, { signal: AbortSignal.timeout(30000) });
-      replaceDraft(fromPoem(data.poem));
-      if (language) requestAnimationFrame(() => document.getElementById('edit-language-' + language)?.focus());
+      replaceDraft(fromPoem(data.poem), language);
     } catch (error) {
       reportError(error, 'Poemul nu poate fi încărcat. Textul din editor este păstrat.');
     } finally {
@@ -925,7 +938,6 @@ export default function Admin({
                     <label>
                       Titlu — {sourceLabel}{' '}
                       <input
-                        ref={titleInput}
                         id={'edit-language-' + sourceLanguage}
                         value={draft.title}
                         onChange={e => update('title', e.target.value)}
@@ -1008,7 +1020,7 @@ export default function Admin({
                       <AudioUploadField
                         key={`${audioEditorVersion}:${field}`}
                         field={field}
-                        label={field === 'audio_ro_id' ? 'Română' : 'English (US)'}
+                        label={AUDIO_LABELS[field]}
                         selected={selectedAudio[field]}
                         storedId={draft[field] ?? null}
                         disabled={locked}
@@ -1026,8 +1038,8 @@ export default function Admin({
                       />
                     ))}
                     <p className="field-help">
-                      Poți salva poemul fără înregistrări. Pentru redarea în engleză, salvează și textul variantei în
-                      engleză.
+                      Înregistrările sunt opționale. Pentru redarea unei traduceri, salvează și textul poemului în limba
+                      respectivă.
                     </p>
                   </section>
                   <label>
