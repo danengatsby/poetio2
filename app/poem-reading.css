@@ -6,7 +6,7 @@
 }
 /* Poem titles stay smaller than the shared detail-page heading (videos keep it). */
 .content-detail .poem-reading h1 {
-  font-size: clamp(1.6rem, 3.2vw, 2.3rem);
+  font-size: clamp(1.45rem, 2.9vw, 2.1rem);
 }
 .poem-reading-text {
   width: 100%;
