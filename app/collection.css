@@ -140,7 +140,9 @@
 .collection-verses {
   margin: 0;
   max-width: 42rem;
-  font: 400 clamp(1rem, 1.4vw, 1.25rem)/1.65 var(--serif);
+  font-family: var(--serif);
+  font-size: clamp(1rem, 1.4vw, 1.25rem);
+  line-height: 1.65;
   white-space: pre-wrap;
 }
 @media (max-width: 420px) {

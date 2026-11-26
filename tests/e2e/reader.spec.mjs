@@ -229,6 +229,7 @@ test('mobile readers omit the reading controls and honor previously saved prefer
   for (const view of ['collection', 'poem']) {
     if (view === 'poem') await openSelectedPoemPage(page);
     await expect(verses).toBeVisible();
+    await expect(verses).toHaveCSS('font-weight', '700');
     await expect(verses).toHaveCSS('font-size', '24px');
     await expect(verses).toHaveAttribute('data-width', 'narrow');
     await expect(page.locator('.poem-reading-settings')).toHaveCount(0);
