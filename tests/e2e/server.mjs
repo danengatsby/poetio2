@@ -43,7 +43,7 @@ const server = spawn(process.execPath, [join(root, 'scripts/start-vps.mjs')], {
     POETIO_BUILD_DIR: build,
     POETIO_PORT: String(port),
     POETIO_OWNER_EMAIL: OWNER_EMAIL,
-    OPENAI_API_KEY: '',
+    ANTHROPIC_API_KEY: '',
   },
 });
 let ready;

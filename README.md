@@ -11,7 +11,7 @@ node scripts/migrate.mjs apply .data/poetio.sqlite3 --create
 npm run dev
 ```
 
-Editorul permite schițe, revizuirea traducerilor și publicarea cu verificarea versiunii. Traducerea automată română–engleză este opțională. Serverul citește `OPENAI_API_KEY`, `OPENAI_TRANSLATION_MODEL` și `POETIO_OWNER_EMAIL` din mediul procesului. Pe VPS configurarea este în `/etc/poetio/runtime.env`.
+Editorul permite schițe, revizuirea traducerilor și publicarea cu verificarea versiunii. Traducerea automată din română în engleză, franceză, germană, spaniolă și italiană este opțională și folosește API-ul Claude (`lib/translate-poem.ts`). Serverul citește `ANTHROPIC_API_KEY`, `POETIO_TRANSLATION_MODEL` (implicit `claude-opus-5-5`) și `POETIO_OWNER_EMAIL` din mediul procesului. Pe VPS configurarea este în `/etc/poetio/runtime.env`.
 
 [Instalare și teste](REPRODUCERE.md) · [Publicarea pe VPS](deploy/PUBLICARE.md) · [Backup și restaurare](BACKUP-VPS.md)
 

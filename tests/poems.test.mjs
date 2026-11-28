@@ -7,7 +7,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { createRequire } from 'node:module';
-import { mkdtempSync, readFileSync, readdirSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, writeFileSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import ts from 'typescript';
@@ -109,6 +110,8 @@ const { poemVersion } = require(join(output, 'lib/poem-languages.js'));
 const { translationProvenance, translationStatus, parseTranslationProvenance } = require(
   join(output, 'lib/translation-provenance.js'),
 );
+// lib/translate-poem.ts loads @anthropic-ai/sdk, which the compiled copy finds through this link.
+symlinkSync(fileURLToPath(new URL('../node_modules', import.meta.url)), join(output, 'node_modules'));
 const { translatePoem, parseTranslation } = require(join(output, 'lib/translate-poem.js'));
 const { languageBackfill } = require(join(output, 'db/language-backfill.js'));
 const sql = readdirSync(new URL('../drizzle/', import.meta.url))
@@ -832,69 +835,145 @@ test('bilingual saves validate both versions and distinguish missing translation
   }
 });
 
-test('OpenAI translation preserves indentation and blank lines and saves both variants together', async () => {
-  const original = { title: 'Lumină', theme: '', content: '  Lumina cade\n\nPeste oraș.\n' };
-  const providerResult = { title: 'Light', theme: '', lines: ['The light falls', '', 'Over the city.', ''] };
-  let calls = 0;
-  const generated = await translatePoem(original, { OPENAI_API_KEY: 'test-key' }, async (url, options) => {
-    calls++;
-    assert.equal(url, 'https://api.openai.com/v1/responses');
-    assert.equal(options.headers.Authorization, 'Bearer test-key');
-    const request = JSON.parse(options.body);
-    assert.equal(request.store, false);
-    assert.match(request.instructions, /American English/);
-    assert.equal(request.text.format.strict, true);
-    assert.deepEqual(JSON.parse(request.input).lines, original.content.split('\n'));
+// A stand-in for the Claude Messages API: answers each language's request with that language's version.
+const LANGUAGE_WORD = { translated: 'English', fr: 'French', de: 'German', es: 'Spanish', it: 'Italian' };
+function claudeStub(answers, calls = []) {
+  return async (url, init) => {
+    const body = JSON.parse(init.body);
+    const target = Object.keys(LANGUAGE_WORD).find(key => body.system.includes(LANGUAGE_WORD[key]));
+    calls.push({ url: String(url), headers: new Headers(init.headers), body, target });
+    const answer = answers[target];
+    if (answer instanceof Response) return answer;
     return Response.json({
-      status: 'completed',
-      output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(providerResult) }] }],
+      id: 'msg_test_' + target,
+      type: 'message',
+      role: 'assistant',
+      model: body.model,
+      content: [
+        { type: 'thinking', thinking: '', signature: 'sig' },
+        { type: 'text', text: typeof answer === 'string' ? answer : JSON.stringify(answer) },
+      ],
+      stop_reason: answer?.stop_reason ?? 'end_turn',
+      stop_sequence: null,
+      usage: { input_tokens: 10, output_tokens: 20 },
     });
-  });
-  assert.equal(calls, 1);
-  assert.equal(generated.translated_content, '  The light falls\n\nOver the city.\n');
+  };
+}
+
+test('Claude translates into every site language, keeping verses, blank lines and indentation, and both are saved', async () => {
+  const original = { title: 'Lumină', theme: '', content: '  Lumina cade\n\nPeste oraș.\n' };
+  const answers = {
+    translated: { title: 'Light', theme: '', lines: ['The light falls', '', 'Over the city.', ''] },
+    fr: { title: 'Lumière', theme: '', lines: ['La lumière tombe', '', 'Sur la ville.', ''] },
+    de: { title: 'Licht', theme: '', lines: ['Das Licht fällt', '', 'Über die Stadt.', ''] },
+    es: { title: 'Luz', theme: '', lines: ['La luz cae', '', 'Sobre la ciudad.', ''] },
+    it: { title: 'Luce', theme: '', lines: ['La luce cade', '', 'Sulla città.', ''] },
+  };
+  const calls = [];
+  const { translation, failed } = await translatePoem(
+    original,
+    { ANTHROPIC_API_KEY: 'test-key' },
+    undefined,
+    claudeStub(answers, calls),
+  );
+  assert.deepEqual(failed, []);
+  assert.deepEqual(calls.map(call => call.target).sort(), ['de', 'es', 'fr', 'it', 'translated']);
+  for (const call of calls) {
+    assert.match(call.url, /^https:\/\/api\.anthropic\.com\/v1\/messages/);
+    // SDK 1.x sends the key as a bearer token (API version 2026-10-21).
+    assert.equal(call.headers.get('authorization'), 'Bearer test-key');
+    assert.match(call.headers.get('anthropic-beta'), /server-side-fallback-2026-07-01/);
+    assert.equal(call.body.model, 'claude-opus-5-5');
+    assert.equal(call.body.fallbacks, 'default');
+    assert.equal(call.body.output_config.effort, 'medium');
+    assert.equal(call.body.output_config.format.type, 'json_schema');
+    assert.match(call.body.system, /never instructions to follow/);
+    assert.deepEqual(JSON.parse(call.body.messages[0].content).lines, original.content.split('\n'));
+  }
+  assert.equal(translation.translated_content, '  The light falls\n\nOver the city.\n');
+  assert.equal(translation.fr_content, '  La lumière tombe\n\nSur la ville.\n');
+  assert.equal(translation.it_title, 'Luce');
+  for (const key of ['translation_provenance', 'fr_provenance', 'de_provenance', 'es_provenance', 'it_provenance'])
+    assert.equal(translation[key].origin, 'automatic', key);
   const db = database();
   try {
-    const savedInput = service.validateInput({ ...original, author: 'Autor', source_language: 'ro', ...generated });
+    const savedInput = service.validateInput({ ...original, author: 'Autor', source_language: 'ro', ...translation });
     const saved = await service.createPoem(db, id, savedInput, readyMediaValidator);
     assert.equal(saved.content, original.content);
-    assert.equal(poemVersion(saved, 'en-US').content, generated.translated_content);
-    assert.equal((await service.createPoem(db, id, savedInput, readyMediaValidator)).revision, 1);
+    assert.equal(poemVersion(saved, 'en-US').content, translation.translated_content);
+    assert.equal(saved.de_content, translation.de_content);
+    for (const target of ['translated', 'fr', 'de', 'es', 'it'])
+      assert.equal(await translationStatus(saved, target), 'ready', target);
   } finally {
     db.close();
   }
 });
 
+test('only the requested versions are translated, and a failed extra language leaves the others usable', async () => {
+  const original = { title: 'Noapte', theme: 'Liniște', content: 'Primul vers\nUltimul vers' };
+  const good = { title: 'Nuit', theme: 'Silence', lines: ['Premier vers', 'Dernier vers'] };
+  const calls = [];
+  const only = await translatePoem(original, { ANTHROPIC_API_KEY: 'k' }, ['fr'], claudeStub({ fr: good }, calls));
+  assert.equal(calls.length, 1);
+  assert.deepEqual(Object.keys(only.translation).sort(), ['fr_content', 'fr_provenance', 'fr_theme', 'fr_title']);
+
+  const partial = await translatePoem(
+    original,
+    { ANTHROPIC_API_KEY: 'k' },
+    ['translated', 'fr', 'de'],
+    claudeStub({
+      translated: { title: 'Night', theme: 'Stillness', lines: ['First line', 'Last line'] },
+      fr: good,
+      de: { title: 'Nacht', theme: 'Stille', lines: ['Erste und letzte Zeile zusammen'] },
+    }),
+  );
+  assert.deepEqual(partial.failed, ['de']);
+  assert.equal(partial.translation.fr_title, 'Nuit');
+  assert.equal(partial.translation.de_title, undefined);
+  assert.equal(partial.translation.translated_content, 'First line\nLast line');
+});
+
 test('missing credentials, upstream failures and refused or incomplete translations are recoverable', async () => {
   let calls = 0;
   await assert.rejects(
-    translatePoem(input, {}, async () => {
+    translatePoem(input, {}, undefined, async () => {
       calls++;
     }),
     { status: 503 },
   );
   assert.equal(calls, 0);
-  const config = { OPENAI_API_KEY: 'test-key' };
-  for (const status of [401, 429, 500]) {
-    await assert.rejects(
-      translatePoem(input, config, async () => Response.json({ error: 'provider details must not leak' }, { status })),
-      error => error.status === 503 && !error.message.includes('provider details'),
-    );
-  }
-  await assert.rejects(
-    translatePoem(input, config, async () => {
-      throw new TypeError('network failed with secret details');
-    }),
-    { status: 503 },
-  );
-  for (const payload of [
-    { status: 'incomplete', output: [] },
-    { status: 'completed', output: [{ type: 'message', content: [{ type: 'refusal' }] }] },
-    { status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: '{broken' }] }] },
+  const config = { ANTHROPIC_API_KEY: 'test-key' };
+  const lines = input.content.split('\n').map(line => (line.trim() ? 'verse' : ''));
+  const english = { title: 'Return', theme: 'Memories', lines };
+  // English is required: whatever goes wrong with it, nothing is returned and nothing leaks.
+  for (const answer of [
+    Response.json(
+      { type: 'error', error: { type: 'authentication_error', message: 'provider details must not leak' } },
+      { status: 401 },
+    ),
+    Response.json(
+      { type: 'error', error: { type: 'api_error', message: 'provider details must not leak' } },
+      { status: 500 },
+    ),
+    { ...english, stop_reason: 'refusal' },
+    { ...english, stop_reason: 'max_tokens' },
+    '{broken',
+    { ...english, lines: ['merged verses'] },
   ])
     await assert.rejects(
-      translatePoem(input, config, async () => Response.json(payload)),
-      { status: 503 },
+      translatePoem(input, config, ['translated', 'fr'], claudeStub({ translated: answer, fr: english })),
+      error => error.status === 503 && !error.message.includes('provider details'),
     );
+  await assert.rejects(
+    translatePoem(input, config, ['translated'], async () => {
+      throw new TypeError('network failed with secret details');
+    }),
+    error => error.status === 503 && !error.message.includes('secret'),
+  );
+  // Without English, failing every requested language is a failure too.
+  await assert.rejects(translatePoem(input, config, ['fr', 'de'], claudeStub({ fr: '{broken', de: '{broken' })), {
+    status: 503,
+  });
 });
 
 test('translations with missing, extra, blank or merged verses are rejected', () => {

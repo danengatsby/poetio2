@@ -34,7 +34,7 @@ import {
 import RecoveryTools from './recovery-tools';
 import type { EditorSnapshot } from '@/lib/editorial';
 import ThemeToggle from '../theme-toggle';
-import { keepsLegacyTranslation, translationProvenance } from '@/lib/translation-provenance';
+import { keepsLegacyTranslation, translationProvenance, type TranslationTarget } from '@/lib/translation-provenance';
 import { useTranslationStatus } from './use-translation-status';
 import { adminPoemListUrl, type AdminPoemCollection } from '@/lib/poem-admin-list';
 
@@ -45,6 +45,21 @@ const VERSION_NAME: Record<ExtraLanguage, string> = {
   de: 'germană',
   es: 'spaniolă',
   it: 'italiană',
+};
+const TARGET_NAME = (target: TranslationTarget) => (target === 'translated' ? 'engleză' : VERSION_NAME[target]);
+const nameList = (targets: TranslationTarget[]) => {
+  const names = targets.map(TARGET_NAME);
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} și ${names[names.length - 1]}` : names.join('');
+};
+/** What the editor tells the owner after an automatic translation: what was prepared and what is still missing. */
+const translationNote = (targets: TranslationTarget[], failed: TranslationTarget[]) => {
+  const done = targets.filter(target => !failed.includes(target));
+  return (
+    `Traducerea în ${nameList(done)} este în schiță. Verific-o în previzualizare înainte de salvarea publică.` +
+    (failed.length
+      ? ` Varianta în ${nameList(failed)} nu a putut fi pregătită acum; reîncearcă sau completeaz-o manual.`
+      : '')
+  );
 };
 const emptyAudio = {
   audio_ro_id: null,
@@ -267,6 +282,16 @@ export default function Admin({
   const blockedVersion = EXTRA_LANGUAGES.find(
     language => versionStates[language] !== 'ready' && versionStates[language] !== 'missing',
   );
+  // Automatic translation: the button prepares every version not yet confirmed for the current original;
+  // saving a Romanian poem without English also fills the other languages that are still empty.
+  const unconfirmedTargets: TranslationTarget[] = [
+    ...(translationState !== 'ready' ? (['translated'] as const) : []),
+    ...EXTRA_LANGUAGES.filter(language => versionStates[language] !== 'ready'),
+  ];
+  const saveTargets: TranslationTarget[] = [
+    'translated',
+    ...EXTRA_LANGUAGES.filter(language => versionStates[language] === 'missing'),
+  ];
 
   function reportError(error: unknown, fallback: string) {
     setError(error instanceof Error ? error.message : fallback);
@@ -449,7 +474,8 @@ export default function Admin({
     }
   }
   async function prepareTranslation() {
-    if (!draft || locked || !translationReady) return;
+    if (!draft || locked || !translationReady || !unconfirmedTargets.length) return;
+    const targets = unconfirmedTargets;
     setBusy(true);
     setTranslating(true);
     setError('');
@@ -457,12 +483,12 @@ export default function Admin({
     try {
       const data = await request('/api/poems/translate', {
         method: 'POST',
-        body: JSON.stringify({ title: draft.title, theme: draft.theme, content: draft.content }),
+        body: JSON.stringify({ title: draft.title, theme: draft.theme, content: draft.content, targets }),
       });
       const prepared = { ...draft, ...data.translation };
       setDraft(prepared);
       setTranslationFailed(false);
-      setSuccess('Traducerea este în schiță. Verific-o în previzualizarea EN înainte de salvarea publică.');
+      setSuccess(translationNote(targets, data.failed || []));
     } catch (error) {
       reportError(error, 'Traducerea nu a putut fi pregătită.');
     } finally {
@@ -521,15 +547,23 @@ export default function Admin({
     setSuccess('');
     try {
       let saveDraft = { ...draft };
+      let notPrepared: TranslationTarget[] = [];
       if (translateOnSave && !originalOnly) {
         setTranslating(true);
         setTranslationFailed(false);
         try {
           const data = await request('/api/poems/translate', {
             method: 'POST',
-            body: JSON.stringify({ title: draft.title, theme: draft.theme, content: draft.content }),
+            body: JSON.stringify({
+              title: draft.title,
+              theme: draft.theme,
+              content: draft.content,
+              targets: saveTargets,
+            }),
           });
+          // A language that could not be prepared stays empty; the site shows the original there.
           saveDraft = { ...saveDraft, ...data.translation };
+          notPrepared = data.failed || [];
           // Keep the generated text in the editor even if a later image upload
           // or database save fails, so a retry reuses this exact translation.
           setDraft(saveDraft);
@@ -607,7 +641,10 @@ export default function Admin({
         originalOnly
           ? 'Originalul a fost salvat fără traducere. Traducerea poate fi adăugată ulterior.'
           : saved.source_language === 'ro' && saved.translated_content
-            ? 'Poemul a fost salvat în română și engleză americană.'
+            ? 'Poemul a fost salvat împreună cu traducerile.' +
+              (notPrepared.length
+                ? ` Varianta în ${nameList(notPrepared)} nu a putut fi pregătită acum; site-ul arată acolo originalul.`
+                : '')
             : draft.isNew
               ? 'Poemul a fost adăugat în colecție.'
               : 'Modificările au fost salvate în colecție.',
@@ -901,7 +938,7 @@ export default function Admin({
                       : imageBusy
                         ? 'Se verifică imaginea…'
                         : translating
-                          ? 'Se traduce în engleză americană…'
+                          ? 'Se traduce în celelalte limbi ale site-ului…'
                           : checkingAudio
                             ? 'Se încarcă și se verifică înregistrarea…'
                             : busy
@@ -1068,7 +1105,7 @@ export default function Admin({
                       corespunde originalului actual. Salvarea fără traducere elimină varianta tradusă din publicare.
                       {sourceLanguage === 'ro' &&
                         translationReady &&
-                        ' Poți genera varianta EN cu „Pregătește traducerea în schiță”.'}
+                        ' Poți genera variantele în engleză, franceză, germană, spaniolă și italiană cu „Pregătește traducerea în schiță”; cele deja confirmate rămân neschimbate.'}
                     </p>
                     <label>
                       Titlul traducerii
@@ -1297,7 +1334,7 @@ export default function Admin({
                 </button>
               </div>
             )}
-            {draft && sourceLanguage === 'ro' && translationState !== 'ready' && translationReady && (
+            {draft && sourceLanguage === 'ro' && unconfirmedTargets.length > 0 && translationReady && (
               <button
                 type="button"
                 className="secondary-button"

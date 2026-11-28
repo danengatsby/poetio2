@@ -73,10 +73,11 @@ export const env = {
   get GEOIP() {
     return (geoIp ??= openGeoIp(process.env.POETIO_GEOIP_DB || join(dataDirectory(), 'geoip', 'city.mmdb')));
   },
-  get OPENAI_API_KEY() {
-    return process.env.OPENAI_API_KEY;
+  // Automatic translation in the poem editor (lib/translate-poem.ts); without a key the editor saves originals only.
+  get ANTHROPIC_API_KEY() {
+    return process.env.ANTHROPIC_API_KEY;
   },
-  get OPENAI_TRANSLATION_MODEL() {
-    return process.env.OPENAI_TRANSLATION_MODEL;
+  get POETIO_TRANSLATION_MODEL() {
+    return process.env.POETIO_TRANSLATION_MODEL;
   },
 };

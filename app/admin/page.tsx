@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Administrare poeme — Poetio', robots: { index: false, follow: false } };
 
 async function OwnerContent() {
-  const runtime = env as unknown as { OPENAI_API_KEY?: string; ADMIN_AUTH_MODE?: string };
+  const runtime = env as unknown as { ANTHROPIC_API_KEY?: string; ADMIN_AUTH_MODE?: string };
   const passwordAuth = runtime.ADMIN_AUTH_MODE === 'basic';
   const signInHref = passwordAuth ? '/admin' : chatGPTSignInPath('/admin');
   const user = await getChatGPTUser();
@@ -48,7 +48,7 @@ async function OwnerContent() {
         </Link>
       </main>
     );
-  const translationReady = Boolean(runtime.OPENAI_API_KEY?.trim());
+  const translationReady = Boolean(runtime.ANTHROPIC_API_KEY?.trim());
   let collection = emptyAdminPoems;
   let selectedPoem: Poem | null = null;
   let failed = false;
