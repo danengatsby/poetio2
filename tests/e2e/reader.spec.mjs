@@ -68,9 +68,10 @@ test('collection pages have a canonical address and a sharing preview; favicon.i
     await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', /Poetio/);
     await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
   }
-  // Every page carries the (report-only) Content Security Policy and the Permissions-Policy.
+  // Every page carries the enforced Content Security Policy and the Permissions-Policy.
   const home = await request.get('/');
-  expect(home.headers()['content-security-policy-report-only']).toContain("default-src 'self'");
+  expect(home.headers()['content-security-policy']).toContain("default-src 'self'");
+  expect(home.headers()['content-security-policy-report-only']).toBeUndefined();
   expect(home.headers()['permissions-policy']).toContain('camera=()');
   const report = await request.post('/api/csp-report', {
     headers: { 'Content-Type': 'application/csp-report' },

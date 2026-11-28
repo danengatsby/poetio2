@@ -1,8 +1,9 @@
 // Content Security Policy and Permissions-Policy for every page (next.config.ts).
 //
-// The policy is report-only for now: browsers apply nothing, they only send what would have been
-// blocked to /api/csp-report, which writes it to the service journal. Once the journal stays clean,
-// rename the header to Content-Security-Policy to enforce it.
+// The policy is enforced since 28 Nov 2026, after six days as Content-Security-Policy-Report-Only
+// with no violation in the journal from a real page. Browsers still send what they block to
+// /api/csp-report, which writes it to the service journal (deploy/PUBLICARE.md). Chrome shows the
+// editor's PDF preview (a frame with a file or blob: address) under this policy.
 //
 // vinext puts the page's data in inline scripts that differ per request, so scripts need
 // 'unsafe-inline'; the policy still allows code from this site only, sends data nowhere else,

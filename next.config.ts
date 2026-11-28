@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
       {
         source: '/:path*',
         headers: [
-          { key: 'Content-Security-Policy-Report-Only', value: CONTENT_SECURITY_POLICY },
+          { key: 'Content-Security-Policy', value: CONTENT_SECURITY_POLICY },
           { key: 'Permissions-Policy', value: PERMISSIONS_POLICY },
         ],
       },

@@ -1,5 +1,5 @@
 // The browser tests' `test`: like Playwright's, plus a check that no page opened during a test
-// trips the Content Security Policy (report-only in production; lib/security-headers.ts).
+// trips the Content Security Policy (enforced in production; lib/security-headers.ts).
 import { expect, test as base } from '@playwright/test';
 
 export { expect };

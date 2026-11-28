@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 const logged = createRateLimit(200, 3_600_000);
 const TYPES = ['application/csp-report', 'application/reports+json', 'application/json'];
 
-// Browsers report what the Content Security Policy would have blocked (lib/security-headers.ts).
+// Browsers report what the Content Security Policy blocked (lib/security-headers.ts).
 export async function POST(request: Request) {
   try {
     const type = request.headers.get('content-type')?.split(';')[0].trim() ?? '';

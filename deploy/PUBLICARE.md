@@ -94,13 +94,13 @@ Prima descărcare are aproximativ 60 MB (127 MB după dezarhivare). Site-ul prei
 
 ## Content Security Policy și Permissions-Policy
 
-Aplicația trimite pe fiecare răspuns `Content-Security-Policy-Report-Only` și `Permissions-Policy` (`lib/security-headers.ts`, aplicate din `next.config.ts`). Deocamdată politica doar raportează: browserele nu blochează nimic, dar trimit la `/api/csp-report` ce ar fi blocat. Serverul scrie fiecare raport în jurnal, fără parametrii adresei, cel mult 200 pe oră:
+Aplicația trimite pe fiecare răspuns `Content-Security-Policy` și `Permissions-Policy` (`lib/security-headers.ts`, aplicate din `next.config.ts`). Politica este aplicată din 28 noiembrie 2026, după șase zile în care a doar raportat (`Content-Security-Policy-Report-Only`) fără nicio încălcare de la o pagină reală. Browserele blochează ce nu e permis și trimit la `/api/csp-report` ce au blocat. Serverul scrie fiecare raport în jurnal, fără parametrii adresei, cel mult 200 pe oră:
 
 ```sh
 journalctl -u poetio --since "-7 days" | grep "CSP violation"
 ```
 
-Testele de browser verifică pe fiecare pagină deschisă că nu apare nicio încălcare (`tests/e2e/test.mjs`). Când jurnalul rămâne curat câteva zile, redenumește antetul în `Content-Security-Policy` din `next.config.ts` ca politica să fie aplicată. Dacă apar rapoarte, verifică dacă sunt reale (o resursă nouă a site-ului) sau zgomot (extensii de browser, de obicei `chrome-extension:` sau scripturi injectate).
+Testele de browser verifică pe fiecare pagină deschisă că nu apare nicio încălcare (`tests/e2e/test.mjs`). Dacă apar rapoarte, verifică dacă sunt reale (o resursă nouă a site-ului, care trebuie adăugată în politică) sau zgomot (extensii de browser, de obicei `chrome-extension:` sau scripturi injectate). O resursă nouă de pe alt domeniu (fonturi, analiză, plăți) nu se încarcă până nu e adăugată în `lib/security-headers.ts`. Ca soluție temporară, redenumirea antetului înapoi în `Content-Security-Policy-Report-Only` din `next.config.ts` oprește blocarea.
 
 ## Adresa administratorului
 
