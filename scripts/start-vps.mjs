@@ -14,19 +14,23 @@ const { server } = await startProdServer({
   outDir: resolve(process.env.POETIO_BUILD_DIR || 'dist'),
 });
 
-// Run even when nobody visits the site. Use a short-lived connection to the configured database.
+// Run even when nobody visits the site. The connection stays open for the life of the server:
+// while one is open, SQLite keeps poetio.sqlite3-wal and -shm in place. The order-mail job
+// (deploy/poetio-order-mail.service) opens the database read-only in a sandbox and cannot create
+// them, so it failed after every restart until the first visit opened the site's own, lazy
+// connection (server/vps-env.ts).
+const databaseFile = resolve(process.env.POETIO_DATA_DIR || '/var/lib/poetio', 'poetio.sqlite3');
+let db;
 function cleanVisits() {
-  const file = resolve(process.env.POETIO_DATA_DIR || '/var/lib/poetio', 'poetio.sqlite3');
-  if (!existsSync(file)) return;
-  let db;
   try {
-    db = new DatabaseSync(file);
-    db.exec('PRAGMA busy_timeout=5000');
+    if (!db) {
+      if (!existsSync(databaseFile)) return;
+      db = new DatabaseSync(databaseFile);
+      db.exec('PRAGMA busy_timeout=5000');
+    }
     db.prepare(VISIT_CLEANUP_SQL).run(Date.now() - VISIT_IP_RETENTION_DAYS * 86400000);
   } catch (error) {
     console.error('Visit retention cleanup failed', error);
-  } finally {
-    db?.close();
   }
 }
 cleanVisits();
