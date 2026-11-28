@@ -250,11 +250,24 @@ test('sitemap returns only paths and timestamps even for large poem bodies', asy
   sqlite
     .prepare("UPDATE poems SET it_title='Titolo', it_content='Versi', de_title='Nur Titel', de_content=' ' WHERE id=?")
     .run(id);
+  // A film keeps one address, like a book: its title and description are the original's.
+  const film = crypto.randomUUID(),
+    still = crypto.randomUUID();
+  sqlite
+    .prepare('INSERT INTO video_files VALUES(?,?,?,?,?,?,?,?)')
+    .run(still, 'film', 'film.mp4', 'video/mp4', 1, 'hash', 'owner@example.test', 1);
+  sqlite
+    .prepare('INSERT INTO videos (id,title,file_id,created_at,updated_at) VALUES(?,?,?,?,?)')
+    .run(film, 'Film', still, 1, 2);
   const entries = await sitemapEntries(db);
   const entry = entries.find(row => row.path === '/poeme/' + id);
   assert.equal(entry.updated, 1);
   assert.deepEqual(entry.languages, ['ro', 'en-US', 'it']);
   assert.deepEqual(entries.find(row => row.path === '/autor').languages, ['ro', 'en-US', 'fr', 'de', 'es', 'it']);
+  assert.deepEqual(
+    entries.find(row => row.path === '/video/' + film),
+    { path: '/video/' + film, updated: 2, languages: null },
+  );
   assert(entries.every(row => Object.keys(row).sort().join(',') === 'languages,path,updated'));
   assert.equal(JSON.stringify(entries).includes('secret-tail'), false);
 });

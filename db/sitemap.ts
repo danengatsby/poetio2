@@ -3,7 +3,7 @@ import { present } from './poem-collection';
 import { EXTRA_LANGUAGES, isExtraLanguage, type SiteLanguage } from '../lib/poem-types';
 import { SITE_LANGUAGES } from '../lib/site-language';
 
-/** A public page; `languages` lists its language versions, or is null for a page with one address (books). */
+/** A public page; `languages` lists its language versions, or is null for a page with one address (films, books). */
 export type SitemapEntry = { path: string; updated: number; languages: readonly SiteLanguage[] | null };
 
 export async function sitemapEntries(db: Database): Promise<SitemapEntry[]> {
@@ -19,10 +19,10 @@ export async function sitemapEntries(db: Database): Promise<SitemapEntry[]> {
     .all<{ id: string; updated: number; source_language: string } & Record<`has_${string}`, number>>();
   const others = await db
     .prepare(
-      `SELECT '/video/' || id AS path, updated_at AS updated, 1 AS translated_interface FROM videos
-    UNION ALL SELECT '/carti/' || id AS path, updated_at AS updated, 0 AS translated_interface FROM books`,
+      `SELECT '/video/' || id AS path, updated_at AS updated FROM videos
+    UNION ALL SELECT '/carti/' || id AS path, updated_at AS updated FROM books`,
     )
-    .all<{ path: string; updated: number; translated_interface: number }>();
+    .all<{ path: string; updated: number }>();
   return [
     ...['/', '/video', '/carti', '/autor'].map(path => ({ path, updated: 0, languages: SITE_LANGUAGES })),
     ...poems.results.map(poem => ({
@@ -34,11 +34,8 @@ export async function sitemapEntries(db: Database): Promise<SitemapEntry[]> {
           : language === poem.source_language || Boolean(poem.has_translated),
       ),
     })),
-    // Video pages exist in every interface language; a book keeps one address (see its page's metadata).
-    ...others.results.map(({ path, updated, translated_interface }) => ({
-      path,
-      updated,
-      languages: translated_interface ? SITE_LANGUAGES : null,
-    })),
+    // A film or a book has one text, its original, so it keeps one address: the other site languages
+    // only translate the page around it and name that address as canonical (see the pages' metadata).
+    ...others.results.map(({ path, updated }) => ({ path, updated, languages: null })),
   ];
 }

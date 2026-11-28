@@ -6,7 +6,7 @@ import { videoPosterPath } from '@/lib/video-types';
 import { requestLanguage } from '@/lib/request-language';
 import { contentMetadata, contentPath, excerpt, safeJsonLd, siteOrigin } from '@/lib/content-metadata';
 import ContentDetail from '../../content-detail';
-import { pick, SITE_LANGUAGES } from '@/lib/site-language';
+import { pick } from '@/lib/site-language';
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ lang?: string }> };
 // Link previews show the film's own still where this runtime can render one.
@@ -31,8 +31,10 @@ export async function generateMetadata(props: Props) {
       video.description,
       `${video.title} — ${pick(language, 'Video din colecția Poetio.', 'Video from the Poetio collection.', 'Vidéo de la collection Poetio.', 'Video aus der Poetio-Sammlung.', 'Vídeo de la colección Poetio.', 'Video della collezione Poetio.')}`,
     ),
+    // Title, description and recording are the original's in every site language, so the page keeps
+    // one address (as a book does): ?lang= versions name it as canonical and list no hreflang versions,
+    // and the sitemap lists it once (db/sitemap.ts).
     path: contentPath('video', video.id),
-    languages: SITE_LANGUAGES,
     image: previewImage(video.file_id),
     language,
     updated: video.updated_at,

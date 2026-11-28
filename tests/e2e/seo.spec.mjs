@@ -1,6 +1,7 @@
 // What search engines and feed readers see: hreflang with x-default, the multilingual sitemap and the RSS feed.
 import { expect, test } from './test.mjs';
-import { fixturePoems } from './fixture.mjs';
+import { readFileSync } from 'node:fs';
+import { fixturePoems, OWNER_EMAIL } from './fixture.mjs';
 
 const [meeting] = fixturePoems;
 // The editor test may rename this English-only poem; its title keeps this beginning.
@@ -86,4 +87,40 @@ test('the RSS feed carries the poems in the chosen language', async ({ page, req
   expect(romanian).toContain('<language>ro</language>');
   expect(romanian).toContain(`<title>${meeting.title}</title>`);
   expect(romanian).toContain(`<link>${SITE}/poeme/${id}</link>`);
+});
+
+test('a film keeps one address in every site language and in the sitemap', async ({ page, request, baseURL }) => {
+  const owner = { 'oai-authenticated-user-email': OWNER_EMAIL, Origin: baseURL };
+  const file = crypto.randomUUID(),
+    id = crypto.randomUUID();
+  const upload = await request.post('/api/video-files', {
+    headers: { ...owner, 'Content-Type': 'video/mp4', 'X-File-Name': 'clip.mp4', 'X-Upload-Id': file },
+    data: readFileSync(new URL('../fixtures/media/clip.mp4', import.meta.url)),
+  });
+  expect(upload.status()).toBe(201);
+  const data = {
+    id,
+    title: 'Film pentru căutare',
+    author: 'Editor',
+    description: 'Un film despre ploaie.',
+    file_id: file,
+  };
+  await expect.poll(async () => (await request.post('/api/videos', { headers: owner, data })).status()).toBe(201);
+
+  for (const language of ['', '?lang=fr']) {
+    await page.goto(`/video/${id}${language}`);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `${SITE}/video/${id}`);
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', `${SITE}/video/${id}`);
+    await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(0);
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', data.description);
+  }
+
+  const xml = await (await request.get('/sitemap.xml')).text();
+  const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
+  expect(locs.filter(loc => loc.startsWith(`${SITE}/video/${id}`))).toEqual([`${SITE}/video/${id}`]);
+  expect(xml).not.toContain(`${SITE}/video/${id}?lang=`);
+  // The film collection itself is translated, so it still lists every language.
+  for (const language of ['', '?lang=en-US', '?lang=it']) expect(locs).toContain(`${SITE}/video${language}`);
+
+  expect((await request.delete('/api/videos/' + id, { headers: owner, data: { revision: 1 } })).ok()).toBe(true);
 });
